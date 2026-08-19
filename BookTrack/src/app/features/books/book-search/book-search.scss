@@ -1,0 +1,88 @@
+.page { display:flex; flex-direction:column; min-height:100vh; background:#C9A96E; }
+
+.content {
+  flex:1;
+  padding:2rem;
+  display:flex;
+  flex-direction:column;
+  gap:1.2rem;
+  max-width:1000px;
+  margin:0 auto;
+  width:100%;
+}
+
+.search-bar {
+  display:flex;
+  gap:0.8rem;
+  input {
+    flex:1;
+    padding:0.6rem 1rem;
+    border-radius:20px;
+    border:1px solid #999;
+    font-size:0.9rem;
+    background:white;
+    outline:none;
+  }
+}
+
+.btn-primary { background:#1a1a1a; color:white; border:none; padding:0.6rem 1.5rem; border-radius:20px; cursor:pointer; font-size:0.85rem; }
+
+.categorias {
+  display:flex;
+  flex-wrap:wrap;
+  gap:0.5rem;
+}
+
+.cat-btn {
+  background:white;
+  border:1px solid #999;
+  padding:0.3rem 0.9rem;
+  border-radius:20px;
+  font-size:0.78rem;
+  cursor:pointer;
+  transition:all 0.15s;
+  &.activo { background:#1a1a1a; color:white; border-color:#1a1a1a; }
+  &:hover:not(.activo) { border-color:#1a1a1a; }
+}
+
+.msg { text-align:center; color:#555; font-style:italic; padding:2rem; }
+
+.grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(180px, 1fr));
+  gap:1rem;
+}
+
+.libro-card {
+  background:rgba(212,184,150,0.85);
+  border-radius:8px;
+  overflow:hidden;
+  cursor:pointer;
+  box-shadow:0 2px 6px rgba(0,0,0,0.12);
+  transition:transform 0.15s, box-shadow 0.15s;
+  &:hover { transform:translateY(-3px); box-shadow:0 4px 12px rgba(0,0,0,0.2); }
+}
+
+.portada {
+  height:130px;
+  background:#e0c89a;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  img { width:100%; height:100%; object-fit:cover; }
+}
+
+.portada-placeholder { display:flex; align-items:center; justify-content:center; width:100%; height:100%; }
+
+.libro-info {
+  padding:0.8rem;
+  display:flex;
+  flex-direction:column;
+  gap:0.2rem;
+}
+
+.titulo  { font-family:Georgia,serif; font-weight:bold; font-size:0.82rem; line-height:1.2; }
+.autor   { font-size:0.72rem; color:#555; }
+.cat-tag { font-size:0.68rem; background:#1a1a1a; color:white; padding:0.1rem 0.5rem; border-radius:20px; align-self:flex-start; }
+.disponibles { font-size:0.7rem; color:#444; margin-top:0.2rem; }

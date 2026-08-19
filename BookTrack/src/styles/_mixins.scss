@@ -1,0 +1,57 @@
+// Mixins para reutilización de estilos
+
+@mixin paper-texture {
+  background-color: $bg-paper;
+  background-image:
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 10px,
+      rgba(255, 255, 255, 0.05) 10px,
+      rgba(255, 255, 255, 0.05) 20px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 10px,
+      rgba(0, 0, 0, 0.03) 10px,
+      rgba(0, 0, 0, 0.03) 20px
+    );
+}
+
+@mixin shadow-paper {
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.1),
+    0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+@mixin button-primary {
+  background-color: $btn-primary;
+  color: $text-white;
+  border: none;
+  padding: 0.75rem 2rem;
+  border-radius: $border-radius-sm;
+  font-family: $font-sans;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+
+  &:hover {
+    background-color: $btn-primary-hover;
+  }
+}
+
+@mixin input-style {
+  background-color: white;
+  border: 2px solid $border-input;
+  border-radius: $border-radius-sm;
+  padding: 0.75rem;
+  font-family: $font-sans;
+  width: 100%;
+
+  &:focus {
+    outline: none;
+    border-color: darken($border-input, 20%);
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+  }
+}

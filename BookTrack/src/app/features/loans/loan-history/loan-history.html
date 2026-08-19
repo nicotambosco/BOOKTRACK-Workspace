@@ -1,0 +1,60 @@
+<div class="page">
+  <app-header [esAdmin]="false"></app-header>
+
+  <div class="content">
+    <!-- Perfil del usuario -->
+    <div class="perfil-card">
+      <div class="avatar">
+        @if (usuario?.imagen) {
+          <img [src]="usuario!.imagen" alt="foto" />
+        } @else {
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="8" r="4" stroke="#1a1a1a" stroke-width="2" fill="none"/>
+            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="#1a1a1a" stroke-width="2" fill="none"/>
+          </svg>
+        }
+      </div>
+      <div class="perfil-info">
+        <span class="nombre">{{ usuario?.nombreApellido ?? 'Usuario' }}</span>
+        <span class="legajo">Legajo: {{ usuario?.legajo ?? '-' }}</span>
+        <span class="categoria">{{ usuario?.categoria ?? 'usuario' }}</span>
+      </div>
+    </div>
+
+    <!-- Historial -->
+    <div class="historial-card">
+      <div class="card-header">
+        <h2>Historial de Préstamos</h2>
+        <span class="total">{{ prestamos.length }} registro/s</span>
+      </div>
+
+      @if (prestamos.length === 0) {
+        <p class="vacio">No hay préstamos registrados.</p>
+      } @else {
+        <div class="tabla">
+          <div class="tabla-header">
+            <span>Libro</span>
+            <span>Fecha inicio</span>
+            <span>Fecha fin</span>
+            <span>Estado</span>
+          </div>
+          @for (p of prestamos; track p.id) {
+            <div class="tabla-row">
+              <span>Libro #{{ p.libroId }}</span>
+              <span>{{ p.fechaInicio }}</span>
+              <span>{{ p.fechaFin || '-' }}</span>
+              <span class="badge" [class]="p.estado">{{ etiquetaEstado(p.estado) }}</span>
+            </div>
+          }
+        </div>
+      }
+
+      <div class="bottom">
+        <button class="btn-outline" (click)="router.navigate(['/loan-extension'])">
+          Solicitar extensión
+        </button>
+        <button class="btn-primary" (click)="router.navigate(['/home'])">VOLVER</button>
+      </div>
+    </div>
+  </div>
+</div>

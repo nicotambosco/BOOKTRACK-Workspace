@@ -1,0 +1,20 @@
+/* Global styles */
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+}
+#app-root, app-root {
+  display: block;
+  height: 100%;
+}
+
+/* Textura de papel envejecido */
+.paper-texture {
+  background-color: #f5e9d3; /* tono papel */
+  // background-image: url('assets/images/paper-texture.png');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+

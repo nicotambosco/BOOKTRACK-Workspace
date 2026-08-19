@@ -1,0 +1,63 @@
+// Estilos globales de la aplicación
+// Importar variables y mixins
+@import 'variables';
+@import 'mixins';
+
+// Estilos base
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, app-root, app-landing {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100vh;
+  display: block;    /* <--- Agrega esto para que los componentes actúen como bloques */
+  overflow: hidden;  /* Esto desactiva por completo el scroll externo */
+}
+
+// Textura de papel envejecido
+.paper-texture {
+  @include paper-texture;
+}
+
+// Sombra de papel
+.paper-shadow {
+  @include shadow-paper;
+}
+
+// Botón primario
+.btn-primary {
+  @include button-primary;
+}
+
+// Estilos de formulario
+.input-style {
+  @include input-style;
+}
+
+// Clases utilitarias
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.mt-1 { margin-top: $spacing-sm; }
+.mt-2 { margin-top: $spacing-md; }
+.mt-3 { margin-top: $spacing-lg; }
+.mb-1 { margin-bottom: $spacing-sm; }
+.mb-2 { margin-bottom: $spacing-md; }
+.mb-3 { margin-bottom: $spacing-lg; }
+
+// Responsive
+@media (max-width: 768px) {
+  .container {
+    padding: 0 $spacing-sm;
+  }
+}
