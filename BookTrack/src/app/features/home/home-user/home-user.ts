@@ -56,9 +56,9 @@ const CAT_ICONS: Record<string, string> = {
 
           <div class="footer-strip">
             <span class="footer-icon">🎓</span>
-            <span>Tu biblioteca de estudio</span>
+            <span>Reservá tu libro, seguí tu camino</span>
             <span class="footer-sep">|</span>
-            <span class="footer-tagline">Organizá. Aprendé. Crecé.</span>
+            <span class="footer-tagline">Contactanos a example&#64;frd.utn.edu.ar</span>
           </div>
         </div>
 
