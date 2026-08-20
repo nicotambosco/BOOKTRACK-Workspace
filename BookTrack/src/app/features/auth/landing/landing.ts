@@ -8,9 +8,13 @@ import { Router } from '@angular/router';
     <div class="landing-page" [style.backgroundImage]="bg">
       <div class="overlay-card">
         <div class="logos-row">
-          <img src="assets/images/logo-booktrack.png" class="logo-img"/>
+          <img src="assets/images/logo3_booktrack_light.png" class="logo-img"/>
         </div>
-        <button class="btn-iniciar" (click)="irAlLogin()">INICIAR SESIÓN</button>
+        <span class="subtitle-line"></span>
+        <button class="btn-iniciar" (click)="irAlLogin()">
+          <img src="assets/images/icon_login.png" class="icon-login"/>
+          INICIAR SESIÓN
+        </button>
       </div>
     </div>
   `,
@@ -28,41 +32,59 @@ import { Router } from '@angular/router';
       overflow: hidden;
     }
     .overlay-card {
-      background: rgba(20,20,20,0.72);
-      border-radius: 24px;
-      padding: 3rem 4rem;
+      background: rgba(24,24,24,0.85);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      padding: 2.5rem 3.5rem;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 2.5rem;
-      min-width: 500px;
+      gap: 0.5rem;
+      min-width: 460px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
     }
     .logos-row {
       display: flex;
       align-items: center;
-      gap: 2rem;
     }
     .logo-img {
-      width: 380px;
+      width: 420px;
       object-fit: contain;
+      display: block;
+    }
+    .subtitle {
+      color: rgba(255,255,255,0.6);
+      font-size: 0.9rem;
+      letter-spacing: 0.05rem;
+      margin-top: -0.75rem;
+    }
+    .subtitle-line {
+      width: 60px;
+      height: 3px;
+      background: #2ecc71;
+      border-radius: 2px;
+      margin-bottom: 0.5rem;
     }
     .btn-iniciar {
-      padding: 0.8rem 3rem;
-      background: rgba(255,255,255,0.15);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.8rem 2.5rem;
+      background: rgba(255,255,255,0.05);
       color: white;
-      border: 1px solid rgba(255,255,255,0.5);
+      border: 1px solid rgba(255,255,255,0.15);
       border-radius: 30px;
-      font-size: 0.95rem;
-      letter-spacing: 0.15rem;
+      font-size: 0.85rem;
+      letter-spacing: 0.12rem;
       cursor: pointer;
-      backdrop-filter: blur(4px);
       transition: background 0.3s;
     }
-    .btn-iniciar:hover { background: rgba(255,255,255,0.25); }
+    .btn-iniciar .icon-login { width: 18px; height: 18px; object-fit: contain; }
+    .btn-iniciar:hover { background: rgba(255,255,255,0.12); }
   `]
 })
 export class Landing {
-  bg = "url('assets/images/biblioteca.png')";
+  bg = "url('assets/images/fondo2_login.png')";
   constructor(private router: Router) {}
   irAlLogin() { this.router.navigate(['/login']); }
 }

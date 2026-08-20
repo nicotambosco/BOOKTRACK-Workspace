@@ -10,76 +10,144 @@ import { AuthService } from '../../../core/services/auth.service';
   imports: [FormsModule, CommonModule],
   template: `
     <div class="login-page" [style.backgroundImage]="bg">
-      <div class="logo-area">
-        <img src="assets/images/logo-booktrack.png" class="logo-utn"/>
-      </div>
-      <div class="book-wrapper">
-        <img src="assets/images/Libro.png" class="libro-img"/>
-        <div class="inputs-overlay">
-          <input type="text" placeholder="INGRESE LEGAJO / CORREO" [(ngModel)]="legajo"/>
-          <input type="password" placeholder="CONTRASEÑA" [(ngModel)]="password"/>
-          <a class="olvide-link" (click)="irAOlvide()">olvidé mi contraseña</a>
+      <div class="overlay-card">
+        <div class="logos-row">
+          <img src="assets/images/logo3_booktrack_light.png" class="logo-img"/>
         </div>
+        <span class="subtitle-line"></span>
+
+        <div class="field">
+          <img src="assets/images/icon_person.png" class="field-icon"/>
+          <input type="text" placeholder="Usuario o email" [(ngModel)]="legajo"/>
+        </div>
+
+        <div class="field">
+          <img src="assets/images/icon_lock.png" class="field-icon"/>
+          <input [type]="verPassword ? 'text' : 'password'" placeholder="Contraseña" [(ngModel)]="password"/>
+          <img [src]="verPassword ? 'assets/images/icon_eye_off.png' : 'assets/images/icon_eye.png'"
+               class="field-icon-toggle" (click)="verPassword = !verPassword"/>
+        </div>
+
+        <div class="row-extra">
+          <label class="recordarme">
+            <input type="checkbox" [(ngModel)]="recordarme"/> Recordarme
+          </label>
+          <a class="olvide-link" (click)="irAOlvide()">¿Olvidaste tu contraseña?</a>
+        </div>
+
+        <button class="btn-iniciar" (click)="login()" [disabled]="cargando">
+          <img src="assets/images/icon_login.png" class="icon-login"/>
+          {{ cargando ? '...' : 'INICIAR SESIÓN' }}
+        </button>
+
+        @if (error) { <p class="error-msg">{{ error }}</p> }
+
+        <button class="btn-cancelar" (click)="cancelar()">CANCELAR</button>
       </div>
-      <div class="botones">
-        <button class="btn-primary" (click)="login()" [disabled]="cargando">{{ cargando ? '...' : 'CONTINUAR' }}</button>
-        <button class="btn-outline" (click)="cancelar()">CANCELAR</button>
-      </div>
-      @if (error) { <p class="error-msg">{{ error }}</p> }
     </div>
   `,
   styles: [`
     :host { display:block; width:100vw; height:100vh; overflow:hidden; }
     .login-page {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
       width: 100%;
       height: 100%;
       background-size: cover;
       background-position: center;
-      gap: 1.5rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
-    .logo-area { display:flex; align-items:center; gap:1rem; }
-    .logo-utn { height:130px; object-fit:contain; }
-    .book-wrapper { position:relative; width:400px; height:260px; }
-    .libro-img { width:100%; height:100%; object-fit:contain; }
-    .inputs-overlay {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 75%;
+    .overlay-card {
+      background: rgba(24,24,24,0.85);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      padding: 2.5rem 3.5rem;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 0.6rem;
+      gap: 1rem;
+      min-width: 420px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
     }
-    input {
+    .logos-row {
+      display: flex;
+      align-items: center;
+    }
+    .logo-img { width: 300px; object-fit: contain; display: block; }
+    .subtitle-line { width: 60px; height: 3px; background: #2ecc71; border-radius: 2px; margin-bottom: 0.5rem; }
+
+    .field {
       width: 100%;
-      padding: 0.5rem 1rem;
-      border: none;
-      border-radius: 20px;
-      background: rgba(255,255,255,0.85);
-      text-align: center;
-      font-size: 0.78rem;
-      letter-spacing: 0.08rem;
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 30px;
+      padding: 0.7rem 1.2rem;
       box-sizing: border-box;
-      color: #333;
     }
-    input::placeholder { color:#666; font-size:0.75rem; }
-    .olvide-link { font-size:0.72rem; color:#1a1a1a; text-decoration:underline; cursor:pointer; align-self:flex-end; }
-    .botones { display:flex; gap:1rem; }
-    .btn-primary { padding:0.6rem 2rem; background:#1a1a1a; color:white; border:none; border-radius:20px; font-size:0.85rem; letter-spacing:0.1rem; cursor:pointer; font-weight:bold; }
-    .btn-primary:disabled { background:#666; cursor:not-allowed; }
-    .btn-outline { padding:0.6rem 2rem; background:white; color:#1a1a1a; border:2px solid #1a1a1a; border-radius:20px; font-size:0.85rem; letter-spacing:0.1rem; cursor:pointer; font-weight:bold; }
-    .error-msg { color:#c0392b; font-size:0.78rem; text-align:center; background:rgba(255,255,255,0.8); padding:0.4rem 1rem; border-radius:4px; }
+    .field-icon { width: 18px; height: 18px; object-fit: contain; }
+    .field-icon-toggle { width: 18px; height: 18px; object-fit: contain; cursor: pointer; margin-left: auto; }
+    .field input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: white;
+      font-size: 0.85rem;
+      letter-spacing: 0.03rem;
+    }
+    .field input::placeholder { color: rgba(255,255,255,0.5); }
+
+    .row-extra {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+    }
+    .recordarme { color: rgba(255,255,255,0.7); display: flex; align-items: center; gap: 0.4rem; cursor: pointer; }
+    .olvide-link { color: #2ecc71; cursor: pointer; text-decoration: none; }
+    .olvide-link:hover { text-decoration: underline; }
+
+    .btn-iniciar {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      padding: 0.9rem 2rem;
+      background: rgba(46,204,113,0.15);
+      color: white;
+      border: 1px solid #2ecc71;
+      border-radius: 30px;
+      font-size: 0.9rem;
+      letter-spacing: 0.12rem;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .btn-iniciar .icon-login { width: 20px; height: 20px; object-fit: contain; }
+    .btn-iniciar:hover { background: rgba(46,204,113,0.28); }
+    .btn-iniciar:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .btn-cancelar {
+      background: transparent;
+      border: none;
+      color: rgba(255,255,255,0.5);
+      font-size: 0.78rem;
+      letter-spacing: 0.1rem;
+      cursor: pointer;
+      margin-top: -0.3rem;
+    }
+    .btn-cancelar:hover { color: rgba(255,255,255,0.8); }
+
+    .error-msg { color: #ff6b6b; font-size: 0.78rem; text-align: center; margin: 0; }
   `]
 })
 export class Login {
-  bg = "url('assets/images/paper-texture.png')";
-  legajo = ''; password = ''; cargando = false; error = '';
+  bg = "url('assets/images/fondo2_login.png')";
+  legajo = ''; password = ''; cargando = false; error = ''; recordarme = false; verPassword = false;
 
   constructor(private router: Router, private authService: AuthService) {}
 

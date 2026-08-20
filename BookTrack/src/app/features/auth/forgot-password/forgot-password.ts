@@ -9,43 +9,142 @@ import { AuthService } from '../../../core/services/auth.service';
   standalone: true,
   imports: [FormsModule, CommonModule],
   template: `
-    <div class="page">
-      <div class="card">
-        <div class="logo-area">
-          <img src="assets/images/logo-booktrack.png" class="logo-img"/>
+    <div class="login-page" [style.backgroundImage]="bg">
+      <div class="overlay-card">
+        <div class="logos-row">
+          <img src="assets/images/logo3_booktrack_light.png" class="logo-img"/>
         </div>
-        <input type="email" placeholder="EMAIL" [(ngModel)]="email"/>
-        <input type="email" placeholder="CONFIRMAR EMAIL" [(ngModel)]="emailConfirm"/>
-        <p class="info-text">Al presionar enviar se le enviará un correo al mail colocado donde podrá reestablecer su contraseña.</p>
-        <button class="btn-primary" (click)="enviar()">ENVIAR</button>
-        <button class="btn-outline" (click)="cancelar()">CANCELAR</button>
+        <span class="subtitle-line"></span>
+
+        <p class="info-text">Ingresá tu email y te enviaremos un correo para restablecer tu contraseña.</p>
+
+        <div class="field">
+          <input type="email" placeholder="Email" [(ngModel)]="email"/>
+        </div>
+
+        <div class="field">
+          <input type="email" placeholder="Confirmar email" [(ngModel)]="emailConfirm"/>
+        </div>
+
+        @if (error) { <p class="error-msg">{{ error }}</p> }
+
+        <button class="btn-iniciar" (click)="enviar()" [disabled]="cargando">
+          <img src="assets/images/icon_login.png" class="icon-login"/>
+          {{ cargando ? '...' : 'ENVIAR' }}
+        </button>
+
+        <button class="btn-cancelar" (click)="cancelar()">CANCELAR</button>
       </div>
+
       @if (exito) {
         <div class="modal-overlay">
-          <div class="modal">
+          <div class="overlay-card modal">
             <p>¡Se ha enviado un email para restablecer la contraseña!</p>
-            <button class="btn-primary" (click)="continuar()">CONTINUAR</button>
+            <button class="btn-iniciar" (click)="continuar()">
+              <img src="assets/images/icon_login.png" class="icon-login"/>
+              CONTINUAR
+            </button>
           </div>
         </div>
       }
     </div>
   `,
   styles: [`
-    .page { display:flex; justify-content:center; align-items:center; min-height:100vh; background-color:#C9A96E; }
-    .card { display:flex; flex-direction:column; align-items:center; gap:0.9rem; width:340px; background:rgba(201,169,110,0.6); padding:2.5rem 2rem; border-radius:4px; }
-    .logo-area { margin-bottom:0.5rem; }
-    .logo-img { width:200px; object-fit:contain; filter:brightness(0); }
-    input { width:100%; padding:0.65rem 1rem; border:1px solid #888; border-radius:3px; background:white; text-align:center; font-size:0.8rem; box-sizing:border-box; }
-    input::placeholder { color:#888; }
-    .info-text { font-size:0.75rem; text-align:center; color:#333; margin:0; }
-    .btn-primary { width:100%; padding:0.6rem; background:#1a1a1a; color:white; border:none; border-radius:20px; font-size:0.8rem; letter-spacing:0.1rem; cursor:pointer; font-weight:bold; }
-    .btn-outline { width:100%; padding:0.6rem; background:transparent; color:#1a1a1a; border:2px solid #1a1a1a; border-radius:20px; font-size:0.8rem; letter-spacing:0.1rem; cursor:pointer; font-weight:bold; }
-    .modal-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; }
-    .modal { background:white; padding:2rem 3rem; border-radius:8px; text-align:center; display:flex; flex-direction:column; gap:1rem; max-width:300px; }
-    .modal p { font-size:1rem; font-weight:bold; }
+    :host { display:block; width:100vw; height:100vh; overflow:hidden; }
+    .login-page {
+      width: 100%;
+      height: 100%;
+      background-size: cover;
+      background-position: center;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .overlay-card {
+      background: rgba(24,24,24,0.85);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      padding: 2.5rem 3.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      min-width: 420px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    .logos-row { display: flex; align-items: center; }
+    .logo-img { width: 300px; object-fit: contain; display: block; }
+    .subtitle-line { width: 60px; height: 3px; background: #2ecc71; border-radius: 2px; margin-bottom: 0.5rem; }
+
+    .info-text { color: rgba(255,255,255,0.6); font-size: 0.8rem; text-align: center; margin: 0; line-height: 1.4; }
+
+    .field {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 30px;
+      padding: 0.7rem 1.2rem;
+      box-sizing: border-box;
+    }
+    .field input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: white;
+      font-size: 0.85rem;
+      letter-spacing: 0.03rem;
+      text-align: center;
+    }
+    .field input::placeholder { color: rgba(255,255,255,0.5); }
+
+    .btn-iniciar {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      padding: 0.9rem 2rem;
+      background: rgba(46,204,113,0.15);
+      color: white;
+      border: 1px solid #2ecc71;
+      border-radius: 30px;
+      font-size: 0.9rem;
+      letter-spacing: 0.12rem;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .btn-iniciar .icon-login { width: 20px; height: 20px; object-fit: contain; }
+    .btn-iniciar:hover { background: rgba(46,204,113,0.28); }
+    .btn-iniciar:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .btn-cancelar {
+      background: transparent;
+      border: none;
+      color: rgba(255,255,255,0.5);
+      font-size: 0.78rem;
+      letter-spacing: 0.1rem;
+      cursor: pointer;
+      margin-top: -0.3rem;
+    }
+    .btn-cancelar:hover { color: rgba(255,255,255,0.8); }
+
+    .error-msg { color: #ff6b6b; font-size: 0.78rem; text-align: center; margin: 0; }
+
+    .modal-overlay {
+      position: fixed; top:0; left:0; width:100%; height:100%;
+      background: rgba(0,0,0,0.6);
+      display: flex; justify-content: center; align-items: center;
+    }
+    .modal { min-width: 320px; text-align: center; }
+    .modal p { color: white; font-size: 0.95rem; margin: 0 0 0.5rem; }
   `]
 })
 export class ForgotPassword {
+  bg = "url('assets/images/fondo2_login.png')";
   email=''; emailConfirm=''; exito=false; error=''; cargando=false;
 
   constructor(private router: Router, private authService: AuthService) {}
