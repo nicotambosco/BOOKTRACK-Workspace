@@ -29,11 +29,18 @@ import { UserService } from '../../../core/services/user.service';
         <div class="profile-card">
           <div class="avatar-col">
             <div class="avatar">
-              <svg width="56" height="56" viewBox="0 0 60 60" fill="none">
-                <circle cx="30" cy="22" r="12" stroke="#e8e8e8" stroke-width="2" fill="none"/>
-                <path d="M10 52c0-11 9-19 20-19s20 8 20 19" stroke="#e8e8e8" stroke-width="2" fill="none"/>
-              </svg>
-              <div class="avatar-plus">+</div>
+              <div class="avatar-photo">
+                @if (usuario.imagen) {
+                  <img [src]="usuario.imagen" alt="foto de perfil" class="avatar-img"/>
+                } @else {
+                  <svg width="56" height="56" viewBox="0 0 60 60" fill="none">
+                    <circle cx="30" cy="22" r="12" stroke="#e8e8e8" stroke-width="2" fill="none"/>
+                    <path d="M10 52c0-11 9-19 20-19s20 8 20 19" stroke="#e8e8e8" stroke-width="2" fill="none"/>
+                  </svg>
+                }
+              </div>
+              <input #fileInput type="file" accept="image/*" hidden (change)="onFotoSeleccionada($event)"/>
+              <div class="avatar-plus" (click)="fileInput.click()">+</div>
             </div>
 
             <button class="pill-rol" [class]="'rol-' + (usuario.categoria || 'usuario')">
@@ -122,7 +129,9 @@ import { UserService } from '../../../core/services/user.service';
       gap: 2.5rem;
     }
     .avatar-col { display:flex; flex-direction:column; align-items:center; gap:0.9rem; width: 220px; flex-shrink:0; }
-    .avatar { position:relative; width:100px; height:100px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:#232323; }
+    .avatar { position:relative; width:100px; height:100px; }
+    .avatar-photo { width:100%; height:100%; border-radius:50%; display:flex; align-items:center; justify-content:center; background:#232323; overflow:hidden; }
+    .avatar-img { width:100%; height:100%; object-fit:cover; }
     .avatar-plus {
       position:absolute; bottom:2px; right:2px; width:24px; height:24px;
       background:#2ecc71; color:#0a0a0a; border: 2px solid #161616;
@@ -182,7 +191,7 @@ import { UserService } from '../../../core/services/user.service';
 export class ProfileUser implements OnInit {
   editando = false; exito = false; mostrarHistorial = false; verPassword = false;
   usuarioId: number | null = null;
-  usuario = { nombreApellido:'', legajo:'', email:'', password:'', categoria:'' };
+  usuario = { nombreApellido:'', legajo:'', email:'', password:'', categoria:'', imagen:'' };
 
   constructor(private router: Router, private userService: UserService) {}
 
@@ -190,15 +199,23 @@ export class ProfileUser implements OnInit {
     this.userService.getProfile().subscribe({
       next: u => {
         this.usuarioId = u.id ?? null;
-        this.usuario = { nombreApellido: u.nombreApellido, legajo: u.legajo ?? '', email: u.email, password:'', categoria: u.categoria };
+        this.usuario = { nombreApellido: u.nombreApellido, legajo: u.legajo ?? '', email: u.email, password:'', categoria: u.categoria, imagen: u.imagen ?? '' };
       },
       error: () => {}
     });
   }
 
+  onFotoSeleccionada(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => this.usuario.imagen = reader.result as string;
+    reader.readAsDataURL(file);
+  }
+
   guardar() {
     if (!this.usuarioId) { this.editando=false; this.exito=true; return; }
-    this.userService.update(this.usuarioId, { nombreApellido: this.usuario.nombreApellido, email: this.usuario.email }).subscribe({
+    this.userService.update(this.usuarioId, { nombreApellido: this.usuario.nombreApellido, email: this.usuario.email, imagen: this.usuario.imagen }).subscribe({
       next: () => { this.editando=false; this.exito=true; },
       error: () => { this.editando=false; this.exito=true; }
     });

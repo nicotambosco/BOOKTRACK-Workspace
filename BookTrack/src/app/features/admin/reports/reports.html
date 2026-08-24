@@ -1,1 +1,43 @@
-<p>reports works!</p>
+<div class="home-page">
+  <app-header [esAdmin]="true"></app-header>
+  <div class="page-body">
+    <div class="content-header">
+      <div class="title-icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+          <path d="M4 19.5V4M4 19.5H20M9 19.5V11M14 19.5V7M19 19.5v-4" stroke="#e8e8e8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div>
+        <h2 class="section-title">Reportes</h2>
+        <p class="section-subtitle">Resumen general de la biblioteca.</p>
+      </div>
+    </div>
+
+    @if (cargando) {
+      <p class="msg">Cargando reportes...</p>
+    } @else {
+      <div class="stats">
+        <div class="stat-card">
+          <span class="stat-num">{{ librosTotal }}</span>
+          <span class="stat-label">Libros en catálogo</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-num">{{ usuariosTotal }}</span>
+          <span class="stat-label">Usuarios registrados</span>
+        </div>
+        <div class="stat-card pendiente">
+          <span class="stat-num">{{ prestamosPendientes }}</span>
+          <span class="stat-label">Préstamos pendientes</span>
+        </div>
+        <div class="stat-card aprobado">
+          <span class="stat-num">{{ prestamosAprobados }}</span>
+          <span class="stat-label">Préstamos aprobados</span>
+        </div>
+        <div class="stat-card devuelto">
+          <span class="stat-num">{{ prestamosDevueltos }}</span>
+          <span class="stat-label">Préstamos devueltos</span>
+        </div>
+      </div>
+    }
+  </div>
+</div>

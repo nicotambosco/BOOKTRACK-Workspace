@@ -17,10 +17,6 @@ import { LoanService } from '../../../core/services/loan.service';
           </svg>
           <span class="brand-name">BookTrack</span>
         </div>
-        @if (esAdmin) {
-          <span class="divider"></span>
-          <button class="btn-add" (click)="agregarLibro()">+</button>
-        }
       </div>
       <div class="header-center">
         <div class="search-box">
@@ -67,19 +63,7 @@ import { LoanService } from '../../../core/services/loan.service';
     .header-left { display:flex; align-items:center; gap:1rem; }
     .brand { display:flex; align-items:center; gap:0.5rem; cursor:pointer; }
     .brand-name { color:#f5f5f5; font-weight:700; font-size:1.05rem; }
-    .divider { width:1px; height:22px; background:#2a2a2a; }
     .icon-btn { cursor:pointer; }
-    .btn-add {
-      width: 26px; height: 26px;
-      border-radius: 50%;
-      background: white;
-      color: #1a1a1a;
-      border: none;
-      font-size: 1.1rem;
-      font-weight: bold;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-    }
     .header-center { flex: 1; display:flex; justify-content:center; padding: 0 1.5rem; }
     .search-box {
       display: flex;
@@ -135,10 +119,9 @@ export class Header implements OnInit {
     }
   }
 
-  irAHome() { this.router.navigate(['/home']); }
+  irAHome() { this.router.navigate([this.esAdmin ? '/home-admin' : '/home']); }
   irAPerfil() { this.router.navigate([this.esAdmin ? '/profile-admin' : '/profile']); }
   irAHistorial() { this.router.navigate(['/user-history']); }
   irAComentario() { this.router.navigate(['/comment-form']); }
-  agregarLibro() { this.router.navigate(['/book-add']); }
   buscar() { if (this.busqueda.trim()) this.router.navigate(['/book-search'], { queryParams: { q: this.busqueda } }); }
 }

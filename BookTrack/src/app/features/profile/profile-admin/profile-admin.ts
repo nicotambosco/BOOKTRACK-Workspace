@@ -29,25 +29,32 @@ import { UserService } from '../../../core/services/user.service';
         <div class="profile-card">
           <div class="avatar-col">
             <div class="avatar">
-              <svg width="56" height="56" viewBox="0 0 60 60" fill="none">
-                <circle cx="30" cy="22" r="12" stroke="#e8e8e8" stroke-width="2" fill="none"/>
-                <path d="M10 52c0-11 9-19 20-19s20 8 20 19" stroke="#e8e8e8" stroke-width="2" fill="none"/>
-              </svg>
-              <div class="avatar-plus">+</div>
+              <div class="avatar-photo">
+                @if (usuario.imagen) {
+                  <img [src]="usuario.imagen" alt="foto de perfil" class="avatar-img"/>
+                } @else {
+                  <svg width="56" height="56" viewBox="0 0 60 60" fill="none">
+                    <circle cx="30" cy="22" r="12" stroke="#e8e8e8" stroke-width="2" fill="none"/>
+                    <path d="M10 52c0-11 9-19 20-19s20 8 20 19" stroke="#e8e8e8" stroke-width="2" fill="none"/>
+                  </svg>
+                }
+              </div>
+              <input #fileInput type="file" accept="image/*" hidden (change)="onFotoSeleccionada($event)"/>
+              <div class="avatar-plus" (click)="fileInput.click()">+</div>
             </div>
 
-            <button class="pill-rol" [class]="'rol-' + (usuario.categoria || 'usuario')">
+            <button class="pill-rol rol-bibliotecario">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                 <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2" fill="none"/>
                 <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" stroke-width="2" fill="none"/>
               </svg>
-              {{ usuario.categoria === 'usuario' ? 'Usuario' : 'Bibliotecario' }}
+              Bibliotecario
             </button>
 
-            <button class="pill-historial" (click)="irAUsuarios()">
-              Ver Usuarios
+            <button class="pill-historial" (click)="irAHistorial()">
+              Historial de préstamos
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </button>
           </div>
@@ -122,7 +129,9 @@ import { UserService } from '../../../core/services/user.service';
       gap: 2.5rem;
     }
     .avatar-col { display:flex; flex-direction:column; align-items:center; gap:0.9rem; width: 220px; flex-shrink:0; }
-    .avatar { position:relative; width:100px; height:100px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:#232323; }
+    .avatar { position:relative; width:100px; height:100px; }
+    .avatar-photo { width:100%; height:100%; border-radius:50%; display:flex; align-items:center; justify-content:center; background:#232323; overflow:hidden; }
+    .avatar-img { width:100%; height:100%; object-fit:cover; }
     .avatar-plus {
       position:absolute; bottom:2px; right:2px; width:24px; height:24px;
       background:#2ecc71; color:#0a0a0a; border: 2px solid #161616;
@@ -136,7 +145,6 @@ import { UserService } from '../../../core/services/user.service';
       padding:0.55rem 1rem; border-radius:24px; font-size:0.85rem; font-weight:600;
       background: transparent; cursor: default;
     }
-    .pill-rol.rol-usuario { color:#2ecc71; border:1px solid #2ecc71; }
     .pill-rol.rol-bibliotecario { color:#b388ff; border:1px solid #7b3f7a; }
 
     .pill-historial {
@@ -144,7 +152,6 @@ import { UserService } from '../../../core/services/user.service';
       width: 100%;
       padding:0.55rem 1rem; border-radius:24px; font-size:0.85rem;
       background: transparent; border: 1px solid #3a3a3a; color:#e8e8e8; cursor:pointer;
-      transition: background 0.2s;
     }
     .pill-historial:hover { background:#1e1e1e; }
 
@@ -182,7 +189,7 @@ import { UserService } from '../../../core/services/user.service';
 export class ProfileAdmin implements OnInit {
   editando = false; exito = false; verPassword = false;
   usuarioId: number | null = null;
-  usuario = { nombreApellido:'', legajo:'', email:'', password:'', categoria:'' };
+  usuario = { nombreApellido:'', legajo:'', email:'', password:'', imagen:'' };
 
   constructor(private router: Router, private userService: UserService) {}
 
@@ -190,20 +197,28 @@ export class ProfileAdmin implements OnInit {
     this.userService.getProfile().subscribe({
       next: u => {
         this.usuarioId = u.id ?? null;
-        this.usuario = { nombreApellido: u.nombreApellido, legajo: u.legajo ?? '', email: u.email, password:'', categoria: u.categoria };
+        this.usuario = { nombreApellido: u.nombreApellido, legajo: u.legajo ?? '', email: u.email, password:'', imagen: u.imagen ?? '' };
       },
       error: () => {}
     });
   }
 
+  onFotoSeleccionada(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => this.usuario.imagen = reader.result as string;
+    reader.readAsDataURL(file);
+  }
+
   guardar() {
     if (!this.usuarioId) { this.editando=false; this.exito=true; return; }
-    this.userService.update(this.usuarioId, { nombreApellido: this.usuario.nombreApellido, email: this.usuario.email }).subscribe({
+    this.userService.update(this.usuarioId, { nombreApellido: this.usuario.nombreApellido, email: this.usuario.email, imagen: this.usuario.imagen }).subscribe({
       next: () => { this.editando=false; this.exito=true; },
       error: () => { this.editando=false; this.exito=true; }
     });
   }
 
-  irAUsuarios() { this.router.navigate(['/user-management']); }
+  irAHistorial() { this.router.navigate(['/loan-history']); }
   cancelar() { this.router.navigate(['/home-admin']); }
 }

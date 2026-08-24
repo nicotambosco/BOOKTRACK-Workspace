@@ -1,70 +1,82 @@
-<div class="user-management">
-  <div class="header">
-    <h1>👥 Gestión de Usuarios</h1>
-    <p class="subtitle">Edita roles y permisos de los usuarios</p>
-  </div>
+<div class="home-page">
+  <app-header [esAdmin]="true"></app-header>
+  <div class="page-body">
+    <div class="content-header">
+      <div class="title-icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="#e8e8e8" stroke-width="2" fill="none"/>
+          <circle cx="9" cy="7" r="4" stroke="#e8e8e8" stroke-width="2" fill="none"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="#e8e8e8" stroke-width="2" fill="none"/>
+        </svg>
+      </div>
+      <div>
+        <h2 class="section-title">Gestión de Usuarios</h2>
+        <p class="section-subtitle">Editá roles y permisos de los usuarios.</p>
+      </div>
+    </div>
 
-  <!-- Alerta de error -->
-  <div *ngIf="error" class="alert alert-error">
-    <span class="icon">⚠️</span>
-    {{ error }}
-  </div>
+    <!-- Alerta de error -->
+    <div *ngIf="error" class="alert alert-error">
+      <span class="icon">⚠️</span>
+      {{ error }}
+    </div>
 
-  <!-- Cargando -->
-  <div *ngIf="cargando" class="loading">
-    <div class="spinner"></div>
-    <p>Cargando usuarios...</p>
-  </div>
+    <!-- Cargando -->
+    <div *ngIf="cargando" class="loading">
+      <div class="spinner"></div>
+      <p>Cargando usuarios...</p>
+    </div>
 
-  <!-- Tabla de usuarios -->
-  <div *ngIf="!cargando && usuarios.length > 0" class="table-container">
-    <table class="users-table">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Nombre</th>
-          <th>Email</th>
-          <th>Legajo</th>
-          <th>Rol Actual</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let usuario of usuarios" [class.editing]="usuarioEnEdicion === usuario.id">
-          <td>{{ usuario.id }}</td>
-          <td>{{ usuario.nombreApellido }}</td>
-          <td>{{ usuario.email }}</td>
-          <td>{{ usuario.legajo || '-' }}</td>
-          <td>
-            <div *ngIf="usuarioEnEdicion === usuario.id" class="role-select">
-              <select [(ngModel)]="usuario.categoria" class="dropdown">
-                <option *ngFor="let rol of rolesDisponibles" [value]="rol">
-                  {{ rol === 'usuario' ? '👤 Usuario' : '📚 Bibliotecario' }}
-                </option>
-              </select>
-            </div>
-            <span *ngIf="usuarioEnEdicion !== usuario.id" class="role-badge" [class]="'role-' + usuario.categoria">
-              {{ usuario.categoria === 'usuario' ? '👤 Usuario' : '📚 Bibliotecario' }}
-            </span>
-          </td>
-          <td class="actions">
-            <div *ngIf="usuarioEnEdicion === usuario.id" class="action-buttons">
-              <button class="btn btn-save" (click)="guardarRol(usuario)">✓ Guardar</button>
-              <button class="btn btn-cancel" (click)="cancelarEdicion()">✕ Cancelar</button>
-            </div>
-            <div *ngIf="usuarioEnEdicion !== usuario.id" class="action-buttons">
-              <button class="btn btn-edit" (click)="editarRol(usuario.id)">✏️ Editar</button>
-              <button class="btn btn-delete" (click)="eliminarUsuario(usuario.id)">🗑️ Eliminar</button>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+    <!-- Tabla de usuarios -->
+    <div *ngIf="!cargando && usuarios.length > 0" class="table-card">
+      <table class="users-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Email</th>
+            <th>Legajo</th>
+            <th>Rol Actual</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let usuario of usuarios" [class.editing]="usuarioEnEdicion === usuario.id">
+            <td>{{ usuario.id }}</td>
+            <td>{{ usuario.nombreApellido }}</td>
+            <td>{{ usuario.email }}</td>
+            <td>{{ usuario.legajo || '-' }}</td>
+            <td>
+              <div *ngIf="usuarioEnEdicion === usuario.id" class="role-select">
+                <select [(ngModel)]="usuario.categoria" class="dropdown">
+                  <option *ngFor="let rol of rolesDisponibles" [value]="rol">
+                    {{ rol === 'usuario' ? '👤 Usuario' : '📚 Bibliotecario' }}
+                  </option>
+                </select>
+              </div>
+              <span *ngIf="usuarioEnEdicion !== usuario.id" class="role-badge" [class]="'role-' + usuario.categoria">
+                {{ usuario.categoria === 'usuario' ? '👤 Usuario' : '📚 Bibliotecario' }}
+              </span>
+            </td>
+            <td class="actions">
+              <div *ngIf="usuarioEnEdicion === usuario.id" class="action-buttons">
+                <button class="btn btn-save" (click)="guardarRol(usuario)">✓ Guardar</button>
+                <button class="btn btn-cancel" (click)="cancelarEdicion()">✕ Cancelar</button>
+              </div>
+              <div *ngIf="usuarioEnEdicion !== usuario.id" class="action-buttons">
+                <button class="btn btn-edit" (click)="editarRol(usuario.id)">✏️ Editar</button>
+                <button class="btn btn-delete" (click)="eliminarUsuario(usuario.id)">🗑️ Eliminar</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
-  <!-- Sin usuarios -->
-  <div *ngIf="!cargando && usuarios.length === 0" class="empty-state">
-    <p class="empty-icon">📭</p>
-    <p class="empty-text">No hay usuarios registrados</p>
+    <!-- Sin usuarios -->
+    <div *ngIf="!cargando && usuarios.length === 0" class="empty-state">
+      <p class="empty-icon">📭</p>
+      <p class="empty-text">No hay usuarios registrados</p>
+    </div>
   </div>
 </div>
