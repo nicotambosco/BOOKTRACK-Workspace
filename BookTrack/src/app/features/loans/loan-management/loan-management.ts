@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Header } from '../../../shared/components/header/header';
 import { LoanService } from '../../../core/services/loan.service';
+import { BookService } from '../../../core/services/book.service';
 import { Loan } from '../../../models/loan.model';
 
 @Component({
@@ -21,27 +22,49 @@ import { Loan } from '../../../models/loan.model';
           </div>
           <div>
             <h2 class="section-title">Administración de préstamos</h2>
-            <p class="section-subtitle">Aprobá o rechazá las solicitudes pendientes.</p>
+            <p class="section-subtitle">Gestioná solicitudes, extensiones y devoluciones.</p>
           </div>
         </div>
 
         <div class="list-card">
           @if (prestamos.length === 0) {
-            <p class="msg">No hay préstamos pendientes.</p>
+            <p class="msg">No hay préstamos para gestionar.</p>
           } @else {
             @for (p of prestamos; track p.id) {
               <div class="prestamo-row">
-                <span class="nombre">Usuario #{{ p.estudianteId }} — Libro #{{ p.libroId }} ({{ p.fechaInicio }} → {{ p.fechaFin || '?' }})</span>
-                <div class="acciones">
-                  <button class="btn-primary" (click)="aprobar(p.id!)">APROBAR</button>
-                  <button class="btn-danger" (click)="denegar(p.id!)">DENEGAR</button>
-                </div>
+                <span class="nombre">
+                  Usuario #{{ p.estudianteId }} — {{ tituloLibro(p.libroId) }} ({{ p.plazoDeSolicitud || 'sin período' }})
+                </span>
+
+                @if (p.estado === 'pendiente') {
+                  <div class="acciones">
+                    <button class="btn-primary" (click)="aprobar(p.id!)">APROBAR</button>
+                    <button class="btn-danger" (click)="denegar(p.id!)">DENEGAR</button>
+                  </div>
+                } @else if (p.estado === 'aprobado' && p.extensionPendiente) {
+                  <div class="acciones">
+                    <span class="estado-badge extension">EXTENSIÓN SOLICITADA</span>
+                    <button class="btn-primary" (click)="aprobarExtension(p.id!)">APROBAR EXT.</button>
+                    <button class="btn-danger" (click)="denegarExtension(p.id!)">DENEGAR EXT.</button>
+                  </div>
+                } @else if (p.estado === 'aprobado') {
+                  <div class="acciones">
+                    <span class="estado-badge aprobado">APROBADO</span>
+                    <button class="btn-outline" (click)="devolver(p.id!)">MARCAR DEVUELTO</button>
+                  </div>
+                } @else {
+                  <span class="estado-badge" [class.denegado]="p.estado === 'denegado'" [class.devuelto]="p.estado === 'devuelto'">
+                    {{ p.estado === 'denegado' ? 'DENEGADO' : 'DEVUELTO' }}
+                  </span>
+                }
               </div>
             }
-            <div class="bottom-bar">
-              <button class="btn-primary" (click)="aprobarTodo()">APROBAR TODO</button>
-              <button class="btn-danger" (click)="denegarTodo()">DENEGAR TODO</button>
-            </div>
+            @if (hayPendientes()) {
+              <div class="bottom-bar">
+                <button class="btn-primary" (click)="aprobarTodo()">APROBAR TODO</button>
+                <button class="btn-danger" (click)="denegarTodo()">DENEGAR TODO</button>
+              </div>
+            }
           }
         </div>
       </div>
@@ -78,6 +101,14 @@ import { Loan } from '../../../models/loan.model';
     .btn-primary:hover { background:#3ddb80; }
     .btn-danger { background:transparent; border:1px solid #e74c3c; color:#e74c3c; padding:0.5rem 1.4rem; border-radius:20px; cursor:pointer; font-size:0.78rem; }
     .btn-danger:hover { background:rgba(231,76,60,0.1); }
+    .btn-outline { background:transparent; border:1px solid #3a3a3a; color:#e8e8e8; padding:0.5rem 1.4rem; border-radius:20px; cursor:pointer; font-size:0.78rem; }
+    .btn-outline:hover { background:#1a1a1a; }
+
+    .estado-badge { font-size:0.72rem; font-weight:700; letter-spacing:0.03rem; padding:0.4rem 1rem; border-radius:20px; white-space:nowrap; }
+    .estado-badge.aprobado { color:#2ecc71; border:1px solid #2ecc71; }
+    .estado-badge.denegado { color:#e74c3c; border:1px solid #e74c3c; }
+    .estado-badge.devuelto { color:#9a9a9a; border:1px solid #3a3a3a; }
+    .estado-badge.extension { color:#e8a020; border:1px solid #e8a020; }
 
     .modal-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:flex; justify-content:center; align-items:center; }
     .modal { background:#161616; border:1px solid #2a2a2a; padding:2rem 3rem; border-radius:12px; text-align:center; display:flex; flex-direction:column; gap:1rem; }
@@ -87,34 +118,84 @@ import { Loan } from '../../../models/loan.model';
 export class LoanManagement implements OnInit {
   modal = false; modalMsg = '';
   prestamos: Loan[] = [];
+  private titulosPorLibro = new Map<number, string>();
 
-  constructor(private loanService: LoanService) {}
+  constructor(private loanService: LoanService, private bookService: BookService) {}
 
   ngOnInit() {
-    this.loanService.getPending().subscribe({ next: l => this.prestamos = l, error: () => {} });
+    this.loanService.getAll().subscribe({ next: l => this.prestamos = l, error: () => {} });
+    this.bookService.getAll().subscribe({
+      next: libros => libros.forEach(l => { if (l.id) this.titulosPorLibro.set(l.id, l.titulo); }),
+      error: () => {}
+    });
+  }
+
+  tituloLibro(libroId: number): string {
+    return this.titulosPorLibro.get(libroId) ?? `Libro #${libroId}`;
+  }
+
+  hayPendientes() { return this.prestamos.some(p => p.estado === 'pendiente'); }
+
+  devolver(id: number) {
+    this.loanService.return_(id).subscribe({
+      next: p => { this.actualizarEstado(id, p.estado); this.modalMsg='¡Préstamo marcado como devuelto!'; this.modal=true; },
+      error: () => { this.modalMsg='No se pudo marcar como devuelto.'; this.modal=true; }
+    });
+  }
+
+  aprobarExtension(id: number) {
+    this.loanService.approveExtension(id).subscribe({
+      next: p => { this.actualizarPrestamo(p); this.modalMsg='¡Extensión aprobada! Nueva fecha de vencimiento asignada.'; this.modal=true; },
+      error: () => { this.modalMsg='No se pudo aprobar la extensión.'; this.modal=true; }
+    });
+  }
+
+  denegarExtension(id: number) {
+    this.loanService.denyExtension(id).subscribe({
+      next: p => { this.actualizarPrestamo(p); this.modalMsg='Extensión denegada.'; this.modal=true; },
+      error: () => { this.modalMsg='No se pudo denegar la extensión.'; this.modal=true; }
+    });
   }
 
   aprobar(id: number) {
     this.loanService.approve(id).subscribe({
-      next: () => { this.prestamos = this.prestamos.filter(p => p.id !== id); this.modalMsg='¡El préstamo fue aprobado!'; this.modal=true; },
-      error: () => { this.modalMsg='¡El préstamo fue aprobado!'; this.modal=true; }
+      next: p => { this.actualizarEstado(id, p.estado); this.modalMsg='¡El préstamo fue aprobado!'; this.modal=true; },
+      error: () => { this.modalMsg='No se pudo aprobar el préstamo.'; this.modal=true; }
     });
   }
 
   denegar(id: number) {
     this.loanService.deny(id).subscribe({
-      next: () => { this.prestamos = this.prestamos.filter(p => p.id !== id); this.modalMsg='¡El préstamo fue denegado!'; this.modal=true; },
-      error: () => { this.modalMsg='¡El préstamo fue denegado!'; this.modal=true; }
+      next: p => { this.actualizarEstado(id, p.estado); this.modalMsg='¡El préstamo fue denegado!'; this.modal=true; },
+      error: () => { this.modalMsg='No se pudo denegar el préstamo.'; this.modal=true; }
     });
   }
 
   aprobarTodo() {
-    this.prestamos.forEach(p => this.loanService.approve(p.id!).subscribe());
-    this.prestamos = []; this.modalMsg='¡Todos los préstamos fueron aprobados!'; this.modal=true;
+    const pendientes = this.prestamos.filter(p => p.estado === 'pendiente');
+    pendientes.forEach(p => this.loanService.approve(p.id!).subscribe({
+      next: r => this.actualizarEstado(p.id!, r.estado),
+      error: () => {}
+    }));
+    this.modalMsg='¡Todos los préstamos fueron aprobados!'; this.modal=true;
   }
 
   denegarTodo() {
-    this.prestamos.forEach(p => this.loanService.deny(p.id!).subscribe());
-    this.prestamos = []; this.modalMsg='¡Todos los préstamos fueron denegados!'; this.modal=true;
+    const pendientes = this.prestamos.filter(p => p.estado === 'pendiente');
+    pendientes.forEach(p => this.loanService.deny(p.id!).subscribe({
+      next: r => this.actualizarEstado(p.id!, r.estado),
+      error: () => {}
+    }));
+    this.modalMsg='¡Todos los préstamos fueron denegados!'; this.modal=true;
+  }
+
+  private actualizarEstado(id: number, estado: Loan['estado']) {
+    const p = this.prestamos.find(p => p.id === id);
+    if (p) p.estado = estado;
+  }
+
+  private actualizarPrestamo(actualizado: Loan) {
+    const i = this.prestamos.findIndex(p => p.id === actualizado.id);
+    if (i !== -1) this.prestamos[i] = actualizado;
   }
 }

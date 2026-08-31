@@ -26,6 +26,22 @@ export class LoanService {
     return this.http.patch<Loan>(`${this.api}/${id}/denegar/`, {});
   }
 
+  return_(id: number): Observable<Loan> {
+    return this.http.patch<Loan>(`${this.api}/${id}/devolver/`, {});
+  }
+
+  requestExtension(id: number): Observable<Loan> {
+    return this.http.patch<Loan>(`${this.api}/${id}/solicitar-extension/`, {});
+  }
+
+  approveExtension(id: number): Observable<Loan> {
+    return this.http.patch<Loan>(`${this.api}/${id}/aprobar-extension/`, {});
+  }
+
+  denyExtension(id: number): Observable<Loan> {
+    return this.http.patch<Loan>(`${this.api}/${id}/denegar-extension/`, {});
+  }
+
   request(libroId: number, plazoDeSolicitud: string, estudianteId: number): Observable<Loan> {
     return this.http.post<Loan>(`${this.api}/`, {
       libroId,

@@ -9,6 +9,7 @@ export interface Book {
   nroCodigo?: string;      // ej: LIB-ING/MUS-MK-1996
   nroInventario?: string;  // ej: ID-ADM-260611
   categoria: string;       // sistemas, química, electricia, mecánica, básicas, cursos
+  anio?: number;           // año de cursada de la materia (0 = sin año / electivas)
   disponibles?: number;
   tipo?: 'libro base' | 'libro de consulta';
   sugerencias?: Book[];    // libros relacionados

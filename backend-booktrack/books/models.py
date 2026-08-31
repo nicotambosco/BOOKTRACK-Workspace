@@ -13,6 +13,7 @@ class Book(models.Model):
     nro_codigo = models.CharField(max_length=50, blank=True)
     nro_inventario = models.CharField(max_length=50, blank=True, unique=True, null=True)
     categoria = models.CharField(max_length=100)
+    anio = models.PositiveSmallIntegerField(default=0)
     disponibles = models.PositiveIntegerField(default=1)
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, blank=True)
 

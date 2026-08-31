@@ -1,12 +1,35 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { LoanService } from '../../../core/services/loan.service';
+import { BookService } from '../../../core/services/book.service';
+
+interface NotifItem {
+  id: string;
+  tipo: 'aprobado' | 'denegado' | 'porVencer' | 'vencido' | 'extensionAprobada' | 'extensionDenegada';
+  libroId: number;
+}
+
+function esFinDeSemana(d: Date): boolean {
+  const dia = d.getDay();
+  return dia === 0 || dia === 6;
+}
+
+function diaHabilAnterior(fecha: Date): Date {
+  const d = new Date(fecha);
+  do { d.setDate(d.getDate() - 1); } while (esFinDeSemana(d));
+  return d;
+}
+
+function toISODate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, CommonModule],
   template: `
     <div class="header">
       <div class="header-left">
@@ -34,10 +57,33 @@ import { LoanService } from '../../../core/services/loan.service';
           </svg>
         } @else {
           <div class="notif-wrap">
-            <svg class="icon-btn" width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <svg class="icon-btn" width="22" height="22" viewBox="0 0 24 24" fill="none" (click)="toggleNotificaciones()">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0" stroke="white" stroke-width="2" fill="none"/>
             </svg>
             @if (tieneNotificaciones) { <span class="notif-dot"></span> }
+            @if (mostrarNotificaciones) {
+              <div class="notif-panel">
+                <h4 class="notif-titulo">Notificaciones</h4>
+                @if (notificaciones.length === 0) {
+                  <p class="notif-vacio">No tenés novedades por ahora.</p>
+                } @else {
+                  @for (n of notificaciones; track n.id) {
+                    <div class="notif-item" [class]="n.tipo">
+                      <span class="notif-msg">
+                        @switch (n.tipo) {
+                          @case ('aprobado') { Tu préstamo de "{{ tituloLibro(n.libroId) }}" fue <strong>aprobado</strong>. }
+                          @case ('denegado') { Tu préstamo de "{{ tituloLibro(n.libroId) }}" fue <strong>denegado</strong>. }
+                          @case ('porVencer') { Tu préstamo de "{{ tituloLibro(n.libroId) }}" <strong>vence pronto</strong>. }
+                          @case ('vencido') { Tu préstamo de "{{ tituloLibro(n.libroId) }}" está <strong>vencido</strong>. }
+                          @case ('extensionAprobada') { Tu solicitud de extensión de "{{ tituloLibro(n.libroId) }}" fue <strong>aprobada</strong>. }
+                          @case ('extensionDenegada') { Tu solicitud de extensión de "{{ tituloLibro(n.libroId) }}" fue <strong>denegada</strong>. }
+                        }
+                      </span>
+                    </div>
+                  }
+                }
+              </div>
+            }
           </div>
         }
         <div class="profile-icon" (click)="irAPerfil()">
@@ -92,6 +138,30 @@ import { LoanService } from '../../../core/services/loan.service';
       width: 8px; height: 8px; border-radius: 50%;
       background: #2ecc71; border: 1.5px solid #101010;
     }
+    .notif-panel {
+      position: absolute; top: 34px; right: -8px;
+      width: 300px; max-height: 340px; overflow-y: auto;
+      background: #161616; border: 1px solid #2a2a2a; border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      padding: 0.9rem; z-index: 50;
+      scrollbar-width: thin;
+      scrollbar-color: #3a3a3a transparent;
+    }
+    .notif-panel::-webkit-scrollbar { width: 8px; }
+    .notif-panel::-webkit-scrollbar-track { background: transparent; }
+    .notif-panel::-webkit-scrollbar-thumb { background: #3a3a3a; border-radius: 4px; }
+    .notif-panel::-webkit-scrollbar-thumb:hover { background: #4a4a4a; }
+    .notif-titulo { margin: 0 0 0.6rem; font-family: Georgia, serif; font-size: 0.95rem; color: #f5f5f5; }
+    .notif-vacio { margin: 0; color: #8a8a8a; font-size: 0.8rem; font-style: italic; }
+    .notif-item { padding: 0.6rem 0.7rem; border-radius: 8px; background: #101010; margin-bottom: 0.5rem; }
+    .notif-item:last-child { margin-bottom: 0; }
+    .notif-item.aprobado { border-left: 3px solid #2ecc71; }
+    .notif-item.denegado { border-left: 3px solid #e74c3c; }
+    .notif-item.porVencer { border-left: 3px solid #e8a020; }
+    .notif-item.vencido { border-left: 3px solid #e74c3c; background: rgba(231,76,60,0.08); }
+    .notif-item.extensionAprobada { border-left: 3px solid #2ecc71; }
+    .notif-item.extensionDenegada { border-left: 3px solid #e74c3c; }
+    .notif-msg { font-size: 0.8rem; color: #d8d8d8; line-height: 1.4; }
     .profile-icon {
       width: 32px; height: 32px;
       border-radius: 50%;
@@ -105,18 +175,75 @@ export class Header implements OnInit {
   @Input() esAdmin = false;
   busqueda = '';
   tieneNotificaciones = false;
+  mostrarNotificaciones = false;
+  notificaciones: NotifItem[] = [];
+  private titulosPorLibro = new Map<number, string>();
 
-  constructor(private router: Router, private loanService: LoanService) {}
+  constructor(private router: Router, private loanService: LoanService, private bookService: BookService) {}
 
   ngOnInit() {
-    // ponytail: sin backend de notificaciones dedicado; usamos cambios de estado
-    // en los préstamos del usuario (aprobado/denegado) como proxy de "novedades".
+    // ponytail: sin backend de notificaciones dedicado; derivamos las novedades
+    // del estado/fecha de los préstamos del usuario.
     if (!this.esAdmin) {
       this.loanService.getAll().subscribe({
-        next: loans => this.tieneNotificaciones = loans.some(l => l.estado === 'aprobado' || l.estado === 'denegado'),
+        next: loans => {
+          const hoy = toISODate(new Date());
+          this.notificaciones = loans.flatMap((l): NotifItem[] => {
+            const items: NotifItem[] = [];
+            if (l.estado === 'aprobado' || l.estado === 'denegado') {
+              items.push({ id: `${l.id}-${l.estado}`, tipo: l.estado, libroId: l.libroId });
+            }
+            if (l.estado === 'aprobado' && l.fechaFin) {
+              if (l.fechaFin < hoy) {
+                items.push({ id: `${l.id}-vencido`, tipo: 'vencido', libroId: l.libroId });
+              } else {
+                const avisoDesde = toISODate(diaHabilAnterior(new Date(l.fechaFin + 'T00:00:00')));
+                if (avisoDesde === hoy) {
+                  items.push({ id: `${l.id}-porVencer`, tipo: 'porVencer', libroId: l.libroId });
+                }
+              }
+            }
+            if (l.extensionEstado === 'aprobada') {
+              items.push({ id: `${l.id}-extensionAprobada`, tipo: 'extensionAprobada', libroId: l.libroId });
+            } else if (l.extensionEstado === 'denegada') {
+              items.push({ id: `${l.id}-extensionDenegada`, tipo: 'extensionDenegada', libroId: l.libroId });
+            }
+            return items;
+          });
+          const leidas = this.idsLeidas();
+          this.tieneNotificaciones = this.notificaciones.some(n => !leidas.has(n.id));
+        },
+        error: () => {}
+      });
+      this.bookService.getAll().subscribe({
+        next: libros => libros.forEach(l => { if (l.id) this.titulosPorLibro.set(l.id, l.titulo); }),
         error: () => {}
       });
     }
+  }
+
+  toggleNotificaciones() {
+    this.mostrarNotificaciones = !this.mostrarNotificaciones;
+    if (this.mostrarNotificaciones) this.marcarComoLeidas();
+  }
+
+  private idsLeidas(): Set<string> {
+    try {
+      return new Set(JSON.parse(localStorage.getItem('notif_leidas') ?? '[]'));
+    } catch {
+      return new Set();
+    }
+  }
+
+  private marcarComoLeidas() {
+    const leidas = this.idsLeidas();
+    this.notificaciones.forEach(n => leidas.add(n.id));
+    localStorage.setItem('notif_leidas', JSON.stringify([...leidas]));
+    this.tieneNotificaciones = false;
+  }
+
+  tituloLibro(libroId: number): string {
+    return this.titulosPorLibro.get(libroId) ?? `Libro #${libroId}`;
   }
 
   irAHome() { this.router.navigate([this.esAdmin ? '/home-admin' : '/home']); }

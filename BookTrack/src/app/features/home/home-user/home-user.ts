@@ -3,15 +3,20 @@ import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Header } from '../../../shared/components/header/header';
 import { BookService } from '../../../core/services/book.service';
+import { CategoryService } from '../../../core/services/category.service';
 import { Book } from '../../../models/book.model';
 
 const CAT_ICONS: Record<string, string> = {
   sistemas: 'assets/icons/sistemas_filtro.png',
-  química: 'assets/icons/quimica_filtros.png',
-  eléctrica: 'assets/icons/Electrica_filtro.png',
-  mecánica: 'assets/icons/mecanica_filtros.png',
-  básicas: 'assets/icons/Basicas_filtro.png',
+  quimica: 'assets/icons/quimica_filtros.png',
+  electrica: 'assets/icons/Electrica_filtro.png',
+  mecanica: 'assets/icons/mecanica_filtros.png',
+  basicas: 'assets/icons/Basicas_filtro.png',
 };
+
+function normalizar(texto: string): string {
+  return texto.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+}
 
 @Component({
   selector: 'app-home-user',
@@ -42,15 +47,20 @@ const CAT_ICONS: Record<string, string> = {
                 </div>
               </div>
             } @else {
-              <div class="bookshelf">
-                @for (libro of libros; track libro.id; let i = $index) {
-                  <div class="book-card" (click)="verLibro(libro.id!)">
-                    <div class="book-cover" [style.background]="colorLibro(i)">
-                      <span class="book-title-mini">{{ libro.titulo }}</span>
-                    </div>
+              @for (grupo of gruposPorAnio; track grupo.anio) {
+                <div class="anio-grupo">
+                  <h4 class="anio-titulo">{{ etiquetaAnio(grupo.anio) }}</h4>
+                  <div class="bookshelf">
+                    @for (libro of grupo.libros; track libro.id; let i = $index) {
+                      <div class="book-card" (click)="verLibro(libro.id!)">
+                        <div class="book-cover" [style.background]="colorLibro(i)">
+                          <span class="book-title-mini">{{ libro.titulo }}</span>
+                        </div>
+                      </div>
+                    }
                   </div>
-                }
-              </div>
+                </div>
+              }
             }
           </div>
 
@@ -93,7 +103,13 @@ const CAT_ICONS: Record<string, string> = {
       padding: 1.5rem 2rem;
       overflow-y: auto;
       color: #e8e8e8;
+      scrollbar-width: thin;
+      scrollbar-color: #3a3a3a transparent;
     }
+    .main-content::-webkit-scrollbar { width: 8px; }
+    .main-content::-webkit-scrollbar-track { background: transparent; }
+    .main-content::-webkit-scrollbar-thumb { background: #3a3a3a; border-radius: 4px; }
+    .main-content::-webkit-scrollbar-thumb:hover { background: #4a4a4a; }
     .content-header { display:flex; align-items:center; gap:1rem; margin-bottom: 1.5rem; }
     .title-icon {
       width: 84px; height: 84px;
@@ -107,18 +123,22 @@ const CAT_ICONS: Record<string, string> = {
     .section-subtitle { margin:0; color:#9a9a9a; font-size:0.9rem; }
 
     .bookshelf-card {
-      flex: 1;
       background: #161616;
       border-radius: 12px;
       padding: 1.5rem;
       min-height: 300px;
+      flex-shrink: 0;
       display:flex;
+      flex-direction: column;
     }
     .empty-state { display:flex; align-items:center; gap:1.5rem; margin: auto; }
     .empty-icon { font-size: 3rem; opacity:0.6; }
     .empty-text h3 { margin:0 0 0.5rem; color:#f0f0f0; font-family: Georgia, serif; font-size:1.2rem; }
     .empty-text p { margin:0; color:#8a8a8a; font-size:0.9rem; max-width: 420px; }
 
+    .anio-grupo { display:flex; flex-direction:column; gap:0.8rem; }
+    .anio-grupo + .anio-grupo { margin-top: 1.8rem; }
+    .anio-titulo { margin:0; font-family: Georgia, serif; font-size:1rem; color:#c8c8c8; border-bottom:1px solid #2a2a2a; padding-bottom:0.5rem; }
     .bookshelf { display: flex; flex-wrap: wrap; gap: 1rem; }
     .book-card { cursor:pointer; transition: transform 0.2s; }
     .book-card:hover { transform: translateY(-4px); }
@@ -135,6 +155,7 @@ const CAT_ICONS: Record<string, string> = {
 
     .footer-strip {
       display:flex; align-items:center; gap:0.6rem;
+      flex-shrink: 0;
       margin-top: 1.5rem;
       padding-top: 1rem;
       border-top: 1px solid #2a2a2a;
@@ -176,28 +197,54 @@ const CAT_ICONS: Record<string, string> = {
 })
 export class HomeUser implements OnInit {
   vistaActual = 'Materias Básicas';
-  catActiva = 'básicas';
+  catActiva = '';
   sidebarColapsado = false;
-  categorias = ['sistemas', 'química', 'eléctrica', 'mecánica', 'básicas'];
+  categorias: string[] = [];
   libros: Book[] = [];
+  gruposPorAnio: { anio: number; libros: Book[] }[] = [];
   colores = ['#8B4513','#2d5a8e','#1a6b3a','#e8a020','#7b3f7a','#2e7d5e'];
 
-  constructor(private router: Router, private bookService: BookService) {}
+  constructor(private router: Router, private bookService: BookService, private categoryService: CategoryService) {}
 
-  ngOnInit() { this.filtrar('básicas'); }
+  ngOnInit() {
+    this.categoryService.getAll().subscribe(cats => {
+      this.categorias = cats.map(c => c.nombre);
+      const basicas = this.categorias.find(c => normalizar(c) === 'basicas') ?? this.categorias[0];
+      if (basicas) this.filtrar(basicas);
+    });
+  }
 
   verLibro(id: number) { this.router.navigate(['/book', id]); }
 
   filtrar(cat: string) {
     this.catActiva = cat;
-    this.vistaActual = cat === 'básicas' ? 'Libros de Básicas' : `Libros de  ${cat[0].toUpperCase() + cat.slice(1)}`;
+    this.vistaActual = normalizar(cat) === 'basicas' ? 'Libros de Básicas' : `Libros de ${cat}`;
     this.bookService.getByCategory(cat).subscribe({
-      next: l => this.libros = l,
-      error: () => this.libros = []
+      next: l => { this.libros = l; this.agrupar(l); },
+      error: () => { this.libros = []; this.gruposPorAnio = []; }
     });
   }
 
   colorLibro(i: number) { return this.colores[i % this.colores.length]; }
 
-  catIcon(cat: string) { return CAT_ICONS[cat] ?? CAT_ICONS['básicas']; }
+  catIcon(cat: string) { return CAT_ICONS[normalizar(cat)] ?? CAT_ICONS['basicas']; }
+
+  agrupar(libros: Book[]) {
+    const mapa = new Map<number, Book[]>();
+    for (const libro of libros) {
+      const anio = libro.anio ?? 0;
+      if (!mapa.has(anio)) mapa.set(anio, []);
+      mapa.get(anio)!.push(libro);
+    }
+    this.gruposPorAnio = [...mapa.entries()]
+      .sort(([a], [b]) => a - b)
+      .map(([anio, libros]) => ({ anio, libros }));
+  }
+
+  etiquetaAnio(anio: number): string {
+    if (anio === 0) return 'General';
+    if (anio === 99) return 'Electivas';
+    const ordinal = ['', '1er', '2do', '3er', '4to', '5to', '6to'][anio] ?? `${anio}°`;
+    return `${ordinal} Año`;
+  }
 }

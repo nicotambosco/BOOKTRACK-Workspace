@@ -7,6 +7,8 @@ export interface Loan {
   fechaFin: string;
   estado: 'pendiente' | 'aprobado' | 'denegado' | 'devuelto';
   plazoDeSolicitud?: string;
+  extensionPendiente?: boolean;
+  extensionEstado?: '' | 'aprobada' | 'denegada';
 }
 
 export interface LoanTableRow {

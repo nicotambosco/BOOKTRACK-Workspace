@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { Header } from '../../../shared/components/header/header';
 import { LoanService } from '../../../core/services/loan.service';
 import { UserService } from '../../../core/services/user.service';
+import { BookService } from '../../../core/services/book.service';
 import { Loan } from '../../../models/loan.model';
 import { User } from '../../../models/user.model';
 
@@ -72,7 +73,7 @@ import { User } from '../../../models/user.model';
               </div>
               @for (p of prestamos; track p.id) {
                 <div class="tabla-row">
-                  <span class="libro-id">Libro #{{ p.libroId }}</span>
+                  <span class="libro-id">{{ tituloLibro(p.libroId) }}</span>
                   <span>{{ p.fechaInicio }}</span>
                   <span>{{ p.fechaFin || '-' }}</span>
                   <span class="badge" [class]="esVencido(p) ? 'vencido' : p.estado">{{ esVencido(p) ? 'Vencido' : label(p.estado) }}</span>
@@ -159,11 +160,20 @@ export class UserHistory implements OnInit {
     return this.prestamos.filter(p => p.estado === 'aprobado' && (!p.fechaFin || p.fechaFin >= hoy)).length;
   }
 
-  constructor(public router: Router, private loanService: LoanService, private userService: UserService) {}
+  private titulosPorLibro = new Map<number, string>();
+
+  constructor(public router: Router, private loanService: LoanService, private userService: UserService, private bookService: BookService) {}
 
   ngOnInit() {
     this.userService.getProfile().subscribe(u => this.usuario = u);
     this.loanService.getHistory().subscribe(l => this.prestamos = l);
+    this.bookService.getAll().subscribe(libros => {
+      libros.forEach(l => { if (l.id) this.titulosPorLibro.set(l.id, l.titulo); });
+    });
+  }
+
+  tituloLibro(libroId: number): string {
+    return this.titulosPorLibro.get(libroId) ?? `Libro #${libroId}`;
   }
 
   label(e: string) { return ({ pendiente:'Pendiente', aprobado:'Activo', devuelto:'Devuelto', denegado:'Denegado' } as any)[e] ?? e; }

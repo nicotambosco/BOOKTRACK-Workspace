@@ -1,5 +1,6 @@
 from decouple import config
 from datetime import timedelta
+from django.contrib.auth.hashers import PBKDF2PasswordHasher
 
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-cambiar-en-produccion')
 DEBUG = config('DEBUG', default=True, cast=bool)
@@ -71,6 +72,17 @@ DATABASES = {
 }
 # ─────────────────────────────────────────────────────────────────
 
+# ponytail: Django 6 default es 1.2M iteraciones PBKDF2 (~2s por login). 300k sigue
+# arriba del mínimo recomendado por OWASP y responde en ~0.3s.
+class FastPBKDF2PasswordHasher(PBKDF2PasswordHasher):
+    iterations = 300000
+
+PASSWORD_HASHERS = [
+    'booktrack.settings.FastPBKDF2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+]
+
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -96,8 +108,7 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticatedOrReadOnly',
     ],
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 50,
+    # ponytail: sin paginacion global — el front consume listas planas en todos los services
 }
 
 SIMPLE_JWT = {
@@ -109,4 +120,5 @@ SIMPLE_JWT = {
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:4200',
+    'http://127.0.0.1:4200',
 ]

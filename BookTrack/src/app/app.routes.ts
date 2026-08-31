@@ -35,13 +35,13 @@ export const routes: Routes = [
   {
     path: 'home',
     component: HomeUser,
-    // canActivate: [authGuard],
+    canActivate: [authGuard],
     data: { roles: ['usuario', 'bibliotecario'] }
   },
   {
     path: 'home-admin', //falta
     component: HomeAdmin,
-    // canActivate: [authGuard],
+    canActivate: [authGuard],
     data: { roles: ['bibliotecario'] }
   },
   {
@@ -52,53 +52,53 @@ export const routes: Routes = [
   {
     path: 'book-add',
     component: BookAdd,
-    // canActivate: [authGuard],
+    canActivate: [authGuard],
     data: { roles: ['bibliotecario'] }
   },
   {
     path: 'book-edit/:id', //falta
     component: BookEdit,
-    // canActivate: [authGuard],
+    canActivate: [authGuard],
     data: { roles: ['bibliotecario'] }
   },
   {
     path: 'loan-request/:bookId',
     component: LoanRequest,
-    // canActivate: [authGuard]
+    canActivate: [authGuard]
   },
   {
     path: 'loan-management',
     component: LoanManagement,
-    // canActivate: [authGuard],
+    canActivate: [authGuard],
     data: { roles: ['bibliotecario'] }
   },
   {
     path: 'loan-history',
     component: LoanHistory,
-    // canActivate: [authGuard],
+    canActivate: [authGuard],
     data: { roles: ['bibliotecario'] }
   },
   {
     path: 'profile',
     component: ProfileUser,
-    // canActivate: [authGuard]
+    canActivate: [authGuard]
   },
   {
     path: 'profile-admin',
     component: ProfileAdmin,
-    // canActivate: [authGuard],
+    canActivate: [authGuard],
     data: { roles: ['bibliotecario'] }
   },
   {
     path: 'user-management',
     component: UserManagement,
-    // canActivate: [authGuard],
+    canActivate: [authGuard],
     data: { roles: ['bibliotecario'] }
   },
   {
-    path: 'reports', //falta
+    path: 'reports', 
     component: Reports,
-    // canActivate: [authGuard],
+    canActivate: [authGuard],
     data: { roles: ['bibliotecario'] }
   },
   { path: 'comment-form', component: CommentForm },

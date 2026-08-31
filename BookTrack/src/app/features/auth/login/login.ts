@@ -16,14 +16,14 @@ import { AuthService } from '../../../core/services/auth.service';
         </div>
         <span class="subtitle-line"></span>
 
-        <div class="field">
+        <div class="field" [class.field-error]="legajoInvalido">
           <img src="assets/images/icon_person.png" class="field-icon"/>
-          <input type="text" placeholder="Usuario o email" [(ngModel)]="legajo"/>
+          <input type="text" placeholder="Usuario o email" [(ngModel)]="legajo" (keyup.enter)="login()"/>
         </div>
 
-        <div class="field">
+        <div class="field" [class.field-error]="passwordInvalido">
           <img src="assets/images/icon_lock.png" class="field-icon"/>
-          <input [type]="verPassword ? 'text' : 'password'" placeholder="Contraseña" [(ngModel)]="password"/>
+          <input [type]="verPassword ? 'text' : 'password'" placeholder="Contraseña" [(ngModel)]="password" (keyup.enter)="login()"/>
           <img [src]="verPassword ? 'assets/images/icon_eye_off.png' : 'assets/images/icon_eye.png'"
                class="field-icon-toggle" (click)="verPassword = !verPassword"/>
         </div>
@@ -87,6 +87,7 @@ import { AuthService } from '../../../core/services/auth.service';
       padding: 0.7rem 1.2rem;
       box-sizing: border-box;
     }
+    .field.field-error { border-color: #ff6b6b; }
     .field-icon { width: 18px; height: 18px; object-fit: contain; }
     .field-icon-toggle { width: 18px; height: 18px; object-fit: contain; cursor: pointer; margin-left: auto; }
     .field input {
@@ -148,18 +149,25 @@ import { AuthService } from '../../../core/services/auth.service';
 export class Login {
   bg = "url('assets/images/fondo2_login.png')";
   legajo = ''; password = ''; cargando = false; error = ''; recordarme = false; verPassword = false;
+  legajoInvalido = false; passwordInvalido = false;
 
   constructor(private router: Router, private authService: AuthService) {}
 
   login() {
     if (!this.legajo || !this.password) { this.error = 'Completá los campos.'; return; }
-    this.cargando = true; this.error = '';
+    this.cargando = true; this.error = ''; this.legajoInvalido = false; this.passwordInvalido = false;
     this.authService.login(this.legajo, this.password).subscribe({
       next: res => {
         this.cargando = false;
         this.router.navigate([res.user.categoria === 'bibliotecario' ? '/home-admin' : '/home']);
       },
-      error: () => { this.cargando = false; this.error = 'Credenciales incorrectas.'; }
+      error: err => {
+        this.cargando = false;
+        const campos: string[] = err.error?.campos ?? ['legajoOEmail', 'contrasena'];
+        this.legajoInvalido = campos.includes('legajoOEmail');
+        this.passwordInvalido = campos.includes('contrasena');
+        this.error = 'Usuario no existente o contraseña incorrecta.';
+      }
     });
   }
 

@@ -18,6 +18,9 @@ class Loan(models.Model):
     fecha_fin = models.DateField(null=True, blank=True)
     estado = models.CharField(max_length=10, choices=ESTADO_CHOICES, default='pendiente')
     plazo_de_solicitud = models.CharField(max_length=50, blank=True)
+    extension_pendiente = models.BooleanField(default=False)
+    EXTENSION_ESTADO_CHOICES = [('', 'Sin resolver'), ('aprobada', 'Aprobada'), ('denegada', 'Denegada')]
+    extension_estado = models.CharField(max_length=10, choices=EXTENSION_ESTADO_CHOICES, blank=True)
 
     class Meta:
         db_table = 'loans'

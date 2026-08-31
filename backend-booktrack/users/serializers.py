@@ -40,18 +40,20 @@ class LoginSerializer(serializers.Serializer):
         password = data['contrasena']
 
         # intenta por username (legajo) primero, luego por email
-        user = authenticate(username=legajo_o_email, password=password)
-        if not user:
-            try:
-                u = User.objects.get(email=legajo_o_email)
-                user = authenticate(username=u.username, password=password)
-            except User.DoesNotExist:
-                pass
+        existente = User.objects.filter(username=legajo_o_email).first() \
+            or User.objects.filter(email=legajo_o_email).first()
+
+        user = authenticate(username=existente.username, password=password) if existente else None
 
         if not user:
-            raise serializers.ValidationError('Credenciales incorrectas.')
+            campos = ['contrasena'] if existente else ['legajoOEmail', 'contrasena']
+            raise serializers.ValidationError({
+                'detail': 'Usuario no existente o contraseña incorrecta.',
+                'campos': campos,
+            })
 
         refresh = RefreshToken.for_user(user)
+        refresh['categoria'] = user.categoria
         data['token'] = str(refresh.access_token)
         data['user'] = user
         return data

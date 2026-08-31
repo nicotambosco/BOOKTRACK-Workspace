@@ -43,6 +43,33 @@ class LoanViewSet(viewsets.ModelViewSet):
         loan.save()
         return Response(LoanSerializer(loan).data)
 
+    @action(detail=True, methods=['patch'], url_path='solicitar-extension')
+    def solicitar_extension(self, request, pk=None):
+        loan = self.get_object()
+        loan.extension_pendiente = True
+        loan.extension_estado = ''
+        loan.save()
+        return Response(LoanSerializer(loan).data)
+
+    @action(detail=True, methods=['patch'], url_path='aprobar-extension')
+    def aprobar_extension(self, request, pk=None):
+        import datetime
+        loan = self.get_object()
+        base = loan.fecha_fin or datetime.date.today()
+        loan.fecha_fin = base + datetime.timedelta(days=7)
+        loan.extension_pendiente = False
+        loan.extension_estado = 'aprobada'
+        loan.save()
+        return Response(LoanSerializer(loan).data)
+
+    @action(detail=True, methods=['patch'], url_path='denegar-extension')
+    def denegar_extension(self, request, pk=None):
+        loan = self.get_object()
+        loan.extension_pendiente = False
+        loan.extension_estado = 'denegada'
+        loan.save()
+        return Response(LoanSerializer(loan).data)
+
     @action(detail=False, methods=['get'], url_path='export/pdf')
     def export_pdf(self, request):
         loans = self.get_queryset()

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Header } from '../../../shared/components/header/header';
 import { UserService } from '../../../core/services/user.service';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-profile-admin',
@@ -56,6 +57,14 @@ import { UserService } from '../../../core/services/user.service';
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                 <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
+            </button>
+
+            <button class="pill-logout" (click)="cerrarSesion()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Cerrar sesión
             </button>
           </div>
 
@@ -155,6 +164,14 @@ import { UserService } from '../../../core/services/user.service';
     }
     .pill-historial:hover { background:#1e1e1e; }
 
+    .pill-logout {
+      display:flex; align-items:center; justify-content:center; gap:0.5rem;
+      width: 100%;
+      padding:0.55rem 1rem; border-radius:24px; font-size:0.85rem;
+      background: transparent; border: 1px solid #7a2e2e; color:#ff6b6b; cursor:pointer;
+    }
+    .pill-logout:hover { background:rgba(255,107,107,0.1); }
+
     .divider-v { width:1px; background:#2a2a2a; align-self: stretch; }
 
     .form-area { display:flex; flex-direction:column; gap:1.2rem; flex:1; max-width: 520px; }
@@ -191,7 +208,7 @@ export class ProfileAdmin implements OnInit {
   usuarioId: number | null = null;
   usuario = { nombreApellido:'', legajo:'', email:'', password:'', imagen:'' };
 
-  constructor(private router: Router, private userService: UserService) {}
+  constructor(private router: Router, private userService: UserService, private authService: AuthService) {}
 
   ngOnInit() {
     this.userService.getProfile().subscribe({
@@ -221,4 +238,5 @@ export class ProfileAdmin implements OnInit {
 
   irAHistorial() { this.router.navigate(['/loan-history']); }
   cancelar() { this.router.navigate(['/home-admin']); }
+  cerrarSesion() { this.authService.logout(); this.router.navigate(['/login']); }
 }

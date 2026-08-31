@@ -6,7 +6,7 @@ from .serializers import BookSerializer
 
 
 class BookViewSet(viewsets.ModelViewSet):
-    queryset = Book.objects.all().order_by('titulo')
+    queryset = Book.objects.all().order_by('anio', 'titulo')
     serializer_class = BookSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
