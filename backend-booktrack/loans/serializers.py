@@ -4,7 +4,10 @@ from .models import Loan
 
 class LoanSerializer(serializers.ModelSerializer):
     estudianteId = serializers.IntegerField(source='estudiante_id', read_only=True)
+    estudianteLegajo = serializers.CharField(source='estudiante.legajo', read_only=True)
+    estudianteNombre = serializers.CharField(source='estudiante.nombre_apellido', read_only=True)
     libroId = serializers.IntegerField(source='libro_id')
+    libroTitulo = serializers.CharField(source='libro.titulo', read_only=True)
     tipoPrestamo = serializers.CharField(source='tipo_prestamo')
     fechaInicio = serializers.DateField(source='fecha_inicio', read_only=True)
     fechaFin = serializers.DateField(source='fecha_fin', allow_null=True)
@@ -15,8 +18,8 @@ class LoanSerializer(serializers.ModelSerializer):
     class Meta:
         model = Loan
         fields = [
-            'id', 'estudianteId', 'libroId', 'tipoPrestamo',
-            'fechaInicio', 'fechaFin', 'estado', 'plazoDeSolicitud',
+            'id', 'estudianteId', 'estudianteLegajo', 'estudianteNombre', 'libroId', 'libroTitulo',
+            'tipoPrestamo', 'fechaInicio', 'fechaFin', 'estado', 'plazoDeSolicitud',
             'extensionPendiente', 'extensionEstado',
         ]
         read_only_fields = ['fechaInicio', 'estado']

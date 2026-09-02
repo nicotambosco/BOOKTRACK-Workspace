@@ -1,13 +1,15 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
+import { CommonModule } from '@angular/common';
 import { Header } from '../../../shared/components/header/header';
 import { LoanService } from '../../../core/services/loan.service';
+import { BookService } from '../../../core/services/book.service';
 
 @Component({
   selector: 'app-loan-history',
   standalone: true,
-  imports: [Header],
+  imports: [Header, CommonModule],
   template: `
     <div class="home-page">
       <app-header [esAdmin]="true"></app-header>
@@ -81,29 +83,50 @@ import { LoanService } from '../../../core/services/loan.service';
     .btn-outline:hover { background:#1a1a1a; }
   `]
 })
-export class LoanHistory {
-  historial = [
-    { id:'ADM-92118', estudiante:'Joaquin Pingo', codigo:'LIB-ING/SIST-CAM-2017', tipo:'Consulta', periodo:'10/9-16/9' },
-    { id:'ADM-26061', estudiante:'Fabian Levano', codigo:'LIB-ART/MUS-MK-199s', tipo:'Base', periodo:'10/8-13/8' },
-    { id:'ADM-92118', estudiante:'Roman Rinaldec', codigo:'LIB-ING/SIST-CAM-2017', tipo:'Consulta', periodo:'6/8-13/8' },
-  ]; // TODO: LoanService.getHistory()
-  constructor(private router: Router, private loanService: LoanService) {}
+export class LoanHistory implements OnInit {
+  historial: any[] = [];
+  private titulosPorLibro = new Map<number, string>();
+
+  constructor(private router: Router, private loanService: LoanService, private bookService: BookService) {}
+
+  ngOnInit() {
+    this.bookService.getAll().subscribe(libros => {
+      libros.forEach(l => { if (l.id) this.titulosPorLibro.set(l.id, l.titulo); });
+    });
+
+    this.loanService.getAll().subscribe(prestamos => {
+      this.historial = prestamos.map(p => ({
+        id: p.id,
+        estudiante: `Usuario #${p.estudianteId}`,
+        codigo: this.titulosPorLibro.get(p.libroId) || `Libro #${p.libroId}`,
+        tipo: p.tipoPrestamo,
+        periodo: `${p.fechaInicio} → ${p.fechaFin || '-'}`
+      }));
+    });
+  }
+
   volver() { this.router.navigate(['/home-admin']); }
 
-  exportPDF() { this.descargar(this.loanService.exportPDF(), 'historial-prestamos.pdf'); }
-  exportExcel() { this.descargar(this.loanService.exportExcel(), 'historial-prestamos.xlsx'); }
+  exportPDF() { this.descargar(this.loanService.exportPDF(), `historiales_prestamos_${new Date().toISOString().split('T')[0]}.pdf`); }
+  exportExcel() { this.descargar(this.loanService.exportExcel(), `historiales_prestamos_${new Date().toISOString().split('T')[0]}.xlsx`); }
 
   private descargar(blob$: Observable<Blob>, nombre: string) {
     blob$.subscribe({
       next: blob => {
+        if (blob.size === 0) {
+          alert('El archivo no se pudo generar. Verifica con tu administrador.');
+          return;
+        }
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = nombre;
+        document.body.appendChild(a);
         a.click();
-        URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 100);
       },
-      error: () => {}
+      error: (err) => alert(`Error descargando ${nombre}. Intenta nuevamente.`)
     });
   }
 }

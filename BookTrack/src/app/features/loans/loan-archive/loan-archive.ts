@@ -47,6 +47,7 @@ import { Loan } from '../../../models/loan.model';
           <table>
             <thead>
               <tr>
+                <th>LEGAJO</th>
                 <th>ESTUDIANTE</th>
                 <th>LIBRO</th>
                 <th>TIPO</th>
@@ -57,7 +58,8 @@ import { Loan } from '../../../models/loan.model';
             <tbody>
               @for (p of filtrados; track p.id) {
                 <tr>
-                  <td>Usuario #{{ p.estudianteId }}</td>
+                  <td>{{ obtenerlLegajo(p) }}</td>
+                  <td>{{ obtenerNombre(p) }}</td>
                   <td>{{ tituloLibro(p.libroId) }}</td>
                   <td>{{ p.tipoPrestamo }}</td>
                   <td>{{ p.fechaInicio }} → {{ p.fechaFin || '-' }}</td>
@@ -65,7 +67,7 @@ import { Loan } from '../../../models/loan.model';
                 </tr>
               }
               @if (filtrados.length === 0) {
-                <tr><td colspan="5" class="vacio">Sin registros.</td></tr>
+                <tr><td colspan="6" class="vacio">Sin registros.</td></tr>
               }
             </tbody>
           </table>
@@ -79,21 +81,42 @@ import { Loan } from '../../../models/loan.model';
     </div>
   `,
   styles: [`
-    .home-page { display:flex; flex-direction:column; min-height:100vh; background:#0d0d0d; }
-    .home-body { flex:1; padding: 1.5rem 2rem; color:#e8e8e8; }
+    .home-page { display:flex; flex-direction:column; height:100vh; background:#0d0d0d; }
+    .home-body {
+      flex:1; padding: 1.5rem 2rem; color:#e8e8e8;
+      display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #3a3a3a transparent;
+    }
+    .home-body::-webkit-scrollbar { width: 8px; }
+    .home-body::-webkit-scrollbar-track { background: transparent; }
+    .home-body::-webkit-scrollbar-thumb { background: #3a3a3a; border-radius: 4px; }
+    .home-body::-webkit-scrollbar-thumb:hover { background: #4a4a4a; }
 
-    .content-header { display:flex; align-items:center; gap:1rem; margin-bottom: 1.5rem; }
+    .content-header { display:flex; align-items:center; gap:1rem; margin-bottom: 1.5rem; width: 100%; max-width: 1000px; }
     .title-icon { width:72px; height:72px; background:#1c1c1c; border-radius:14px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
     .section-title { font-family: Georgia, serif; font-size: 1.7rem; margin: 0 0 0.2rem; color:#f5f5f5; }
     .section-subtitle { margin:0; color:#9a9a9a; font-size:0.9rem; }
 
-    .table-card { background:#161616; border-radius:12px; padding:1.5rem; display:flex; flex-direction:column; gap:1rem; max-width: 1000px; }
-    .card-top { display:flex; justify-content:flex-end; }
+    .table-card {
+      background:#161616; border-radius:12px; padding:1.5rem; display:flex; flex-direction:column; gap:1rem;
+      max-width: 1000px; width: 100%;
+      max-height: 70vh; overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #3a3a3a transparent;
+    }
+    .table-card::-webkit-scrollbar { width: 8px; }
+    .table-card::-webkit-scrollbar-track { background: transparent; }
+    .table-card::-webkit-scrollbar-thumb { background: #3a3a3a; border-radius: 4px; }
+    .table-card::-webkit-scrollbar-thumb:hover { background: #4a4a4a; }
+
+    .card-top { display:flex; justify-content:flex-end; flex-shrink: 0; }
     .filtros { display:flex; gap:0.6rem; align-items:center; }
     select { padding:0.5rem 0.7rem; border-radius:8px; border:1px solid #2a2a2a; font-size:0.8rem; background:#101010; color:#e8e8e8; }
     .btn-outline.btn-sm { padding:0.4rem 1rem; font-size:0.72rem; }
 
-    table { width:100%; border-collapse:collapse; }
+    table { width:100%; border-collapse:collapse; flex: 1; }
     th { background:#101010; color:#9a9a9a; padding:0.6rem 0.8rem; font-size:0.72rem; text-align:left; letter-spacing:0.03rem; }
     td { padding:0.6rem 0.8rem; font-size:0.82rem; border-bottom:1px solid #232323; }
     tr:hover td { background:#1a1a1a; }
@@ -135,6 +158,95 @@ export class LoanArchive implements OnInit {
   }
 
   label(e: string) { return ({ pendiente:'Pendiente', aprobado:'Activo', devuelto:'Devuelto', denegado:'Denegado' } as any)[e] ?? e; }
-  exportPDF()   { this.loanService.exportPDF().subscribe(); }
-  exportExcel() { this.loanService.exportExcel().subscribe(); }
+
+  obtenerlLegajo(p: any): string {
+    return p.estudianteLegajo || '-';
+  }
+
+  obtenerNombre(p: any): string {
+    return p.estudianteNombre || `Usuario #${p.estudianteId}`;
+  }
+
+  exportPDF() {
+    let html = `
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          h1 { text-align: center; }
+          .info { margin-bottom: 20px; font-size: 12px; }
+          table { width: 100%; border-collapse: collapse; }
+          th, td { border: 1px solid #000; padding: 8px; text-align: left; }
+          th { background-color: #f0f0f0; font-weight: bold; }
+          tr:nth-child(even) { background-color: #f9f9f9; }
+        </style>
+      </head>
+      <body>
+        <h1>Historial de Préstamos</h1>
+        <div class="info">
+          <p><strong>Filtro:</strong> ${this.filtroEstado || 'Todos'}</p>
+          <p><strong>Fecha:</strong> ${new Date().toLocaleDateString()}</p>
+          <p><strong>Total de registros:</strong> ${this.filtrados.length}</p>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Legajo</th>
+              <th>Estudiante</th>
+              <th>Libro</th>
+              <th>Tipo</th>
+              <th>Estado</th>
+              <th>Período</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    this.filtrados.forEach(p => {
+      const legajo = (p as any).estudianteLegajo || '-';
+      const nombre = (p as any).estudianteNombre || 'Usuario #' + p.estudianteId;
+      const libro = this.tituloLibro(p.libroId);
+      const periodo = `${p.fechaInicio} → ${p.fechaFin || '-'}`;
+      html += `
+        <tr>
+          <td>${legajo}</td>
+          <td>${nombre}</td>
+          <td>${libro}</td>
+          <td>${p.tipoPrestamo}</td>
+          <td>${this.label(p.estado)}</td>
+          <td>${periodo}</td>
+        </tr>
+      `;
+    });
+
+    html += `
+          </tbody>
+        </table>
+        <script>window.print();</script>
+      </body>
+      </html>
+    `;
+
+    const ventana = window.open('', '', 'height=600,width=900');
+    ventana?.document.write(html);
+    ventana?.document.close();
+  }
+
+  exportExcel() {
+    let csv = 'Legajo,Estudiante,Libro,Tipo,Estado,Fecha Inicio,Fecha Fin\n';
+    this.filtrados.forEach(p => {
+      const legajo = (p as any).estudianteLegajo || '-';
+      const nombre = (p as any).estudianteNombre || 'Usuario #' + p.estudianteId;
+      const libro = this.tituloLibro(p.libroId);
+      csv += `"${legajo}","${nombre}","${libro}","${p.tipoPrestamo}","${this.label(p.estado)}","${p.fechaInicio}","${p.fechaFin || ''}"\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `historiales_prestamos_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    window.URL.revokeObjectURL(url);
+  }
 }

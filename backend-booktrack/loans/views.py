@@ -76,11 +76,27 @@ class LoanViewSet(viewsets.ModelViewSet):
         pdf = FPDF()
         pdf.add_page()
         pdf.set_font('Helvetica', size=14)
-        pdf.cell(0, 10, 'Historial de préstamos', ln=True)
-        pdf.set_font('Helvetica', size=9)
+        pdf.cell(0, 10, 'Historial de prestamos', ln=True)
+        pdf.ln(5)
+        pdf.set_font('Helvetica', 'B', size=9)
+        pdf.cell(50, 7, 'Estudiante')
+        pdf.cell(50, 7, 'Libro')
+        pdf.cell(30, 7, 'Tipo')
+        pdf.cell(25, 7, 'Estado')
+        pdf.cell(35, 7, 'Periodo')
+        pdf.ln()
+        pdf.set_font('Helvetica', size=8)
         for l in loans:
-            texto = f'{l.estudiante} - {l.libro} - {l.tipo_prestamo} - {l.estado} - {l.fecha_inicio} a {l.fecha_fin or "?"}'
-            pdf.multi_cell(0, 7, texto.encode('latin-1', 'replace').decode('latin-1'))
+            nombre_estudiante = l.estudiante.nombreApellido if hasattr(l.estudiante, 'nombreApellido') else str(l.estudiante)
+            nombre_libro = l.libro.titulo if hasattr(l.libro, 'titulo') else str(l.libro)
+            fecha_fin = str(l.fecha_fin) if l.fecha_fin else '-'
+            periodo = f'{l.fecha_inicio} a {fecha_fin}'
+            pdf.cell(50, 7, nombre_estudiante[:20])
+            pdf.cell(50, 7, nombre_libro[:20])
+            pdf.cell(30, 7, l.tipo_prestamo[:10])
+            pdf.cell(25, 7, l.estado[:10])
+            pdf.cell(35, 7, periodo[:15])
+            pdf.ln()
         response = HttpResponse(bytes(pdf.output()), content_type='application/pdf')
         response['Content-Disposition'] = 'attachment; filename="historial-prestamos.pdf"'
         return response
@@ -90,10 +106,13 @@ class LoanViewSet(viewsets.ModelViewSet):
         loans = self.get_queryset()
         wb = Workbook()
         ws = wb.active
-        ws.title = 'Préstamos'
+        ws.title = 'Prestamos'
         ws.append(['Estudiante', 'Libro', 'Tipo', 'Estado', 'Fecha inicio', 'Fecha fin'])
         for l in loans:
-            ws.append([str(l.estudiante), str(l.libro), l.tipo_prestamo, l.estado, str(l.fecha_inicio), str(l.fecha_fin or '')])
+            nombre_estudiante = l.estudiante.nombreApellido if hasattr(l.estudiante, 'nombreApellido') else str(l.estudiante)
+            nombre_libro = l.libro.titulo if hasattr(l.libro, 'titulo') else str(l.libro)
+            fecha_fin = str(l.fecha_fin) if l.fecha_fin else ''
+            ws.append([nombre_estudiante, nombre_libro, l.tipo_prestamo, l.estado, str(l.fecha_inicio), fecha_fin])
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = 'attachment; filename="historial-prestamos.xlsx"'
         wb.save(response)

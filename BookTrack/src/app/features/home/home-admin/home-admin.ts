@@ -50,6 +50,10 @@ import { BookService } from '../../../core/services/book.service';
             <span class="accion-icon">📋</span>
             <span>Gestionar préstamos</span>
           </div>
+          <div class="accion-card" (click)="router.navigate(['/loan-archive'])">
+            <span class="accion-icon">📦</span>
+            <span>Archivo de préstamos</span>
+          </div>
           <div class="accion-card" (click)="router.navigate(['/user-management'])">
             <span class="accion-icon">👥</span>
             <span>Gestionar usuarios</span>
