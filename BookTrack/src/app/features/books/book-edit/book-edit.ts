@@ -75,15 +75,25 @@ import { CategoryService } from '../../../core/services/category.service';
     </div>
   `,
   styles: [`
-    .home-page { display:flex; flex-direction:column; min-height:100vh; background:#0d0d0d; }
-    .page-body { flex:1; padding: 1.5rem 2rem; color:#e8e8e8; }
+    .home-page { display:flex; flex-direction:column; height:100vh; background:#0d0d0d; }
+    .page-body {
+      flex:1; padding: 1.5rem 2rem; color:#e8e8e8;
+      display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #3a3a3a transparent;
+    }
+    .page-body::-webkit-scrollbar { width: 8px; }
+    .page-body::-webkit-scrollbar-track { background: transparent; }
+    .page-body::-webkit-scrollbar-thumb { background: #3a3a3a; border-radius: 4px; }
+    .page-body::-webkit-scrollbar-thumb:hover { background: #4a4a4a; }
 
-    .content-header { display:flex; align-items:center; gap:1rem; margin-bottom: 1.5rem; }
+    .content-header { display:flex; align-items:center; gap:1rem; margin-bottom: 1.5rem; width: 100%; max-width: 900px; }
     .title-icon { width:72px; height:72px; background:#1c1c1c; border-radius:14px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
     .section-title { font-family: Georgia, serif; font-size: 1.7rem; margin: 0 0 0.2rem; color:#f5f5f5; }
     .section-subtitle { margin:0; color:#9a9a9a; font-size:0.9rem; }
 
-    .form-card { background:#161616; border-radius:12px; padding:2.5rem; display:flex; gap:2.5rem; max-width: 900px; }
+    .form-card { background:#161616; border-radius:12px; padding:2.5rem; display:flex; gap:2.5rem; max-width: 900px; width: 100%; }
     .left-panel { display:flex; flex-direction:column; gap:1rem; align-items:center; }
     .cover-placeholder {
       width:140px; height:190px; border:2px dashed #3a3a3a; border-radius:8px;

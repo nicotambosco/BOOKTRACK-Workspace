@@ -42,6 +42,10 @@ import { BookService } from '../../../core/services/book.service';
             <span class="accion-icon">＋</span>
             <span>Agregar libro</span>
           </div>
+          <div class="accion-card" (click)="router.navigate(['/book-management'])">
+            <span class="accion-icon">📚</span>
+            <span>Gestionar libros</span>
+          </div>
           <div class="accion-card" (click)="router.navigate(['/loan-management'])">
             <span class="accion-icon">📋</span>
             <span>Gestionar préstamos</span>

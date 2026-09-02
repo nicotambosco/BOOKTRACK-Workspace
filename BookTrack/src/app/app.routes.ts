@@ -10,6 +10,7 @@ import { HomeAdmin } from './features/home/home-admin/home-admin';
 import { BookDetail } from './features/books/book-detail/book-detail';
 import { BookAdd } from './features/books/book-add/book-add';
 import { BookEdit } from './features/books/book-edit/book-edit';
+import { BookManagement } from './features/books/book-management/book-management';
 import { LoanRequest } from './features/loans/loan-request/loan-request';
 import { LoanManagement } from './features/loans/loan-management/loan-management';
 import { LoanHistory } from './features/loans/loan-history/loan-history';
@@ -58,6 +59,12 @@ export const routes: Routes = [
   {
     path: 'book-edit/:id', //falta
     component: BookEdit,
+    canActivate: [authGuard],
+    data: { roles: ['bibliotecario'] }
+  },
+  {
+    path: 'book-management',
+    component: BookManagement,
     canActivate: [authGuard],
     data: { roles: ['bibliotecario'] }
   },
