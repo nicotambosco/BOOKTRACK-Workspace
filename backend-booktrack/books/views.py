@@ -3,8 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework import status
-from django.core.files.storage import default_storage
-from uuid import uuid4
+import base64
 from .models import Book
 from .serializers import BookSerializer
 
@@ -18,10 +17,11 @@ class BookViewSet(viewsets.ModelViewSet):
     def upload_image(self, request):
         image = request.FILES.get('file')
         allowed_types = {'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp'}
-        if not image or image.content_type not in allowed_types or image.size > 5 * 1024 * 1024:
-            return Response({'detail': 'Elegí una imagen JPG, PNG o WebP de hasta 5 MB.'}, status=status.HTTP_400_BAD_REQUEST)
-        path = default_storage.save(f'book_covers/{uuid4().hex}{allowed_types[image.content_type]}', image)
-        return Response({'url': request.build_absolute_uri(default_storage.url(path))}, status=status.HTTP_201_CREATED)
+        if not image or image.content_type not in allowed_types or image.size > 1024 * 1024:
+            return Response({'detail': 'Elegí una imagen JPG, PNG o WebP de hasta 1 MB.'}, status=status.HTTP_400_BAD_REQUEST)
+        # ponytail: la portada se guarda en la base (data URI), sin carpeta media; si pesa, redimensionar o mover a storage externo
+        data = base64.b64encode(image.read()).decode()
+        return Response({'url': f'data:{image.content_type};base64,{data}'}, status=status.HTTP_201_CREATED)
 
     def get_queryset(self):
         qs = super().get_queryset()

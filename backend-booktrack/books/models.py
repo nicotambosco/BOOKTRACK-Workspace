@@ -9,7 +9,7 @@ class Book(models.Model):
     editorial = models.CharField(max_length=255, blank=True)
     fecha_publicacion = models.CharField(max_length=20, blank=True)
     descripcion = models.TextField(blank=True)
-    imagen = models.URLField(blank=True)
+    imagen = models.TextField(blank=True)  # ruta assets/... o data URI, así la portada viaja con la base
     nro_codigo = models.CharField(max_length=50, blank=True)
     nro_inventario = models.CharField(max_length=50, blank=True, unique=True, null=True)
     categoria = models.CharField(max_length=100)
