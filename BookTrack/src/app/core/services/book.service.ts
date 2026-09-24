@@ -38,8 +38,9 @@ export class BookService {
     return this.http.delete<void>(`${this.api}/${id}/`);
   }
 
-  uploadImage(_file: File): Observable<{ url: string }> {
-    // ponytail: placeholder hasta implementar file upload en Django
-    return new Observable(obs => { obs.next({ url: 'assets/images/placeholder-book.jpg' }); obs.complete(); });
+  uploadImage(file: File): Observable<{ url: string }> {
+    const data = new FormData();
+    data.append('file', file);
+    return this.http.post<{ url: string }>(`${this.api}/upload-image/`, data);
   }
 }

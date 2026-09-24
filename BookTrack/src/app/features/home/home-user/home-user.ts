@@ -53,8 +53,12 @@ function normalizar(texto: string): string {
                   <div class="bookshelf">
                     @for (libro of grupo.libros; track libro.id; let i = $index) {
                       <div class="book-card" (click)="verLibro(libro.id!)">
-                        <div class="book-cover" [style.background]="colorLibro(i)">
-                          <span class="book-title-mini">{{ libro.titulo }}</span>
+                        <div class="book-cover" [style.background]="libro.imagen ? 'transparent' : colorLibro(i)">
+                          @if (libro.imagen) {
+                            <img [src]="libro.imagen" [alt]="'Portada de ' + libro.titulo"/>
+                          } @else {
+                            <span class="book-title-mini">{{ libro.titulo }}</span>
+                          }
                         </div>
                       </div>
                     }
@@ -152,6 +156,7 @@ function normalizar(texto: string): string {
       box-shadow: 3px 3px 8px rgba(0,0,0,0.4);
     }
     .book-title-mini { font-size:0.6rem; color:white; font-weight:bold; }
+    .book-cover img { width:100%; height:100%; object-fit:cover; border-radius:3px; }
 
     .footer-strip {
       display:flex; align-items:center; gap:0.6rem;

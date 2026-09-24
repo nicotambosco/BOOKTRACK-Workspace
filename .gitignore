@@ -1,0 +1,5 @@
+/backend-booktrack/.venv/
+/backend-booktrack/db.local.sqlite3
+/backend-booktrack/media/
+__pycache__/
+*.py[cod]

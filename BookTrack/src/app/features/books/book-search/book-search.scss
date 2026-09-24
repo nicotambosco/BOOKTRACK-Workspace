@@ -42,6 +42,7 @@
   box-shadow: 3px 3px 8px rgba(0,0,0,0.4);
 }
 .book-title-mini { font-size:0.6rem; color:white; font-weight:bold; }
+.book-cover img { width:100%; height:100%; object-fit:cover; border-radius:3px; }
 
 .book-info { display:flex; flex-direction:column; gap:0.1rem; }
 .autor { font-size:0.68rem; color:#9a9a9a; }

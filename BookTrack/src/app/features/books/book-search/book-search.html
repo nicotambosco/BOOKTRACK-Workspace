@@ -22,8 +22,12 @@
           <div class="bookshelf">
             @for (libro of libros; track libro.id; let i = $index) {
               <div class="book-card" (click)="irADetalle(libro.id!)">
-                <div class="book-cover" [style.background]="colorLibro(i)">
-                  <span class="book-title-mini">{{ libro.titulo }}</span>
+                <div class="book-cover" [style.background]="libro.imagen ? 'transparent' : colorLibro(i)">
+                  @if (libro.imagen) {
+                    <img [src]="libro.imagen" [alt]="'Portada de ' + libro.titulo"/>
+                  } @else {
+                    <span class="book-title-mini">{{ libro.titulo }}</span>
+                  }
                 </div>
                 <div class="book-info">
                   <span class="autor">{{ libro.autor }}</span>

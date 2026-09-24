@@ -1,6 +1,9 @@
 from decouple import config
 from datetime import timedelta
 from django.contrib.auth.hashers import PBKDF2PasswordHasher
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-cambiar-en-produccion')
 DEBUG = config('DEBUG', default=True, cast=bool)
@@ -59,17 +62,20 @@ WSGI_APPLICATION = 'booktrack.wsgi.application'
 # ─────────────────────────────────────────────────────────────────
 # CONEXIÓN BASE DE DATOS MySQL — completar credenciales en .env
 # ─────────────────────────────────────────────────────────────────
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': config('DB_NAME', default='booktrack_db'),
-        'USER': config('DB_USER', default='root'),
-        'PASSWORD': config('DB_PASSWORD', default=''),
-        'HOST': config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default='3306'),
-        'OPTIONS': {'charset': 'utf8mb4'},
+if config('DB_ENGINE', default='mysql') == 'sqlite3':
+    DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': BASE_DIR / config('DB_NAME', default='db.sqlite3')}}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': config('DB_NAME', default='booktrack_db'),
+            'USER': config('DB_USER', default='root'),
+            'PASSWORD': config('DB_PASSWORD', default=''),
+            'HOST': config('DB_HOST', default='localhost'),
+            'PORT': config('DB_PORT', default='3306'),
+            'OPTIONS': {'charset': 'utf8mb4'},
+        }
     }
-}
 # ─────────────────────────────────────────────────────────────────
 
 # ponytail: Django 6 default es 1.2M iteraciones PBKDF2 (~2s por login). 300k sigue
@@ -96,6 +102,8 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = '/static/'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ─────────────────────────────────────────────────────────────────
@@ -121,4 +129,6 @@ SIMPLE_JWT = {
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:4200',
     'http://127.0.0.1:4200',
+    'http://127.0.0.1:4202',
+    'http://localhost:4202',
 ]
