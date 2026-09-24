@@ -30,7 +30,7 @@
 .empty-text p { margin:0; color:#8a8a8a; font-size:0.9rem; max-width: 420px; }
 
 .bookshelf { display: flex; flex-wrap: wrap; gap: 1.2rem; align-content:flex-start; }
-.book-card { cursor:pointer; transition: transform 0.2s; display:flex; flex-direction:column; gap:0.4rem; width:90px; }
+.book-card { cursor:pointer; transition: transform 0.2s; display:flex; flex-direction:column; gap:0.4rem; width:110px; }
 .book-card:hover { transform: translateY(-4px); }
 .book-cover {
   width: 90px;
@@ -39,11 +39,12 @@
   display: flex;
   align-items: flex-end;
   padding: 0.3rem;
+  box-sizing: border-box;
   box-shadow: 3px 3px 8px rgba(0,0,0,0.4);
 }
-.book-title-mini { font-size:0.6rem; color:white; font-weight:bold; }
 .book-cover img { width:100%; height:100%; object-fit:cover; border-radius:3px; }
 
 .book-info { display:flex; flex-direction:column; gap:0.1rem; }
+.book-title { font-size:0.72rem; line-height:1.25; color:#f0f0f0; font-weight:600; }
 .autor { font-size:0.68rem; color:#9a9a9a; }
 .disponibles { font-size:0.65rem; color:#7a7a7a; }

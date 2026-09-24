@@ -56,10 +56,9 @@ function normalizar(texto: string): string {
                         <div class="book-cover" [style.background]="libro.imagen ? 'transparent' : colorLibro(i)">
                           @if (libro.imagen) {
                             <img [src]="libro.imagen" [alt]="'Portada de ' + libro.titulo"/>
-                          } @else {
-                            <span class="book-title-mini">{{ libro.titulo }}</span>
                           }
                         </div>
+                        <span class="book-title">{{ libro.titulo }}</span>
                       </div>
                     }
                   </div>
@@ -144,7 +143,7 @@ function normalizar(texto: string): string {
     .anio-grupo + .anio-grupo { margin-top: 1.8rem; }
     .anio-titulo { margin:0; font-family: Georgia, serif; font-size:1rem; color:#c8c8c8; border-bottom:1px solid #2a2a2a; padding-bottom:0.5rem; }
     .bookshelf { display: flex; flex-wrap: wrap; gap: 1rem; }
-    .book-card { cursor:pointer; transition: transform 0.2s; }
+    .book-card { cursor:pointer; transition: transform 0.2s; display:flex; flex-direction:column; gap:0.4rem; width:110px; }
     .book-card:hover { transform: translateY(-4px); }
     .book-cover {
       width: 90px;
@@ -153,10 +152,11 @@ function normalizar(texto: string): string {
       display: flex;
       align-items: flex-end;
       padding: 0.3rem;
+      box-sizing: border-box;
       box-shadow: 3px 3px 8px rgba(0,0,0,0.4);
     }
-    .book-title-mini { font-size:0.6rem; color:white; font-weight:bold; }
     .book-cover img { width:100%; height:100%; object-fit:cover; border-radius:3px; }
+    .book-title { font-size:0.72rem; line-height:1.25; color:#f0f0f0; font-weight:600; }
 
     .footer-strip {
       display:flex; align-items:center; gap:0.6rem;

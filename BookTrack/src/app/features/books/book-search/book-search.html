@@ -25,11 +25,10 @@
                 <div class="book-cover" [style.background]="libro.imagen ? 'transparent' : colorLibro(i)">
                   @if (libro.imagen) {
                     <img [src]="libro.imagen" [alt]="'Portada de ' + libro.titulo"/>
-                  } @else {
-                    <span class="book-title-mini">{{ libro.titulo }}</span>
                   }
                 </div>
                 <div class="book-info">
+                  <span class="book-title">{{ libro.titulo }}</span>
                   <span class="autor">{{ libro.autor }}</span>
                   <span class="disponibles">{{ libro.disponibles }} disponible/s</span>
                 </div>
