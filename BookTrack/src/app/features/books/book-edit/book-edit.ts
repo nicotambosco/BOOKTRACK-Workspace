@@ -162,6 +162,7 @@ export class BookEdit implements OnInit {
 
   guardar() {
     if (!this.libro.titulo || !this.libro.autor) { this.modalMsg='¡Revise y complete todos los campos!'; this.modal=true; return; }
+    if (!this.categoriaSeleccionada) { this.modalMsg='¡Seleccione una categoría!'; this.modal=true; return; }
     this.bookService.update(this.bookId, { ...this.libro, categoria: this.categoriaSeleccionada }).subscribe({
       next: () => { this.modalMsg='¡Libro actualizado exitosamente!'; this.modal=true; },
       error: () => { this.modalMsg='Error al guardar. Intente de nuevo.'; this.modal=true; }

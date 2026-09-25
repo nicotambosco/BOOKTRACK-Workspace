@@ -9,7 +9,7 @@ class LoanSerializer(serializers.ModelSerializer):
     libroId = serializers.IntegerField(source='libro_id')
     libroTitulo = serializers.CharField(source='libro.titulo', read_only=True)
     tipoPrestamo = serializers.CharField(source='tipo_prestamo')
-    fechaInicio = serializers.DateField(source='fecha_inicio', read_only=True)
+    fechaInicio = serializers.DateField(source='fecha_inicio')
     fechaFin = serializers.DateField(source='fecha_fin', allow_null=True)
     plazoDeSolicitud = serializers.CharField(source='plazo_de_solicitud', allow_blank=True)
     extensionPendiente = serializers.BooleanField(source='extension_pendiente', read_only=True)
@@ -22,4 +22,4 @@ class LoanSerializer(serializers.ModelSerializer):
             'tipoPrestamo', 'fechaInicio', 'fechaFin', 'estado', 'plazoDeSolicitud',
             'extensionPendiente', 'extensionEstado',
         ]
-        read_only_fields = ['fechaInicio', 'estado']
+        read_only_fields = ['estado']

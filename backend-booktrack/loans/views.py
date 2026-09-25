@@ -1,4 +1,5 @@
 from django.http import HttpResponse
+from django.db import transaction
 from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -14,19 +15,31 @@ class LoanViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        # bibliotecario ve todos; usuario solo los suyos
         if user.categoria == 'bibliotecario':
-            return Loan.objects.all().order_by('-fecha_inicio')
-        return Loan.objects.filter(estudiante=user).order_by('-fecha_inicio')
+            queryset = Loan.objects.all()
+        else:
+            queryset = Loan.objects.filter(estudiante=user)
+        estado = self.request.query_params.get('estado')
+        if estado:
+            queryset = queryset.filter(estado=estado)
+        return queryset.order_by('-fecha_inicio')
 
     def perform_create(self, serializer):
         serializer.save(estudiante=self.request.user)
 
     @action(detail=True, methods=['patch'])
+    @transaction.atomic
     def aprobar(self, request, pk=None):
         loan = self.get_object()
+        if loan.estado != 'pendiente':
+            return Response(LoanSerializer(loan).data)
+        book = loan.libro
+        if book.disponibles < 1:
+            return Response({'detail': 'No hay ejemplares disponibles.'}, status=400)
+        book.disponibles -= 1
+        book.save(update_fields=['disponibles'])
         loan.estado = 'aprobado'
-        loan.save()
+        loan.save(update_fields=['estado'])
         return Response(LoanSerializer(loan).data)
 
     @action(detail=True, methods=['patch'])
@@ -37,10 +50,16 @@ class LoanViewSet(viewsets.ModelViewSet):
         return Response(LoanSerializer(loan).data)
 
     @action(detail=True, methods=['patch'])
+    @transaction.atomic
     def devolver(self, request, pk=None):
         loan = self.get_object()
+        if loan.estado != 'aprobado':
+            return Response(LoanSerializer(loan).data)
+        book = loan.libro
+        book.disponibles += 1
+        book.save(update_fields=['disponibles'])
         loan.estado = 'devuelto'
-        loan.save()
+        loan.save(update_fields=['estado'])
         return Response(LoanSerializer(loan).data)
 
     @action(detail=True, methods=['patch'], url_path='solicitar-extension')
@@ -87,7 +106,7 @@ class LoanViewSet(viewsets.ModelViewSet):
         pdf.ln()
         pdf.set_font('Helvetica', size=8)
         for l in loans:
-            nombre_estudiante = l.estudiante.nombreApellido if hasattr(l.estudiante, 'nombreApellido') else str(l.estudiante)
+            nombre_estudiante = l.estudiante.nombre_apellido or str(l.estudiante)
             nombre_libro = l.libro.titulo if hasattr(l.libro, 'titulo') else str(l.libro)
             fecha_fin = str(l.fecha_fin) if l.fecha_fin else '-'
             periodo = f'{l.fecha_inicio} a {fecha_fin}'
@@ -109,7 +128,7 @@ class LoanViewSet(viewsets.ModelViewSet):
         ws.title = 'Prestamos'
         ws.append(['Estudiante', 'Libro', 'Tipo', 'Estado', 'Fecha inicio', 'Fecha fin'])
         for l in loans:
-            nombre_estudiante = l.estudiante.nombreApellido if hasattr(l.estudiante, 'nombreApellido') else str(l.estudiante)
+            nombre_estudiante = l.estudiante.nombre_apellido or str(l.estudiante)
             nombre_libro = l.libro.titulo if hasattr(l.libro, 'titulo') else str(l.libro)
             fecha_fin = str(l.fecha_fin) if l.fecha_fin else ''
             ws.append([nombre_estudiante, nombre_libro, l.tipo_prestamo, l.estado, str(l.fecha_inicio), fecha_fin])

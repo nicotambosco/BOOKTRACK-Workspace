@@ -9,7 +9,7 @@ class User(AbstractUser):
     legajo = models.CharField(max_length=50, unique=True, null=True, blank=True)
     codigo = models.CharField(max_length=50, blank=True)
     categoria = models.CharField(max_length=20, choices=CATEGORIA_CHOICES, default='usuario')
-    imagen = models.URLField(blank=True)
+    imagen = models.TextField(blank=True)
 
     class Meta:
         db_table = 'users'

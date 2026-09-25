@@ -42,13 +42,13 @@ export class LoanService {
     return this.http.patch<Loan>(`${this.api}/${id}/denegar-extension/`, {});
   }
 
-  request(libroId: number, plazoDeSolicitud: string, estudianteId: number): Observable<Loan> {
+  request(libroId: number, fechaInicio: string, fechaFin: string): Observable<Loan> {
     return this.http.post<Loan>(`${this.api}/`, {
       libroId,
-      plazoDeSolicitud,
-      estudianteId,
+      plazoDeSolicitud: `${fechaInicio} a ${fechaFin}`,
       tipoPrestamo: 'normal',
-      fechaFin: null,
+      fechaInicio,
+      fechaFin,
     });
   }
 

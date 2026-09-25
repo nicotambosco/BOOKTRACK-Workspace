@@ -133,8 +133,7 @@ export class LoanRequest implements OnInit {
 
   enviar() {
     if (!this.desde || !this.hasta) return;
-    const plazo = `${this.desde} a ${this.hasta}`;
-    this.loanService.request(this.bookId, plazo, 0).subscribe({
+    this.loanService.request(this.bookId, this.desde, this.hasta).subscribe({
       next: () => this.exito = true,
       error: () => this.error = 'No se pudo enviar la solicitud. Intentá de nuevo.'
     });

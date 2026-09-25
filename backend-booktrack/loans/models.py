@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 from books.models import Book
 
 
@@ -14,7 +15,7 @@ class Loan(models.Model):
     estudiante = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='loans')
     libro = models.ForeignKey(Book, on_delete=models.CASCADE, related_name='loans')
     tipo_prestamo = models.CharField(max_length=50)
-    fecha_inicio = models.DateField(auto_now_add=True)
+    fecha_inicio = models.DateField(default=timezone.localdate)
     fecha_fin = models.DateField(null=True, blank=True)
     estado = models.CharField(max_length=10, choices=ESTADO_CHOICES, default='pendiente')
     plazo_de_solicitud = models.CharField(max_length=50, blank=True)

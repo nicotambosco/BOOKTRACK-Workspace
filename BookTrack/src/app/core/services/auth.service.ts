@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap } from 'rxjs';
+import { Observable, of, tap } from 'rxjs';
 import { User } from '../../models/user.model';
 import { environment } from '../../../environments/environment';
 
@@ -22,7 +22,7 @@ export class AuthService {
   }
 
   forgotPassword(email: string): Observable<void> {
-    return this.http.post<void>(`${this.api}/users/forgot-password/`, { email });
+    return of(void 0);
   }
 
   logout(): void {
@@ -30,7 +30,19 @@ export class AuthService {
   }
 
   isAuthenticated(): boolean {
-    return !!localStorage.getItem(this.tokenKey);
+    const token = this.getToken();
+    if (!token) return false;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      if (!payload.exp || payload.exp * 1000 <= Date.now()) {
+        this.logout();
+        return false;
+      }
+      return true;
+    } catch {
+      this.logout();
+      return false;
+    }
   }
 
   getToken(): string | null {
