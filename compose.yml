@@ -1,0 +1,46 @@
+services:
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: booktrack_db
+      MYSQL_ROOT_PASSWORD: admin1234
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build: ./backend-booktrack
+    environment:
+      SECRET_KEY: docker-local-booktrack
+      DEBUG: "True"
+      ALLOWED_HOSTS: localhost,127.0.0.1,backend
+      DB_NAME: booktrack_db
+      DB_USER: root
+      DB_PASSWORD: admin1234
+      DB_HOST: db
+      DB_PORT: "3306"
+      ADMIN_PASSWORD: Campana1
+      STUDENT_PASSWORD: utnfrd
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend-booktrack/media:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build: ./BookTrack
+    ports:
+      - "4202:80"
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:
