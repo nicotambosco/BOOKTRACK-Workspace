@@ -148,6 +148,7 @@ export class BookAdd implements OnInit {
 
   guardar() {
     if (!this.libro.titulo || !this.libro.autor) { this.modalMsg='¡Revise y complete todos los campos!'; this.modal=true; return; }
+    if (!this.categoriaSeleccionada) { this.modalMsg='¡Seleccione una categoría!'; this.modal=true; return; }
     this.bookService.create({ ...this.libro, categoria: this.categoriaSeleccionada }).subscribe({
       next: () => { this.modalMsg='¡Libro añadido exitosamente!'; this.modal=true; },
       error: () => { this.modalMsg='Error al guardar. Intente de nuevo.'; this.modal=true; }
