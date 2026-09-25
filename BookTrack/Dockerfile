@@ -8,6 +8,9 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
+FROM build AS test
+RUN npm test
+
 FROM nginx:1.27-alpine
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
