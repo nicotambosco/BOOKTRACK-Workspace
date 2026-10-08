@@ -42,7 +42,9 @@ import { CategoryService } from '../../../core/services/category.service';
                 </svg>
               }
               <input #fileInput type="file" accept="image/*" hidden (change)="onImagenSeleccionada($event)"/>
-              <button class="btn-outline btn-sm" (click)="fileInput.click()">AGREGAR IMÁGENES</button>
+              <button class="btn-outline btn-sm" [class.btn-overlay]="libro.imagen" (click)="fileInput.click()">
+                {{ libro.imagen ? 'CAMBIAR IMAGEN' : 'AGREGAR IMÁGENES' }}
+              </button>
             </div>
             <select [(ngModel)]="categoriaSeleccionada">
               <option value="">seleccionar categoría</option>
@@ -98,11 +100,15 @@ import { CategoryService } from '../../../core/services/category.service';
     .form-card { background:#161616; border-radius:12px; padding:2.5rem; display:flex; gap:2.5rem; width:100%; box-sizing:border-box; }
     .left-panel { display:flex; flex-direction:column; gap:1rem; align-items:center; }
     .cover-placeholder {
-      width:140px; height:190px; border:2px dashed #3a3a3a; border-radius:8px;
+      position:relative; width:140px; height:190px; border:2px dashed #3a3a3a; border-radius:8px;
       display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0.7rem;
       background:#101010; overflow:hidden;
     }
     .cover-placeholder img { width:100%; height:100%; object-fit:cover; }
+    .btn-overlay {
+      position:absolute; bottom:0.5rem; left:50%; transform:translateX(-50%);
+      background:rgba(16,16,16,0.85); backdrop-filter:blur(2px);
+    }
     select { padding:0.5rem; border:1px solid #2a2a2a; border-radius:8px; background:#101010; color:#e8e8e8; font-size:0.8rem; width:140px; }
 
     .right-panel { flex:1; display:flex; flex-direction:column; gap:1rem; }

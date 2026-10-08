@@ -7,6 +7,9 @@ class BookSerializer(serializers.ModelSerializer):
     nroCodigo = serializers.CharField(source='nro_codigo', allow_blank=True)
     nroInventario = serializers.CharField(source='nro_inventario', allow_blank=True, allow_null=True)
 
+    def validate_nroInventario(self, value):
+        return value or None  # '' rompería el unique; NULL puede repetirse
+
     class Meta:
         model = Book
         fields = [

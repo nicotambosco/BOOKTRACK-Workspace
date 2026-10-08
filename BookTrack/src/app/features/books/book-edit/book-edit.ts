@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { Header } from '../../../shared/components/header/header';
 import { BookService } from '../../../core/services/book.service';
 import { CategoryService } from '../../../core/services/category.service';
@@ -38,7 +38,7 @@ import { CategoryService } from '../../../core/services/category.service';
                 </svg>
               }
               <input #fileInput type="file" accept="image/*" hidden (change)="onImagenSeleccionada($event)"/>
-              <button class="btn-outline btn-sm" (click)="fileInput.click()">CAMBIAR IMAGEN</button>
+              <button class="btn-outline btn-sm" [class.btn-overlay]="libro.imagen" (click)="fileInput.click()">CAMBIAR IMAGEN</button>
             </div>
             <select [(ngModel)]="categoriaSeleccionada">
               <option value="">seleccionar categoría</option>
@@ -96,11 +96,15 @@ import { CategoryService } from '../../../core/services/category.service';
     .form-card { background:#161616; border-radius:12px; padding:2.5rem; display:flex; gap:2.5rem; max-width: 900px; width: 100%; }
     .left-panel { display:flex; flex-direction:column; gap:1rem; align-items:center; }
     .cover-placeholder {
-      width:140px; height:190px; border:2px dashed #3a3a3a; border-radius:8px;
+      position:relative; width:140px; height:190px; border:2px dashed #3a3a3a; border-radius:8px;
       display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0.7rem;
       background:#101010; overflow:hidden;
     }
     .cover-placeholder img { width:100%; height:100%; object-fit:cover; }
+    .btn-overlay {
+      position:absolute; bottom:0.5rem; left:50%; transform:translateX(-50%);
+      background:rgba(16,16,16,0.85); backdrop-filter:blur(2px);
+    }
     select { padding:0.5rem; border:1px solid #2a2a2a; border-radius:8px; background:#101010; color:#e8e8e8; font-size:0.8rem; width:140px; }
 
     .right-panel { flex:1; display:flex; flex-direction:column; gap:1rem; }
@@ -142,7 +146,8 @@ export class BookEdit implements OnInit {
     private router: Router,
     private route: ActivatedRoute,
     private bookService: BookService,
-    private categoryService: CategoryService
+    private categoryService: CategoryService,
+    private location: Location
   ) {}
 
   ngOnInit() {
@@ -177,7 +182,7 @@ export class BookEdit implements OnInit {
     });
   }
 
-  cerrarModal() { this.modal=false; if (this.modalMsg.includes('exitosamente')) this.router.navigate(['/home-admin']); }
+  cerrarModal() { this.modal=false; if (this.modalMsg.includes('exitosamente')) this.location.back(); }
 
   onImagenSeleccionada(event: Event) {
     const file = (event.target as HTMLInputElement).files?.[0];
