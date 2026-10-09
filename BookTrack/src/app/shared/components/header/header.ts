@@ -52,9 +52,11 @@ function toISODate(d: Date): string {
       </div>
       <div class="header-right">
         @if (esAdmin) {
-          <svg class="icon-btn" width="22" height="22" viewBox="0 0 24 24" fill="none" (click)="irAComentario()">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="white" stroke-width="2" fill="none"/>
-          </svg>
+          @if (mostrarComentarios) {
+            <svg class="icon-btn" width="22" height="22" viewBox="0 0 24 24" fill="none" (click)="irAComentario()">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="white" stroke-width="2" fill="none"/>
+            </svg>
+          }
         } @else {
           <div class="notif-wrap">
             <svg class="icon-btn" width="22" height="22" viewBox="0 0 24 24" fill="none" (click)="toggleNotificaciones()">
@@ -173,6 +175,7 @@ function toISODate(d: Date): string {
 })
 export class Header implements OnInit {
   @Input() esAdmin = false;
+  @Input() mostrarComentarios = true;
   busqueda = '';
   tieneNotificaciones = false;
   mostrarNotificaciones = false;
