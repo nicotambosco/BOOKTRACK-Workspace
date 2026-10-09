@@ -52,6 +52,7 @@ import { Book } from '../../../models/book.model';
             <div class="right-panel">
               <div class="info-row"><span class="label">TÍTULO</span><span>{{ libro.titulo }}</span></div>
               <div class="info-row"><span class="label">AUTOR</span><span>{{ libro.autor }}</span></div>
+              <div class="info-row"><span class="label">CATEGORÍA</span><span>{{ libro.categoria }}</span></div>
               <div class="info-row"><span class="label">EDITORIAL</span><span>{{ libro.editorial }}</span></div>
               <div class="info-row"><span class="label">FECHA DE PUBLICACIÓN</span><span>{{ libro.fechaPublicacion }}</span></div>
               <div class="campo">
