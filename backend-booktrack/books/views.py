@@ -1,3 +1,5 @@
+from django.db.models.deletion import ProtectedError
+from rest_framework.exceptions import ValidationError
 from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -5,13 +7,14 @@ from rest_framework.response import Response
 from rest_framework import status
 import base64
 from .models import Book
+from loans.permissions import ReadOnlyOrLibrarian
 from .serializers import BookSerializer
 
 
 class BookViewSet(viewsets.ModelViewSet):
     queryset = Book.objects.all().order_by('anio', 'titulo')
     serializer_class = BookSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [ReadOnlyOrLibrarian]
 
     @action(detail=False, methods=['post'], url_path='upload-image', parser_classes=[MultiPartParser, FormParser])
     def upload_image(self, request):
@@ -22,6 +25,12 @@ class BookViewSet(viewsets.ModelViewSet):
         # ponytail: la portada se guarda en la base (data URI), sin carpeta media; si pesa, redimensionar o mover a storage externo
         data = base64.b64encode(image.read()).decode()
         return Response({'url': f'data:{image.content_type};base64,{data}'}, status=status.HTTP_201_CREATED)
+
+    def perform_destroy(self, instance):
+        try:
+            instance.delete()
+        except ProtectedError:
+            raise ValidationError('El registro tiene historial de reservas o préstamos y no se puede eliminar.')
 
     def get_queryset(self):
         qs = super().get_queryset()

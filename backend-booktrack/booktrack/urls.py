@@ -12,6 +12,7 @@ urlpatterns = [
     # ── Recursos ──────────────────────────────────────────────────
     path('api/books/', include('books.urls')),
     path('api/loans/', include('loans.urls')),
+    path('api/reservations/', include('loans.reservation_urls')),
     path('api/categories/', include('categories.urls')),
     path('api/comments/', include('comments.urls')),
 ]

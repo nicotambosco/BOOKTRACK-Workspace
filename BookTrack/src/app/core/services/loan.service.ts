@@ -14,18 +14,6 @@ export class LoanService {
     return this.http.get<Loan[]>(`${this.api}/`);
   }
 
-  getPending(): Observable<Loan[]> {
-    return this.http.get<Loan[]>(`${this.api}/`, { params: { estado: 'pendiente' } });
-  }
-
-  approve(id: number): Observable<Loan> {
-    return this.http.patch<Loan>(`${this.api}/${id}/aprobar/`, {});
-  }
-
-  deny(id: number): Observable<Loan> {
-    return this.http.patch<Loan>(`${this.api}/${id}/denegar/`, {});
-  }
-
   return_(id: number): Observable<Loan> {
     return this.http.patch<Loan>(`${this.api}/${id}/devolver/`, {});
   }
@@ -42,25 +30,15 @@ export class LoanService {
     return this.http.patch<Loan>(`${this.api}/${id}/denegar-extension/`, {});
   }
 
-  request(libroId: number, fechaInicio: string, fechaFin: string): Observable<Loan> {
-    return this.http.post<Loan>(`${this.api}/`, {
-      libroId,
-      plazoDeSolicitud: `${fechaInicio} a ${fechaFin}`,
-      tipoPrestamo: 'normal',
-      fechaInicio,
-      fechaFin,
-    });
-  }
-
   getHistory(): Observable<Loan[]> {
     return this.http.get<Loan[]>(`${this.api}/`);
   }
 
-  exportPDF(): Observable<Blob> {
-    return this.http.get(`${this.api}/export/pdf/`, { responseType: 'blob' });
+  exportPDF(estado?: string): Observable<Blob> {
+    return this.http.get(`${this.api}/export/pdf/`, { responseType: 'blob', params: estado ? { estado } : {} });
   }
 
-  exportExcel(): Observable<Blob> {
-    return this.http.get(`${this.api}/export/excel/`, { responseType: 'blob' });
+  exportExcel(estado?: string): Observable<Blob> {
+    return this.http.get(`${this.api}/export/excel/`, { responseType: 'blob', params: estado ? { estado } : {} });
   }
 }

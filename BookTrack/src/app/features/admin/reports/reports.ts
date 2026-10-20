@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Header } from '../../../shared/components/header/header';
 import { BookService } from '../../../core/services/book.service';
 import { LoanService } from '../../../core/services/loan.service';
+import { ReservationService } from '../../../core/services/reservation.service';
 import { UserService } from '../../../core/services/user.service';
 
 @Component({
@@ -18,10 +19,12 @@ export class Reports implements OnInit {
   prestamosPendientes = 0;
   prestamosAprobados = 0;
   prestamosDevueltos = 0;
+  prestamosVencidos = 0;
 
   constructor(
     private bookService: BookService,
     private loanService: LoanService,
+    private reservationService: ReservationService,
     private userService: UserService
   ) {}
 
@@ -29,10 +32,12 @@ export class Reports implements OnInit {
     this.cargando = true;
     this.bookService.getAll().subscribe({ next: l => this.librosTotal = l.length, error: () => {} });
     this.userService.getAll().subscribe({ next: u => this.usuariosTotal = u.length, error: () => {} });
+    this.reservationService.getAll('activa').subscribe({ next: r => this.prestamosPendientes = r.length, error: () => {} });
     this.loanService.getAll().subscribe({
       next: prestamos => {
-        this.prestamosPendientes = prestamos.filter(p => p.estado === 'pendiente').length;
-        this.prestamosAprobados = prestamos.filter(p => p.estado === 'aprobado').length;
+
+        this.prestamosAprobados = prestamos.filter(p => p.estado === 'vigente').length;
+        this.prestamosVencidos = prestamos.filter(p => p.estado === 'vencido').length;
         this.prestamosDevueltos = prestamos.filter(p => p.estado === 'devuelto').length;
         this.cargando = false;
       },

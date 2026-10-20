@@ -6,9 +6,12 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'booktrack.settings')
 django.setup()
 
 from users.models import User
+from decouple import config
 
 
 def create_user(username, password, **defaults):
+    if not password and not User.objects.filter(username=username).exists():
+        raise RuntimeError('Configurá ADMIN_PASSWORD y STUDENT_PASSWORD para crear las cuentas de demostración.')
     user, created = User.objects.get_or_create(username=username, defaults=defaults)
     if created:
         user.set_password(password)
@@ -18,9 +21,9 @@ def create_user(username, password, **defaults):
 
 create_user(
     '12473',
-    os.environ.get('ADMIN_PASSWORD', 'Campana1'),
+    config('ADMIN_PASSWORD', default=''),
     legajo='12473',
-    email='tambosconicolas123@gmail.com',
+    email='admin@booktrack.local',
     nombre_apellido='Administrador',
     categoria='bibliotecario',
     is_staff=True,
@@ -28,7 +31,7 @@ create_user(
 )
 create_user(
     '13885',
-    os.environ.get('STUDENT_PASSWORD', 'utnfrd'),
+    config('STUDENT_PASSWORD', default=''),
     legajo='13885',
     email='alumno@booktrack.local',
     nombre_apellido='Alumno',

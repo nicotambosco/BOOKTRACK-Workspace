@@ -1,5 +1,6 @@
 export interface Book {
   id?: number;
+  estado?: 'activo' | 'inactivo';
   titulo: string;
   autor: string;
   editorial: string;

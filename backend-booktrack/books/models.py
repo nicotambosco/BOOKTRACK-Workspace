@@ -4,6 +4,9 @@ from django.db import models
 class Book(models.Model):
     TIPO_CHOICES = [('libro base', 'Libro base'), ('libro de consulta', 'Libro de consulta')]
 
+    ESTADO_CHOICES = [('activo', 'Activo'), ('inactivo', 'Inactivo')]
+    estado = models.CharField(max_length=10, choices=ESTADO_CHOICES, default='activo')
+
     titulo = models.CharField(max_length=255)
     autor = models.CharField(max_length=255, blank=True)
     editorial = models.CharField(max_length=255, blank=True)

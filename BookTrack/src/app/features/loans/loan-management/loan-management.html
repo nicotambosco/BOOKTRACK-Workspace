@@ -1,1 +1,52 @@
-<p>loan-management works!</p>
+<div class="home-page">
+  <app-header [esAdmin]="true"></app-header>
+  <main class="page-body">
+    <h1>Reservas y préstamos</h1>
+    <p>Registrá el retiro del libro para finalizar la reserva y crear el préstamo.</p>
+    @if (mensaje) { <p class="mensaje" role="status">{{ mensaje }}</p> }
+    <button (click)="cargar()" [disabled]="ocupado">ACTUALIZAR</button>
+    <section>
+      <h2>Reservas</h2>
+      <p>Mayor prioridad se atiende primero; a igual prioridad se respeta el orden de creación.</p>
+      @for (r of reservas; track r.id) {
+        <article>
+          <div><strong>{{ r.libroTitulo }}</strong> · {{ r.estudianteNombre || 'Usuario #' + r.estudianteId }}
+            <p>{{ r.codigoReserva }} · {{ r.estado }}</p>
+            <p>Retirar hasta {{ r.fechaVencimiento }} · Devolver hasta {{ r.fechaDevolucionPrevista || 'fecha no registrada' }}</p>
+            @if (r.prestamoId) { <p>Préstamo #{{ r.prestamoId }}</p> }
+          </div>
+          @if (r.estado === 'activa') {
+            <div class="acciones">
+              <label [for]="'prioridad-' + r.id">Prioridad</label>
+              <input [id]="'prioridad-' + r.id" type="number" min="0" max="32767" [(ngModel)]="r.prioridad" [disabled]="ocupado" />
+              <button (click)="priorizar(r)" [disabled]="ocupado">GUARDAR PRIORIDAD</button>
+              <button class="primary" (click)="retirar(r.id)" [disabled]="ocupado">REGISTRAR RETIRO</button>
+              <button (click)="cancelar(r.id)" [disabled]="ocupado">CANCELAR RESERVA</button>
+            </div>
+          }
+        </article>
+      } @empty { <p>No hay reservas.</p> }
+    </section>
+    <section>
+      <h2>Préstamos</h2>
+      @for (p of prestamos; track p.id) {
+        <article>
+          <div><strong>{{ p.libroTitulo }}</strong> · {{ p.estudianteNombre || 'Usuario #' + p.estudianteId }}
+            <p>{{ p.estado }} · Inicio {{ p.fechaInicio }} · Vence {{ p.fechaVencimiento || 'fecha no registrada' }}</p>
+            @if (p.fechaDevolucion) { <p>Devuelto el {{ p.fechaDevolucion }}</p> }
+          </div>
+          <div class="acciones">
+            @if (p.estado === 'vigente' && p.extensionPendiente) {
+              <span>Renovación solicitada</span>
+              <button (click)="aprobarExtension(p.id!)" [disabled]="ocupado">APROBAR RENOVACIÓN</button>
+              <button (click)="denegarExtension(p.id!)" [disabled]="ocupado">DENEGAR RENOVACIÓN</button>
+            }
+            @if (p.estado === 'vigente' || p.estado === 'vencido') {
+              <button class="primary" (click)="devolver(p.id!)" [disabled]="ocupado">REGISTRAR DEVOLUCIÓN</button>
+            }
+          </div>
+        </article>
+      } @empty { <p>No hay préstamos.</p> }
+    </section>
+  </main>
+</div>

@@ -3,3 +3,10 @@
 /backend-booktrack/media/
 __pycache__/
 *.py[cod]
+
+.env
+**/.env
+*.sqlite3
+*.sqlite3-journal
+*.sqlite3-wal
+*.sqlite3-shm

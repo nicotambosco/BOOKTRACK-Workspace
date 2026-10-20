@@ -1,0 +1,2 @@
+# SQLite development and tests; MySQL requires requirements.txt.
+-r requirements-base.txt
