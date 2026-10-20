@@ -112,8 +112,8 @@ export const routes: Routes = [
   { path: 'modal-success', component: ModalSuccess },
   { path: 'modal-error', component: ModalError },
   { path: 'book-search', component: BookSearch },
-  { path: 'loan-extension', component: LoanExtension },
-  { path: 'user-history', component: UserHistory },
-  { path: 'loan-archive', component: LoanArchive },
+  { path: 'loan-extension', component: LoanExtension, canActivate: [authGuard] },
+  { path: 'user-history', component: UserHistory, canActivate: [authGuard] },
+  { path: 'loan-archive', component: LoanArchive, canActivate: [authGuard], data: { roles: ['bibliotecario'] } },
   { path: '**', redirectTo: '' }
 ];

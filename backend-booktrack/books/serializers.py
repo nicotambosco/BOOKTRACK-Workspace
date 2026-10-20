@@ -15,5 +15,5 @@ class BookSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'titulo', 'autor', 'editorial', 'fechaPublicacion',
             'descripcion', 'imagen', 'nroCodigo', 'nroInventario',
-            'categoria', 'anio', 'disponibles', 'tipo',
+            'categoria', 'anio', 'disponibles', 'tipo', 'estado',
         ]

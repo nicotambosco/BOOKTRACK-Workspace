@@ -1,7 +1,10 @@
+from django.db.models.deletion import ProtectedError
+from rest_framework.exceptions import ValidationError
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import User
+from loans.permissions import IsLibrarian
 from .serializers import UserSerializer, RegisterSerializer, LoginSerializer
 
 
@@ -33,13 +36,24 @@ class ProfileView(generics.RetrieveUpdateAPIView):
 class UserListView(generics.ListAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsLibrarian]
 
 
 class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        if self.request.user.categoria == 'bibliotecario':
+            return User.objects.all()
+        return User.objects.filter(pk=self.request.user.pk)
+
+    def perform_destroy(self, instance):
+        try:
+            instance.delete()
+        except ProtectedError:
+            raise ValidationError('El registro tiene historial de reservas o préstamos y no se puede eliminar.')
 
     def update(self, request, *args, **kwargs):
         # Permitir actualizar solo ciertos campos

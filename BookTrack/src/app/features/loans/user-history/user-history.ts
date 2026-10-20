@@ -6,6 +6,8 @@ import { LoanService } from '../../../core/services/loan.service';
 import { UserService } from '../../../core/services/user.service';
 import { BookService } from '../../../core/services/book.service';
 import { Loan } from '../../../models/loan.model';
+import { ReservationService } from '../../../core/services/reservation.service';
+import { Reservation } from '../../../models/reservation.model';
 import { User } from '../../../models/user.model';
 
 @Component({
@@ -59,6 +61,18 @@ import { User } from '../../../models/user.model';
           </div>
         </div>
 
+        <section class="historial-card">
+          <h3>Mis reservas</h3>
+          @if (mensajeReserva) { <p role="status">{{ mensajeReserva }}</p> }
+          @for (r of reservas; track r.id) {
+            <div>
+              <strong>{{ r.libroTitulo }}</strong> · {{ r.estado }}
+              <p>Retirar hasta {{ r.fechaVencimiento }} · Devolver hasta {{ r.fechaDevolucionPrevista || 'fecha no registrada' }}</p>
+              @if (r.prestamoId) { <p>Préstamo #{{ r.prestamoId }}</p> }
+              @if (r.estado === 'activa') { <button class="btn-outline" (click)="cancelarReserva(r.id)" [disabled]="cancelando">CANCELAR RESERVA</button> }
+            </div>
+          } @empty { <p>No tenés reservas registradas.</p> }
+        </section>
         <div class="historial-card">
           @if (prestamos.length === 0) {
             <p class="vacio">No hay préstamos registrados.</p>
@@ -67,7 +81,7 @@ import { User } from '../../../models/user.model';
               <div class="tabla-header">
                 <span>Libro</span>
                 <span>Inicio</span>
-                <span>Vencimiento</span>
+                <span>Vencimiento / devolución</span>
                 <span>Estado</span>
                 <span></span>
               </div>
@@ -75,10 +89,10 @@ import { User } from '../../../models/user.model';
                 <div class="tabla-row">
                   <span class="libro-id">{{ tituloLibro(p.libroId) }}</span>
                   <span>{{ p.fechaInicio }}</span>
-                  <span>{{ p.fechaFin || '-' }}</span>
+                  <span>{{ p.fechaVencimiento || '-' }}<br />Devuelto: {{ p.fechaDevolucion || '-' }}</span>
                   <span class="badge" [class]="esVencido(p) ? 'vencido' : p.estado">{{ esVencido(p) ? 'Vencido' : label(p.estado) }}</span>
                   <span>
-                    @if (p.estado === 'aprobado') {
+                    @if (p.estado === 'vigente') {
                       <button class="btn-ext" (click)="router.navigate(['/loan-extension'])">Extender</button>
                     }
                   </span>
@@ -135,10 +149,8 @@ import { User } from '../../../models/user.model';
     .tabla-row { display:grid; grid-template-columns:2fr 1fr 1fr 1fr 1fr; align-items:center; background:#101010; border:1px solid #232323; padding:0.7rem 1rem; border-radius:8px; font-size:0.8rem; color:#e8e8e8; }
     .libro-id { font-weight:bold; }
     .badge { padding:0.25rem 0.6rem; border-radius:20px; font-size:0.7rem; text-align:center; width:fit-content; }
-    .badge.aprobado { background:#16301f; color:#4ade80; }
-    .badge.pendiente { background:#332a12; color:#facc15; }
+    .badge.vigente { background:#16301f; color:#4ade80; }
     .badge.devuelto  { background:#12293a; color:#60a5fa; }
-    .badge.denegado  { background:#331616; color:#f87171; }
     .badge.vencido   { background:#3a1414; color:#f87171; font-weight:600; }
     .btn-ext { font-size:0.7rem; background:transparent; border:1px solid #2ecc71; color:#2ecc71; padding:0.25rem 0.6rem; border-radius:20px; cursor:pointer; }
     .btn-ext:hover { background:rgba(46,204,113,0.1); }
@@ -151,20 +163,18 @@ import { User } from '../../../models/user.model';
 export class UserHistory implements OnInit {
   usuario: User | null = null;
   prestamos: Loan[] = [];
-  get vencidos() {
-    const hoy = new Date().toISOString().slice(0, 10);
-    return this.prestamos.filter(p => p.estado === 'aprobado' && !!p.fechaFin && p.fechaFin < hoy).length;
-  }
-  get activos() {
-    const hoy = new Date().toISOString().slice(0, 10);
-    return this.prestamos.filter(p => p.estado === 'aprobado' && (!p.fechaFin || p.fechaFin >= hoy)).length;
-  }
+  reservas: Reservation[] = [];
+  mensajeReserva = '';
+  cancelando = false;
+  get vencidos() { return this.prestamos.filter(p => p.estado === 'vencido').length; }
+  get activos() { return this.prestamos.filter(p => p.estado === 'vigente').length; }
 
   private titulosPorLibro = new Map<number, string>();
 
-  constructor(public router: Router, private loanService: LoanService, private userService: UserService, private bookService: BookService) {}
+  constructor(public router: Router, private loanService: LoanService, private userService: UserService, private reservationService: ReservationService, private bookService: BookService) {}
 
   ngOnInit() {
+    this.reservationService.getAll().subscribe({ next: r => this.reservas = r, error: () => this.mensajeReserva = 'No se pudieron cargar tus reservas.' });
     this.userService.getProfile().subscribe(u => this.usuario = u);
     this.loanService.getHistory().subscribe(l => this.prestamos = l);
     this.bookService.getAll().subscribe(libros => {
@@ -176,10 +186,18 @@ export class UserHistory implements OnInit {
     return this.titulosPorLibro.get(libroId) ?? `Libro #${libroId}`;
   }
 
-  label(e: string) { return ({ pendiente:'Pendiente', aprobado:'Activo', devuelto:'Devuelto', denegado:'Denegado' } as any)[e] ?? e; }
+  label(e: string) { return ({ vigente:'Vigente', vencido:'Vencido', devuelto:'Devuelto' } as any)[e] ?? e; }
+
+  cancelarReserva(id: number) {
+    if (this.cancelando) return;
+    this.cancelando = true;
+    this.reservationService.cancel(id).subscribe({
+      next: r => { this.reservas = this.reservas.map(item => item.id === id ? r : item); this.cancelando = false; this.mensajeReserva = 'Reserva cancelada.'; },
+      error: () => { this.cancelando = false; this.mensajeReserva = 'No se pudo cancelar. Actualizá la página para revisar el estado.'; }
+    });
+  }
 
   esVencido(p: Loan) {
-    const hoy = new Date().toISOString().slice(0, 10);
-    return p.estado === 'aprobado' && !!p.fechaFin && p.fechaFin < hoy;
+    return p.estado === 'vencido';
   }
 }

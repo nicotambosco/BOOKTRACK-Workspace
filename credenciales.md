@@ -1,12 +1,5 @@
-## USUARIOS
-# Admin
-user: 12473
-password:Campana1
+# Cuentas locales de demostración
 
-# Alumno
-user: 13885
-password: utnfrd
+Las cuentas se crean con `backend-booktrack/create_admin.py`: bibliotecario `12473` y usuario `13885`. Configurá sus contraseñas en `ADMIN_PASSWORD` y `STUDENT_PASSWORD` antes de crearlas. No hay una contraseña compartida incorporada al script ni se modifican cuentas existentes.
 
-
-# Actualizar proyecto
-git pull y python manage.py migrate
+Ver [instalación](README.md) y [operación](docs/OPERACION.md). No subir claves reales a Git.

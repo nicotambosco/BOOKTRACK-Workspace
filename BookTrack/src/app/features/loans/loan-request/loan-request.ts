@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Header } from '../../../shared/components/header/header';
 import { BookService } from '../../../core/services/book.service';
-import { LoanService } from '../../../core/services/loan.service';
+import { ReservationService } from '../../../core/services/reservation.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { Book } from '../../../models/book.model';
 
@@ -24,8 +24,8 @@ import { Book } from '../../../models/book.model';
             </svg>
           </div>
           <div>
-            <h2 class="section-title">Solicitud de Préstamo</h2>
-            <p class="section-subtitle">Indicá el plazo que necesitás para este libro.</p>
+            <h2 class="section-title">Reserva de libro</h2>
+            <p class="section-subtitle">Indicá hasta cuándo podés retirarlo y cuándo lo devolverías.</p>
           </div>
         </div>
 
@@ -45,17 +45,17 @@ import { Book } from '../../../models/book.model';
           <div class="form-area">
             <div class="campo-fila">
               <div class="campo">
-                <label>DESDE</label>
-                <input type="date" [(ngModel)]="desde" [min]="hoy"/>
+                <label for="retiro">RETIRAR HASTA</label>
+                <input id="retiro" type="date" [(ngModel)]="desde" [min]="hoy"/>
               </div>
               <div class="campo">
-                <label>HASTA</label>
-                <input type="date" [(ngModel)]="hasta" [min]="desde || hoy"/>
+                <label for="devolucion">DEVOLVER HASTA</label>
+                <input id="devolucion" type="date" [(ngModel)]="hasta" [min]="desde || hoy"/>
               </div>
             </div>
             @if (error) { <p class="error-msg">{{ error }}</p> }
             <div class="botones">
-              <button class="btn-primary" (click)="enviar()" [disabled]="!desde || !hasta">ENVIAR SOLICITUD</button>
+              <button class="btn-primary" (click)="enviar()" [disabled]="!desde || !hasta || enviando">CREAR RESERVA</button>
               <button class="btn-outline" (click)="volver()">VOLVER</button>
             </div>
           </div>
@@ -64,7 +64,7 @@ import { Book } from '../../../models/book.model';
       @if (exito) {
         <div class="modal-overlay">
           <div class="modal">
-            <p>¡Solicitud enviada correctamente!</p>
+            <p>¡Reserva activa! El préstamo se registrará cuando retires el libro.</p>
             <button class="btn-primary" (click)="continuar()">CONTINUAR</button>
           </div>
         </div>
@@ -117,11 +117,12 @@ import { Book } from '../../../models/book.model';
 })
 export class LoanRequest implements OnInit {
   desde = ''; hasta = ''; exito = false; error = ''; bookId = 0;
-  hoy = new Date().toISOString().slice(0, 10);
+  hoy = new Date().toLocaleDateString('en-CA');
+  enviando = false;
   libro: Book | null = null;
 
   constructor(private route: ActivatedRoute, private router: Router,
-    private bookService: BookService, private loanService: LoanService, private authService: AuthService) {}
+    private bookService: BookService, private reservationService: ReservationService, private authService: AuthService) {}
 
   ngOnInit() {
     this.bookId = Number(this.route.snapshot.paramMap.get('bookId'));
@@ -132,13 +133,15 @@ export class LoanRequest implements OnInit {
   }
 
   enviar() {
-    if (!this.desde || !this.hasta) return;
-    this.loanService.request(this.bookId, this.desde, this.hasta).subscribe({
-      next: () => this.exito = true,
-      error: () => this.error = 'No se pudo enviar la solicitud. Intentá de nuevo.'
+    if (!this.desde || !this.hasta || this.enviando) return;
+    if (this.desde < this.hoy || this.hasta < this.desde) { this.error = 'Revisá las fechas de retiro y devolución.'; return; }
+    this.enviando = true;
+    this.reservationService.request(this.bookId, this.desde, this.hasta).subscribe({
+      next: () => { this.exito = true; this.enviando = false; },
+      error: () => { this.enviando = false; this.error = 'No se pudo crear la reserva. Revisá las fechas o si ya tenés una reserva activa.'; }
     });
   }
 
-  continuar() { this.router.navigate(['/home']); }
+  continuar() { this.router.navigate(['/user-history']); }
   volver() { this.router.navigate(['/book', this.bookId]); }
 }

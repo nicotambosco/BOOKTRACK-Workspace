@@ -7,7 +7,7 @@ import { BookService } from '../../../core/services/book.service';
 
 interface NotifItem {
   id: string;
-  tipo: 'aprobado' | 'denegado' | 'porVencer' | 'vencido' | 'extensionAprobada' | 'extensionDenegada';
+  tipo: 'vigente' | 'porVencer' | 'vencido' | 'extensionAprobada' | 'extensionDenegada';
   libroId: number;
 }
 
@@ -73,8 +73,7 @@ function toISODate(d: Date): string {
                     <div class="notif-item" [class]="n.tipo">
                       <span class="notif-msg">
                         @switch (n.tipo) {
-                          @case ('aprobado') { Tu préstamo de "{{ tituloLibro(n.libroId) }}" fue <strong>aprobado</strong>. }
-                          @case ('denegado') { Tu préstamo de "{{ tituloLibro(n.libroId) }}" fue <strong>denegado</strong>. }
+                          @case ('vigente') { Tu préstamo de "{{ tituloLibro(n.libroId) }}" está <strong>vigente</strong>. }
                           @case ('porVencer') { Tu préstamo de "{{ tituloLibro(n.libroId) }}" <strong>vence pronto</strong>. }
                           @case ('vencido') { Tu préstamo de "{{ tituloLibro(n.libroId) }}" está <strong>vencido</strong>. }
                           @case ('extensionAprobada') { Tu solicitud de extensión de "{{ tituloLibro(n.libroId) }}" fue <strong>aprobada</strong>. }
@@ -157,7 +156,7 @@ function toISODate(d: Date): string {
     .notif-vacio { margin: 0; color: #8a8a8a; font-size: 0.8rem; font-style: italic; }
     .notif-item { padding: 0.6rem 0.7rem; border-radius: 8px; background: #101010; margin-bottom: 0.5rem; }
     .notif-item:last-child { margin-bottom: 0; }
-    .notif-item.aprobado { border-left: 3px solid #2ecc71; }
+    .notif-item.vigente { border-left: 3px solid #2ecc71; }
     .notif-item.denegado { border-left: 3px solid #e74c3c; }
     .notif-item.porVencer { border-left: 3px solid #e8a020; }
     .notif-item.vencido { border-left: 3px solid #e74c3c; background: rgba(231,76,60,0.08); }
@@ -193,19 +192,20 @@ export class Header implements OnInit {
           const hoy = toISODate(new Date());
           this.notificaciones = loans.flatMap((l): NotifItem[] => {
             const items: NotifItem[] = [];
-            if (l.estado === 'aprobado' || l.estado === 'denegado') {
+            if (l.estado === 'vigente') {
               items.push({ id: `${l.id}-${l.estado}`, tipo: l.estado, libroId: l.libroId });
             }
-            if (l.estado === 'aprobado' && l.fechaFin) {
-              if (l.fechaFin < hoy) {
+            if (l.estado === 'vigente' && l.fechaVencimiento) {
+              if (l.fechaVencimiento < hoy) {
                 items.push({ id: `${l.id}-vencido`, tipo: 'vencido', libroId: l.libroId });
               } else {
-                const avisoDesde = toISODate(diaHabilAnterior(new Date(l.fechaFin + 'T00:00:00')));
+                const avisoDesde = toISODate(diaHabilAnterior(new Date(l.fechaVencimiento + 'T00:00:00')));
                 if (avisoDesde === hoy) {
                   items.push({ id: `${l.id}-porVencer`, tipo: 'porVencer', libroId: l.libroId });
                 }
               }
             }
+            if (l.estado === 'vencido') { items.push({ id: `${l.id}-vencido`, tipo: 'vencido', libroId: l.libroId }); }
             if (l.extensionEstado === 'aprobada') {
               items.push({ id: `${l.id}-extensionAprobada`, tipo: 'extensionAprobada', libroId: l.libroId });
             } else if (l.extensionEstado === 'denegada') {

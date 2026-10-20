@@ -56,6 +56,9 @@ import { CategoryService } from '../../../core/services/category.service';
               <div class="campo"><label>NRO DE INVENTARIO</label><input [(ngModel)]="libro.nroInventario" placeholder="ingrese numero"/></div>
               <div class="campo"><label>DISPONIBLES</label><input type="number" [(ngModel)]="libro.disponibles" placeholder="cantidad"/></div>
             </div>
+            <div class="campo"><label for="estadoLibro">ESTADO</label>
+              <select id="estadoLibro" [(ngModel)]="libro.estado"><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select>
+            </div>
             <div class="botones">
               <button class="btn-primary" (click)="guardar()">GUARDAR</button>
               <button class="btn-danger" (click)="eliminar()">ELIMINAR</button>
@@ -140,7 +143,7 @@ export class BookEdit implements OnInit {
   modal=false; modalMsg=''; categoriaSeleccionada='';
   categorias: string[] = [];
   bookId!: number;
-  libro = { titulo:'', autor:'', editorial:'', fechaPublicacion:'', descripcion:'', nroCodigo:'', nroInventario:'', imagen:'', disponibles:0 };
+  libro = { titulo:'', autor:'', editorial:'', fechaPublicacion:'', descripcion:'', nroCodigo:'', nroInventario:'', imagen:'', disponibles:0, estado: 'activo' as 'activo' | 'inactivo' };
 
   constructor(
     private router: Router,

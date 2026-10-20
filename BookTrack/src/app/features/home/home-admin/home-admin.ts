@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Header } from '../../../shared/components/header/header';
-import { LoanService } from '../../../core/services/loan.service';
+import { ReservationService } from '../../../core/services/reservation.service';
 import { BookService } from '../../../core/services/book.service';
 
 @Component({
@@ -33,7 +33,7 @@ import { BookService } from '../../../core/services/book.service';
           </div>
           <div class="stat-card">
             <span class="stat-num">{{ prestamosPendientes }}</span>
-            <span class="stat-label">Préstamos pendientes</span>
+            <span class="stat-label">Reservas activas</span>
           </div>
         </div>
 
@@ -103,10 +103,10 @@ export class HomeAdmin implements OnInit {
   librosTotal = 0;
   prestamosPendientes = 0;
 
-  constructor(public router: Router, private loanService: LoanService, private bookService: BookService) {}
+  constructor(public router: Router, private reservationService: ReservationService, private bookService: BookService) {}
 
   ngOnInit() {
     this.bookService.getAll().subscribe({ next: l => this.librosTotal = l.length, error: () => {} });
-    this.loanService.getPending().subscribe({ next: l => this.prestamosPendientes = l.length, error: () => {} });
+    this.reservationService.getAll('activa').subscribe({ next: l => this.prestamosPendientes = l.length, error: () => {} });
   }
 }

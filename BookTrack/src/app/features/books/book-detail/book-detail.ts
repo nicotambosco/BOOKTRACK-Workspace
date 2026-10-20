@@ -59,10 +59,11 @@ import { Book } from '../../../models/book.model';
                 <label>DESCRIPCIÓN</label>
                 <p class="descripcion-texto">{{ libro.descripcion || 'Sin descripción.' }}</p>
               </div>
+              <div class="disponibles">Estado: {{ libro.estado || 'activo' }}</div>
               <div class="disponibles">Disponibles: {{ libro.disponibles }}</div>
               <div class="botones">
-                <button class="btn-primary" (click)="solicitarPrestamo()" [disabled]="(libro.disponibles ?? 0) === 0">
-                  {{ (libro.disponibles ?? 0) > 0 ? 'SOLICITAR PRÉSTAMO' : 'SIN DISPONIBILIDAD' }}
+                <button class="btn-primary" (click)="solicitarPrestamo()" [disabled]="libro.estado === 'inactivo'">
+                  {{ libro.estado === 'inactivo' ? 'LIBRO INACTIVO' : 'RESERVAR LIBRO' }}
                 </button>
                 <button class="btn-outline" (click)="volver()">VOLVER</button>
               </div>

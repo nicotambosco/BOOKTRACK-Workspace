@@ -1,11 +1,15 @@
 export interface Loan {
   id?: number;
   estudianteId: number;
+  estudianteLegajo?: string;
+  estudianteNombre?: string;
   libroId: number;
+  libroTitulo?: string;
   tipoPrestamo: string;
   fechaInicio: string;
-  fechaFin: string;
-  estado: 'pendiente' | 'aprobado' | 'denegado' | 'devuelto';
+  fechaVencimiento: string | null;
+  fechaDevolucion: string | null;
+  estado: 'vigente' | 'vencido' | 'devuelto';
   plazoDeSolicitud?: string;
   extensionPendiente?: boolean;
   extensionEstado?: '' | 'aprobada' | 'denegada';

@@ -34,10 +34,9 @@ import { Loan } from '../../../models/loan.model';
             <div class="filtros">
               <select [(ngModel)]="filtroEstado" (change)="filtrar()">
                 <option value="">Todos los estados</option>
-                <option value="aprobado">Activos</option>
+                <option value="vigente">Vigentes</option>
                 <option value="devuelto">Devueltos</option>
-                <option value="denegado">Denegados</option>
-                <option value="pendiente">Pendientes</option>
+                <option value="vencido">Vencidos</option>
               </select>
               <button class="btn-outline btn-sm" (click)="exportPDF()">IMP. PDF</button>
               <button class="btn-outline btn-sm" (click)="exportExcel()">IMP. EXCEL</button>
@@ -53,6 +52,7 @@ import { Loan } from '../../../models/loan.model';
                 <th>TIPO</th>
                 <th>PERÍODO</th>
                 <th>ESTADO</th>
+                <th>DEVOLUCIÓN</th>
               </tr>
             </thead>
             <tbody>
@@ -62,12 +62,12 @@ import { Loan } from '../../../models/loan.model';
                   <td>{{ obtenerNombre(p) }}</td>
                   <td>{{ tituloLibro(p.libroId) }}</td>
                   <td>{{ p.tipoPrestamo }}</td>
-                  <td>{{ p.fechaInicio }} → {{ p.fechaFin || '-' }}</td>
-                  <td><span class="badge" [class]="p.estado">{{ label(p.estado) }}</span></td>
+                  <td>{{ p.fechaInicio }} → {{ p.fechaVencimiento || '-' }}</td>
+                  <td><span class="badge" [class]="p.estado">{{ label(p.estado) }}</span></td><td>{{ p.fechaDevolucion || '-' }}</td>
                 </tr>
               }
               @if (filtrados.length === 0) {
-                <tr><td colspan="6" class="vacio">Sin registros.</td></tr>
+                <tr><td colspan="7" class="vacio">Sin registros.</td></tr>
               }
             </tbody>
           </table>
@@ -121,10 +121,8 @@ import { Loan } from '../../../models/loan.model';
     td { padding:0.6rem 0.8rem; font-size:0.82rem; border-bottom:1px solid #232323; }
     tr:hover td { background:#1a1a1a; }
     .badge { padding:0.25rem 0.6rem; border-radius:20px; font-size:0.7rem; }
-    .badge.aprobado { background:#16301f; color:#4ade80; }
-    .badge.pendiente { background:#332a12; color:#facc15; }
+    .badge.vigente { background:#16301f; color:#4ade80; }
     .badge.devuelto  { background:#12293a; color:#60a5fa; }
-    .badge.denegado  { background:#331616; color:#f87171; }
     .vacio { text-align:center; color:#8a8a8a; font-style:italic; padding:1rem; }
     .bottom { display:flex; justify-content:space-between; align-items:center; padding-top:0.5rem; }
     .total { font-size:0.8rem; color:#9a9a9a; }
@@ -157,7 +155,7 @@ export class LoanArchive implements OnInit {
       : this.prestamos;
   }
 
-  label(e: string) { return ({ pendiente:'Pendiente', aprobado:'Activo', devuelto:'Devuelto', denegado:'Denegado' } as any)[e] ?? e; }
+  label(e: string) { return ({ vigente:'Vigente', vencido:'Vencido', devuelto:'Devuelto' } as any)[e] ?? e; }
 
   obtenerlLegajo(p: any): string {
     return p.estudianteLegajo || '-';
@@ -167,86 +165,21 @@ export class LoanArchive implements OnInit {
     return p.estudianteNombre || `Usuario #${p.estudianteId}`;
   }
 
-  exportPDF() {
-    let html = `
-      <html>
-      <head>
-        <style>
-          body { font-family: Arial, sans-serif; margin: 20px; }
-          h1 { text-align: center; }
-          .info { margin-bottom: 20px; font-size: 12px; }
-          table { width: 100%; border-collapse: collapse; }
-          th, td { border: 1px solid #000; padding: 8px; text-align: left; }
-          th { background-color: #f0f0f0; font-weight: bold; }
-          tr:nth-child(even) { background-color: #f9f9f9; }
-        </style>
-      </head>
-      <body>
-        <h1>Historial de Préstamos</h1>
-        <div class="info">
-          <p><strong>Filtro:</strong> ${this.filtroEstado || 'Todos'}</p>
-          <p><strong>Fecha:</strong> ${new Date().toLocaleDateString()}</p>
-          <p><strong>Total de registros:</strong> ${this.filtrados.length}</p>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Legajo</th>
-              <th>Estudiante</th>
-              <th>Libro</th>
-              <th>Tipo</th>
-              <th>Estado</th>
-              <th>Período</th>
-            </tr>
-          </thead>
-          <tbody>
-    `;
+  exportPDF() { this.descargar('pdf'); }
+  exportExcel() { this.descargar('xlsx'); }
 
-    this.filtrados.forEach(p => {
-      const legajo = (p as any).estudianteLegajo || '-';
-      const nombre = (p as any).estudianteNombre || 'Usuario #' + p.estudianteId;
-      const libro = this.tituloLibro(p.libroId);
-      const periodo = `${p.fechaInicio} → ${p.fechaFin || '-'}`;
-      html += `
-        <tr>
-          <td>${legajo}</td>
-          <td>${nombre}</td>
-          <td>${libro}</td>
-          <td>${p.tipoPrestamo}</td>
-          <td>${this.label(p.estado)}</td>
-          <td>${periodo}</td>
-        </tr>
-      `;
+  private descargar(tipo: 'pdf' | 'xlsx') {
+    const request = tipo === 'pdf' ? this.loanService.exportPDF(this.filtroEstado) : this.loanService.exportExcel(this.filtroEstado);
+    request.subscribe({
+      next: blob => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `historial-prestamos.${tipo}`;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+      },
+      error: () => alert('No se pudo exportar el historial.')
     });
-
-    html += `
-          </tbody>
-        </table>
-        <script>window.print();</script>
-      </body>
-      </html>
-    `;
-
-    const ventana = window.open('', '', 'height=600,width=900');
-    ventana?.document.write(html);
-    ventana?.document.close();
-  }
-
-  exportExcel() {
-    let csv = 'Legajo,Estudiante,Libro,Tipo,Estado,Fecha Inicio,Fecha Fin\n';
-    this.filtrados.forEach(p => {
-      const legajo = (p as any).estudianteLegajo || '-';
-      const nombre = (p as any).estudianteNombre || 'Usuario #' + p.estudianteId;
-      const libro = this.tituloLibro(p.libroId);
-      csv += `"${legajo}","${nombre}","${libro}","${p.tipoPrestamo}","${this.label(p.estado)}","${p.fechaInicio}","${p.fechaFin || ''}"\n`;
-    });
-
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `historiales_prestamos_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-    window.URL.revokeObjectURL(url);
   }
 }

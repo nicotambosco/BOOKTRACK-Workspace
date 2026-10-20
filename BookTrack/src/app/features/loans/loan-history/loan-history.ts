@@ -35,7 +35,7 @@ import { BookService } from '../../../core/services/book.service';
                 <th>CÓDIGO DE LIBRO</th>
                 <th>TIPO DE PRÉSTAMO</th>
                 <th>ID</th>
-                <th>PERÍODO DE PRÉSTAMO</th>
+                <th>PERÍODO DE PRÉSTAMO</th><th>ESTADO</th><th>DEVOLUCIÓN</th>
               </tr>
             </thead>
             <tbody>
@@ -45,7 +45,7 @@ import { BookService } from '../../../core/services/book.service';
                   <td>{{ r.codigo }}</td>
                   <td>{{ r.tipo }}</td>
                   <td>{{ r.id }}</td>
-                  <td>{{ r.periodo }}</td>
+                  <td>{{ r.periodo }}</td><td>{{ r.estado }}</td><td>{{ r.devolucion }}</td>
                 </tr>
               }
             </tbody>
@@ -97,10 +97,12 @@ export class LoanHistory implements OnInit {
     this.loanService.getAll().subscribe(prestamos => {
       this.historial = prestamos.map(p => ({
         id: p.id,
-        estudiante: `Usuario #${p.estudianteId}`,
-        codigo: this.titulosPorLibro.get(p.libroId) || `Libro #${p.libroId}`,
+        estudiante: p.estudianteNombre || `Usuario #${p.estudianteId}`,
+        codigo: p.libroTitulo || this.titulosPorLibro.get(p.libroId) || `Libro #${p.libroId}`,
         tipo: p.tipoPrestamo,
-        periodo: `${p.fechaInicio} → ${p.fechaFin || '-'}`
+        estado: p.estado,
+        devolucion: p.fechaDevolucion || '-',
+        periodo: `${p.fechaInicio} → ${p.fechaVencimiento || '-'}`
       }));
     });
   }

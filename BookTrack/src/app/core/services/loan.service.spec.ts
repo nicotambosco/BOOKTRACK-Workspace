@@ -2,19 +2,24 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, of } from 'rxjs';
 import { LoanService } from './loan.service';
 
-describe('LoanService', () => {
-  it('sends the selected loan dates', async () => {
-    const post = vi.fn().mockReturnValue(of({ id: 1 }));
-    const service = new LoanService({ post } as unknown as HttpClient);
+describe('LoanService lifecycle actions', () => {
+  it('records returns and extensions through actions, without sending a writable state', async () => {
+    const patch = vi.fn().mockReturnValue(of({ id: 5, estado: 'devuelto' }));
+    const service = new LoanService({ patch } as unknown as HttpClient);
+    await firstValueFrom(service.return_(5));
+    await firstValueFrom(service.requestExtension(5));
+    expect(patch.mock.calls).toEqual([
+      ['http://127.0.0.1:8000/api/loans/5/devolver/', {}],
+      ['http://127.0.0.1:8000/api/loans/5/solicitar-extension/', {}],
+    ]);
+  });
 
-    await firstValueFrom(service.request(7, '2026-09-25', '2026-10-02'));
-
-    expect(post).toHaveBeenCalledWith('http://127.0.0.1:8000/api/loans/', {
-      libroId: 7,
-      plazoDeSolicitud: '2026-09-25 a 2026-10-02',
-      tipoPrestamo: 'normal',
-      fechaInicio: '2026-09-25',
-      fechaFin: '2026-10-02',
+  it('exports the selected state from the API', async () => {
+    const get = vi.fn().mockReturnValue(of(new Blob()));
+    const service = new LoanService({ get } as unknown as HttpClient);
+    await firstValueFrom(service.exportExcel('vencido'));
+    expect(get).toHaveBeenCalledWith('http://127.0.0.1:8000/api/loans/export/excel/', {
+      responseType: 'blob', params: { estado: 'vencido' },
     });
   });
 });

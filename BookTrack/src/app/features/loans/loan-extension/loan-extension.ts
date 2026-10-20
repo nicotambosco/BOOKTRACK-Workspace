@@ -33,7 +33,7 @@ import { Loan } from '../../../models/loan.model';
               <div class="prestamo-row" [class.seleccionado]="seleccionado === p.id" (click)="seleccionar(p.id!)">
                 <div class="info">
                   <span class="libro">{{ tituloLibro(p.libroId) }}</span>
-                  <span class="fechas">Vence: {{ p.fechaFin || 'Sin fecha' }}</span>
+                  <span class="fechas">Vence: {{ p.fechaVencimiento || 'Sin fecha' }}</span>
                 </div>
                 @if (p.extensionPendiente) {
                   <span class="estado pendiente">extensión pendiente</span>
@@ -84,7 +84,7 @@ import { Loan } from '../../../models/loan.model';
     .libro { font-weight:bold; font-size:0.88rem; color:#e8e8e8; }
     .fechas { font-size:0.75rem; color:#9a9a9a; }
     .estado { font-size:0.72rem; padding:0.25rem 0.7rem; border-radius:20px; background:#232323; color:#9a9a9a; }
-    .estado.aprobado { background:#16301f; color:#4ade80; }
+    .estado.vigente { background:#16301f; color:#4ade80; }
     .estado.pendiente { background:#332a12; color:#facc15; }
     .vacio { text-align:center; color:#8a8a8a; font-style:italic; padding:1rem; }
     .bottom { display:flex; gap:1rem; justify-content:flex-end; padding-top:0.5rem; }
@@ -113,7 +113,7 @@ export class LoanExtension implements OnInit {
 
   ngOnInit() {
     this.loanService.getAll().subscribe(loans => {
-      this.prestamos = loans.filter(l => l.estado === 'aprobado');
+      this.prestamos = loans.filter(l => l.estado === 'vigente');
     });
     this.bookService.getAll().subscribe(libros => {
       libros.forEach(l => { if (l.id) this.titulosPorLibro.set(l.id, l.titulo); });

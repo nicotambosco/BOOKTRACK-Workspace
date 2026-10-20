@@ -1,0 +1,13 @@
+.home-page { min-height: 100vh; background: #0d0d0d; color: #e8e8e8; }
+.page-body { padding: 1.5rem 2rem; max-width: 1100px; margin: auto; }
+h1, h2 { font-family: Georgia, serif; }
+p { color: #b8b8b8; line-height: 1.5; }
+section { margin-top: 1.5rem; background: #161616; padding: 1.5rem; border-radius: 12px; }
+article { background: #101010; border: 1px solid #2a2a2a; border-radius: 8px; margin-top: .8rem; padding: 1rem; }
+article p { margin: .4rem 0; font-size: .85rem; }
+.acciones { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; margin-top: .8rem; }
+input { width: 5rem; padding: .5rem; background: #161616; color: white; border: 1px solid #555; border-radius: 6px; }
+button { padding: .55rem 1rem; border-radius: 20px; border: 1px solid #666; color: #eee; background: transparent; cursor: pointer; }
+.primary { background: #2ecc71; color: #0a0a0a; border-color: #2ecc71; font-weight: bold; }
+button:disabled { opacity: .5; cursor: wait; }
+.mensaje { background: #16301f; border: 1px solid #2ecc71; border-radius: 8px; padding: 1rem; color: #eee; }
