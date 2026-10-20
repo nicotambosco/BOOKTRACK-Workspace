@@ -11,7 +11,7 @@ import { BookService } from '../../../core/services/book.service';
   imports: [CommonModule, FormsModule, Header],
   template: `
     <div class="home-page">
-      <app-header [esAdmin]="true"></app-header>
+      <app-header [esAdmin]="true" [mostrarComentarios]="false"></app-header>
       <div class="page-body" #pageBody (scroll)="guardarScroll()">
         <div class="content-header">
           <div class="title-icon">
