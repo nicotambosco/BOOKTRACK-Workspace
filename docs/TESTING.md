@@ -54,3 +54,9 @@ La compilación de producción selecciona `environment.prod.ts`, con API relativ
 - Construcción de contenedores; en un push a `master` publica imágenes en GHCR con etiquetas `latest` y el SHA.
 
 La validación de Docker Compose puede hacerse sin iniciar contenedores con `docker compose --env-file .env.example config --quiet`. Construir/ejecutar contenedores y validar los bloqueos MySQL requiere acceso al servicio Docker o una instancia MySQL disponible.
+
+## Copias cifradas y publicación de datos
+
+`backups/tests.py` prueba exportación completa, cifrado, preservación de IDs/contraseñas/relaciones, archivos cargados, claves incorrectas, archivos alterados, esquemas incompatibles y rollback ante fallos de carga o de archivos. Se ejecuta tanto en SQLite como en el job MySQL de CI.
+
+`backups/test_publish.py` comprueba que el publicador agrega únicamente el archivo cifrado, se detiene ante cambios de código o una rama remota adelantada y conserva el commit local cuando el push falla. Ninguna prueba publica datos reales ni configura una clave del operador.

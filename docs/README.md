@@ -9,6 +9,7 @@ El [README principal](../README.md) contiene el procedimiento reproducible para 
 | [MODELO_DATOS](MODELO_DATOS.md) | Tablas reales, estados, prioridad y correspondencia conceptual |
 | [API](API.md) | Contratos JSON, acciones y permisos |
 | [OPERACION](OPERACION.md) | Migración existente, respaldos, cuentas y diagnóstico |
+| [DATOS_EN_GITHUB](DATOS_EN_GITHUB.md) | Copia completa cifrada, publicación y restauración en otra PC |
 | [TESTING](TESTING.md) | Pruebas automáticas, comprobación manual y CI |
 | [PDF de diagramas](diagramas/BookTrack_diagramas_A4_corregidos.pdf) | Diseño conceptual corregido para impresión A4 |
 

@@ -10,3 +10,10 @@ __pycache__/
 *.sqlite3-journal
 *.sqlite3-wal
 *.sqlite3-shm
+
+/data/recovery/
+/data/*.json
+/data/*.sql
+/data/*.zip
+/data/.booktrack-*
+**/.booktrack-restore-*/

@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'loans',
     'categories',
     'comments',
+    'backups',
 ]
 
 MIDDLEWARE = [

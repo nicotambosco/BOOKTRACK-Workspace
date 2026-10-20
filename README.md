@@ -118,6 +118,16 @@ npm run build
 
 Las pruebas de concurrencia necesitan MySQL y se omiten con SQLite. [TESTING.md](docs/TESTING.md) explica las comprobaciones, la migración de prueba y el alcance de cada entorno.
 
+## Publicar también los datos
+
+En la PC que tiene la base, configurá `BOOKTRACK_BACKUP_PASSWORD` en el `.env` local y ejecutá desde la raíz:
+
+```bash
+python tools/publicar_datos.py
+```
+
+Con Compose: `python tools/publicar_datos.py --docker`. El comando genera una copia cifrada de todos los registros y archivos cargados, la commitea y hace push. Un `git push` normal no consulta la base. [Configuración, restauración y alcance](docs/DATOS_EN_GITHUB.md).
+
 ## Documentación
 
 - [Índice y decisiones del proyecto](docs/README.md).
@@ -127,6 +137,7 @@ Las pruebas de concurrencia necesitan MySQL y se omiten con SQLite. [TESTING.md]
 - [API y permisos](docs/API.md).
 - [Actualización, respaldos y problemas frecuentes](docs/OPERACION.md).
 - [Pruebas y CI](docs/TESTING.md).
+- [Incluir y restaurar datos desde GitHub](docs/DATOS_EN_GITHUB.md).
 - [Diagramas corregidos en PDF](docs/diagramas/BookTrack_diagramas_A4_corregidos.pdf).
 
 La recuperación de contraseña de la interfaz es una simulación. Los avisos se calculan en el navegador; no hay servicio de correo ni notificaciones persistentes. El modelo conceptual del PDF incluye entidades que todavía no existen como tablas separadas; consultá la correspondencia en [MODELO_DATOS.md](docs/MODELO_DATOS.md).

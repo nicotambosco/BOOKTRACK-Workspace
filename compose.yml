@@ -18,6 +18,8 @@ services:
     build: ./backend-booktrack
     environment:
       SECRET_KEY: ${SECRET_KEY:?Configurá SECRET_KEY en .env}
+      BOOKTRACK_BACKUP_PASSWORD: ${BOOKTRACK_BACKUP_PASSWORD:-}
+      BOOKTRACK_DATA_SNAPSHOT: /app/data/booktrack.btbak
       DEBUG: "True"
       ALLOWED_HOSTS: localhost,127.0.0.1,backend
       DB_ENGINE: mysql
@@ -32,6 +34,7 @@ services:
       - "127.0.0.1:8000:8000"
     volumes:
       - ./backend-booktrack/media:/app/media
+      - ./data:/app/data
     depends_on:
       db:
         condition: service_healthy

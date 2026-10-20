@@ -38,7 +38,7 @@ Con la aplicación detenida, copiá `backend-booktrack/db.local.sqlite3`. Si con
 - `backend-booktrack/.env`: variables del backend local.
 - `create_admin.py`: crea `12473` como bibliotecario/superusuario y `13885` como usuario cuando faltan. Requiere contraseñas configuradas para las cuentas nuevas; no restablece las existentes.
 - `python manage.py createsuperuser`: crea una cuenta administrativa de Django. Para usar también las pantallas de bibliotecario, asigná `categoria=bibliotecario` desde Django Admin.
-- Las claves `.env`, archivos SQLite, media y respaldos no se versionan. Si actualizás desde una versión que incluía `.env` en Git, preservá primero tu configuración local.
+- Las claves `.env`, archivos SQLite y respaldos sin cifrar no se versionan. El publicador puede incluir una copia cifrada de los datos y media, como explica [DATOS_EN_GITHUB](DATOS_EN_GITHUB.md). Si actualizás desde una versión que incluía `.env` en Git, preservá primero tu configuración local.
 
 ## Vencimientos
 
@@ -66,3 +66,7 @@ En Compose: `docker compose exec backend python manage.py actualizar_estados`. E
 | Libro/usuario no se puede borrar | Tiene historial protegido; para libros, inactivar |
 
 El listado completo del catálogo y el historial no tienen paginación. Si crecen mucho, será necesario agregar paginación en ambos lados del contrato.
+
+## Copia de datos en el repositorio
+
+Para que otra PC reciba también los datos, ejecutá el publicador cifrado desde la PC que tiene la base real. Seguí [DATOS_EN_GITHUB](DATOS_EN_GITHUB.md): incluye usuarios, permisos, relaciones y archivos cargados, sin publicar las claves de configuración.
