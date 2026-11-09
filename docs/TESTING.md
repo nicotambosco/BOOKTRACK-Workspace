@@ -53,7 +53,7 @@ La compilación de producción selecciona `environment.prod.ts`, con API relativ
 - Frontend con Node.js 24: `npm ci`, pruebas y compilación.
 - Construcción de contenedores; en un push a `master` publica imágenes en GHCR con etiquetas `latest` y el SHA.
 
-La validación de Docker Compose puede hacerse sin iniciar contenedores con `docker compose --env-file .env.example config --quiet`. Construir/ejecutar contenedores y validar los bloqueos MySQL requiere acceso al servicio Docker o una instancia MySQL disponible.
+La validación de Docker Compose puede hacerse sin iniciar contenedores con `docker compose config --quiet`. Construir/ejecutar contenedores y validar los bloqueos MySQL requiere acceso al servicio Docker o una instancia MySQL disponible.
 
 ## Copias cifradas y publicación de datos
 

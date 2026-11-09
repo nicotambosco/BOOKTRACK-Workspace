@@ -5,7 +5,7 @@
 1. Coordiná una ventana sin retiros, devoluciones ni modificaciones. Guardá el commit actualmente instalado con `git rev-parse HEAD` y una copia de tus archivos `.env`.
 2. Detené frontend y backend. Conservá MySQL activo para generar el respaldo.
 3. Creá un dump consistente de `booktrack_db` y verificá que puede restaurarse en una base de prueba.
-4. Actualizá el código con `git pull --ff-only`. Revisá las variables nuevas del `.env.example`, sin sobrescribir tus claves.
+4. Actualizá el código con `git pull --ff-only`. Revisá en el README las variables nuevas del `.env`, sin sobrescribir tus claves.
 5. En Compose, completá el `.env` de la raíz y ejecutá `docker compose up --build -d`. El backend aplica migraciones antes de atender solicitudes.
 6. En instalación local, instalá los requirements y ejecutá `python manage.py migrate` antes de iniciar la nueva API y el frontend.
 7. Comprobá reservas históricas, préstamos, fechas y stock antes de habilitar nuevamente la operación.

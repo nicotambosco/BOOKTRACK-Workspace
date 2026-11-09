@@ -11,10 +11,9 @@ Requisitos: Git, Docker Engine/Desktop y Docker Compose v2, con el servicio Dock
 ```bash
 git clone https://github.com/nicotambosco/BOOKTRACK-Workspace.git
 cd BOOKTRACK-Workspace
-cp .env.example .env
 ```
 
-En PowerShell, usá `Copy-Item .env.example .env`. Editá `.env`: elegí contraseñas propias para `MYSQL_ROOT_PASSWORD`, `ADMIN_PASSWORD` y `STUDENT_PASSWORD`, y una `SECRET_KEY` aleatoria. Podés generar la clave con `python -c "import secrets; print(secrets.token_urlsafe(50))"`.
+Creá un archivo `.env` en la raíz (Docker Compose lo lee automáticamente; no se sube a Git) con estas variables: `MYSQL_ROOT_PASSWORD`, `SECRET_KEY`, `ADMIN_PASSWORD`, `STUDENT_PASSWORD` y, opcional, `BOOKTRACK_BACKUP_PASSWORD` (mínimo 16 caracteres, para la copia cifrada de datos). Elegí contraseñas propias y una `SECRET_KEY` aleatoria. Podés generar la clave con `python -c "import secrets; print(secrets.token_urlsafe(50))"`.
 
 ```bash
 docker compose config --quiet

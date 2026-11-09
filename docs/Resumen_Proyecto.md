@@ -51,7 +51,7 @@ workspace booktrack/
 ├── data/booktrack.btbak          Copia cifrada de los datos (libros, usuarios, préstamos…)
 ├── docs/                         API.md, ARQUITECTURA.md, MODELO_DATOS.md, FUNCIONALIDADES.md, OPERACION.md, TESTING.md, diagramas/*.pdf
 ├── tools/publicar_datos.py       Publica la copia cifrada de datos a GitHub
-├── .env / .env.example           Variables del Compose (`.env` está en .gitignore)
+├── .env                         Variables del Compose (`.env` está en .gitignore)
 └── .github/workflows/ci-cd.yml   Pipeline de CI
 ```
 
@@ -64,7 +64,7 @@ Estado verificado hoy: los 3 contenedores están `Up`/`healthy` y respondieron: 
 
 Pasos desde cero (README.md):
 1. Requisitos: Git, Docker Desktop con Compose v2 iniciado.
-2. `Copy-Item .env.example .env` y completar en `.env`: `MYSQL_ROOT_PASSWORD`, `SECRET_KEY` (≥50 caracteres), `ADMIN_PASSWORD`, `STUDENT_PASSWORD`. `BOOKTRACK_BACKUP_PASSWORD` solo hace falta para publicar/restaurar copias cifradas.
+2. Crear `.env` en la raíz con: `MYSQL_ROOT_PASSWORD`, `SECRET_KEY` (≥50 caracteres), `ADMIN_PASSWORD`, `STUDENT_PASSWORD`. `BOOKTRACK_BACKUP_PASSWORD` solo hace falta para publicar/restaurar copias cifradas.
 3. `docker compose config --quiet` (valida), luego `docker compose up --build -d`, `docker compose ps`.
 4. El backend ejecuta solo: `python manage.py migrate && python create_admin.py && python manage.py runserver 0.0.0.0:8000` (`backend-booktrack/Dockerfile`, última línea). Las migraciones crean tablas **y cargan el catálogo de libros** (`books/migrations/0003`, `0006`, `0007`).
 5. URLs: app `http://localhost:4202` · API `http://localhost:8000/api/` · Django Admin `http://localhost:8000/admin/` · MySQL `127.0.0.1:3307` (base `booktrack_db`, usuario `root`).
