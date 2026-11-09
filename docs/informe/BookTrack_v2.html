@@ -1,0 +1,149 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><title>BookTrack v2</title><style>
+@page { size: A4; margin: 20mm 18mm; }
+@page er { size: A4 landscape; margin: 12mm; }
+.er { page: er; break-before: page; }
+.mermaid svg { width:100% !important; max-width:none !important; height:auto; }
+.er img { height: 140mm; max-width:100%; } img.st { max-height: 195mm; max-width: 100%; }
+.er { break-after: page; }
+body { font-family: Arial, Helvetica, sans-serif; font-size: 10.5pt; color:#000; line-height:1.35; }
+h1 { text-align:center; font-size: 26pt; margin: 0 0 14pt; }
+h2 { font-size: 20pt; font-weight: 400; margin: 18pt 0 8pt; }
+h3 { font-size: 15pt; font-weight: 400; margin: 14pt 0 6pt; }
+h4 { font-size: 11pt; font-weight: 400; color:#444; margin: 14pt 0 6pt; break-after: avoid; }
+.req { margin: 0 0 9pt; break-inside: avoid; }
+.pb { break-before: page; }
+table.cu { border-collapse: collapse; width:100%; margin-bottom: 10pt; break-inside: avoid; }
+table.cu td { border:1px solid #000; padding: 4pt 6pt; vertical-align: top; }
+table.cu td.k { width: 40%; } table.cu td.head { background:#eee; }
+table.cu ol, table.cu ul { margin: 0; padding-left: 16pt; }
+table.log { border-collapse: collapse; width:100%; font-size: 9pt; }
+table.log th, table.log td { border:1px solid #000; padding:3pt 5pt; vertical-align: top; text-align:left; }
+table.log th { background:#eee; }
+.todo { background:#fff3b0; border:1px solid #c9a400; padding:3pt 6pt; margin: 4pt 0 6pt; font-size: 9pt; break-inside: avoid; }
+.sub { font-size: 9pt; color:#555; margin: 0 0 8pt; }
+.foot { font-size: 8.5pt; color:#555; margin-top: 8pt; border-top: 1px solid #ccc; padding-top:3pt; }
+.diag { text-align:center; break-inside: avoid; }
+.mermaid { display:flex; justify-content:center; }
+</style></head><body>
+<h1>BookTrack</h1>
+<h2>1. Introducción</h2><h3>1.1. Propósito del Informe</h3>
+<p>El presente informe tiene como objetivo documentar la definición, el alcance y los requerimientos iniciales del proyecto <b>BookTrack</b>, proporcionando una base clara para su desarrollo y posterior evaluación.</p>
+<h2>2. Definición del Proyecto</h2>
+<p><b>El sistema utilizará los datos de autenticación de los usuarios provistos por una API externa del sistema SysAcad. Por lo tanto, el proyecto no contempla el desarrollo de un módulo propio de registro de usuarios, sino la integración con dicho servicio para validar las credenciales de acceso.</b></p>
+<p>El objetivo principal de este proyecto es desarrollar un sistema integral para la gestión y control de reservaciones de libros de la biblioteca de la UTN-FRD, con el fin de modernizar y optimizar el proceso de préstamo y consulta del material bibliográfico disponible.</p>
+<p>El sistema permitirá que los usuarios puedan buscar libros de manera práctica, consultar su disponibilidad en tiempo real, realizar reservas de forma online y acceder a su historial de reservas, clasificadas como “Activas”, “Canceladas”, “Vencidas” o “Finalizadas” (retiradas), y de préstamos “Vigentes”, “Vencidos” o “Devueltos”. La proximidad al vencimiento se informa mediante una alerta y no constituye un estado. De esta manera, se evitarán trámites manuales o presenciales innecesarios.<br>A su vez, facilitará al personal administrativo de la biblioteca la gestión de reservas, el registro de retiros y devoluciones, y el seguimiento de los préstamos realizados.</p>
+<p>Además, el proyecto busca mejorar la organización interna de la biblioteca, reducir errores en el registro de reservas, agilizar la atención a estudiantes y docentes, y brindar una herramienta digital que centralice la información sobre libros, usuarios y movimientos del sistema. De esta manera, se pretende contribuir a una gestión más eficiente, ordenada y accesible de los recursos bibliográficos de la institución.</p>
+<h2 class="pb">3. Requisitos del Proyecto</h2><h3>3.1. Requisitos Funcionales (RF)</h3><p>Los requisitos funcionales describen las funciones y tareas que el sistema debe poder realizar.</p>
+<div class="req"><b>RF01 - Autenticación con SysAcad</b><br>El sistema deberá permitir el inicio de sesión de alumnos, docentes y personal autorizado mediante la validación de credenciales contra una API externa de SysAcad o, durante el desarrollo, mediante un servicio simulado.</div>
+<div class="req"><b>RF02 - Cierre de sesión</b><br>El sistema deberá permitir que el usuario cierre sesión de forma segura, evitando accesos no autorizados desde dispositivos compartidos o públicos.</div>
+<div class="req"><b>RF03 - Tablero de usuario</b><br>El sistema deberá mostrar al usuario un tablero principal con el resumen de sus reservas activas, libros pendientes de retiro, préstamos vigentes y fechas próximas de devolución.</div>
+<div class="req"><b>RF04 - Edición de datos de contacto</b><br>El sistema deberá permitir que el usuario cargue o actualice datos de contacto secundarios, como correo electrónico alternativo o teléfono, para recibir avisos relacionados con sus reservas y préstamos.</div>
+<div class="req"><b>RF05 - Búsqueda de libros</b><br>El sistema deberá permitir la búsqueda de libros por título, autor, categoría, ISBN, año de publicación o palabra clave.</div>
+<div class="req"><b>RF06 - Consulta de ubicación física</b><br>El sistema deberá mostrar la ubicación física del libro dentro de la biblioteca, indicando información como estante, sector o pasillo, en caso de que dichos datos estén disponibles.</div>
+<div class="req"><b>RF07 - Visualización de libros relacionados</b><br>El sistema deberá permitir visualizar libros relacionados por autor, categoría o temática al consultar la ficha detallada de un libro.</div>
+<div class="req"><b>RF08 - Gestión de favoritos</b><br>El sistema deberá permitir que el usuario marque libros como favoritos para acceder posteriormente a ellos de manera rápida.</div>
+<div class="req"><b>RF09 - Validación de disponibilidad</b><br>El sistema deberá verificar la disponibilidad de ejemplares antes de permitir la creación de una reserva, impidiendo reservar libros sin stock disponible.</div>
+<div class="req"><b>RF10 - Código de reserva</b><br>El sistema deberá generar un código único de reserva que permita identificar la solicitud al momento de retirar el libro en la biblioteca.</div>
+<div class="req"><b>RF11 - Cancelación de reservas</b><br>El sistema deberá permitir que el usuario cancele una reserva activa, siempre que el libro aún no haya sido retirado.</div>
+<div class="req"><b>RF12 - Renovación de préstamo</b><br>El sistema deberá permitir que el usuario solicite la renovación de un préstamo vigente, siempre que no existan reservas activas de otros usuarios sobre el mismo ejemplar.</div>
+<div class="req"><b>RF13 - Gestión de reservas y retiros</b><br>El sistema deberá permitir al personal administrativo visualizar las reservas activas, registrar el retiro del libro (la reserva pasa a Finalizada y se genera el préstamo), cancelar reservas y ordenar la cola de atención mediante la prioridad.</div>
+<div class="req"><b>RF14 - Alta de libros y ejemplares</b><br>El sistema deberá permitir al personal administrativo registrar nuevos libros y ejemplares físicos en el catálogo de la biblioteca.</div>
+<div class="req"><b>RF15 - Registro del estado del ejemplar</b><br>El sistema deberá permitir registrar observaciones sobre el estado físico de los ejemplares, como daños, deterioro, pérdida o necesidad de reparación.</div>
+<div class="req"><b>RF16 - Alertas automáticas</b><br>El sistema deberá generar alertas internas o notificaciones cuando una reserva esté por vencer, un préstamo se encuentre próximo a su fecha de devolución o exista una devolución vencida. «Por vencer» no es un estado: es una condición derivada de la fecha de vencimiento que dispara la alerta.</div>
+<div class="req"><b>RF17 - Confirmación de reserva</b><br>El sistema deberá notificar al usuario cuando su reserva sea creada (activa), cancelada, vencida o finalizada (retiro del libro).</div>
+<div class="req"><b>RF18 - Reporte de demanda de libros</b><br>El sistema deberá permitir al personal administrativo consultar reportes sobre los libros más reservados o solicitados, con el fin de apoyar la toma de decisiones sobre adquisición de ejemplares.</div>
+<div class="req"><b>RF19 - Listado de usuarios con préstamos vencidos</b><br>El sistema deberá permitir generar un listado de usuarios que posean préstamos vencidos, indicando los libros pendientes de devolución y la fecha de vencimiento correspondiente.</div>
+<div class="req"><b>RF20 - Auditoría administrativa</b><br>El sistema deberá registrar las acciones administrativas relevantes, como registro de retiros, cancelaciones, devoluciones, renovaciones y modificaciones de ejemplares.</div>
+<h3>3.2. Requisitos No Funcionales (RNF)</h3><p>Los requisitos no funcionales describen criterios que pueden usarse para juzgar la operación del sistema, en lugar de comportamientos específicos (ej. rendimiento, seguridad, usabilidad).</p>
+<div class="req"><b>RNF01 - Protección de datos</b><br>El sistema deberá proteger la información personal de los usuarios, evitando accesos no autorizados a datos como historial de reservas, préstamos y datos de contacto.</div>
+<div class="req"><b>RNF02 - Seguridad de sesión</b><br>El sistema deberá utilizar mecanismos seguros de autenticación basados en tokens o sesiones con tiempo de expiración definido.</div>
+<div class="req"><b>RNF03 - Control de solicitudes</b><br>El sistema deberá limitar la cantidad de solicitudes realizadas por un mismo usuario en un período determinado para evitar abusos o sobrecarga del servidor.</div>
+<div class="req"><b>RNF04 - Control de acceso por roles</b><br>El sistema deberá restringir el acceso a las funcionalidades según el rol del usuario, diferenciando entre alumnos, docentes y personal administrativo.</div>
+<div class="req"><b>RNF05 - Tiempo de respuesta</b><br>El sistema deberá responder a las búsquedas, consultas de disponibilidad y operaciones principales en un tiempo razonable, preferentemente menor a 2 segundos bajo condiciones normales de uso.</div>
+<div class="req"><b>RNF06 - Concurrencia de usuarios</b><br>El sistema deberá soportar el acceso simultáneo de múltiples usuarios sin afectar de manera significativa su funcionamiento.</div>
+<div class="req"><b>RNF07 - Optimización de recursos visuales</b><br>El sistema deberá optimizar el uso de imágenes, portadas y recursos visuales para favorecer tiempos de carga adecuados.</div>
+<div class="req"><b>RNF08 - Escalabilidad de la base de datos</b><br>El sistema deberá estar diseñado para permitir el crecimiento progresivo de la base de datos sin degradar significativamente el rendimiento.</div>
+<div class="req"><b>RNF09 - Diseño responsive</b><br>El sistema deberá adaptarse correctamente a distintos dispositivos, incluyendo computadoras de escritorio, notebooks, tablets y teléfonos móviles.</div>
+<div class="req"><b>RNF10 - Usabilidad</b><br>El sistema deberá contar con una interfaz clara, simple e intuitiva, permitiendo que los usuarios utilicen las funciones principales sin requerir capacitación previa.</div>
+<div class="req"><b>RNF11 - Accesibilidad visual</b><br>El sistema deberá contemplar criterios básicos de accesibilidad visual, como contraste adecuado, textos legibles y navegación clara.</div>
+<div class="req"><b>RNF12 - Mensajes de error descriptivos</b><br>El sistema deberá mostrar mensajes de error claros y comprensibles para el usuario, evitando mensajes técnicos innecesarios.</div>
+<div class="req"><b>RNF13 - Disponibilidad del sistema</b><br>El sistema deberá encontrarse disponible durante los horarios definidos por la institución, salvo interrupciones por mantenimiento programado o fallas externas.</div>
+<div class="req"><b>RNF14 - Respaldo de información</b><br>El sistema deberá contemplar mecanismos de respaldo periódico de la información para evitar la pérdida de datos ante fallas técnicas.</div>
+<div class="req"><b>RNF15 - Mantenibilidad del código</b><br>El sistema deberá desarrollarse siguiendo una estructura modular y documentada, facilitando su mantenimiento y futuras modificaciones.</div>
+<div class="req"><b>RNF16 - Registro de errores técnicos</b><br>El sistema deberá registrar errores técnicos relevantes, como fallas de conexión, problemas de autenticación o errores en la comunicación con servicios externos.</div>
+<div class="req"><b>RNF17 - Compatibilidad con navegadores</b><br>El sistema deberá ser compatible con navegadores web modernos, como Google Chrome, Mozilla Firefox, Microsoft Edge y equivalentes.</div>
+<div class="req"><b>RNF18 - Despliegue mediante contenedores</b><br>El sistema deberá poder ejecutarse mediante contenedores, facilitando su instalación, configuración y despliegue en distintos entornos.</div>
+<div class="req"><b>RNF19 - Integración con servicios externos</b><br>El sistema deberá estar preparado para comunicarse con servicios externos mediante APIs REST y formatos de intercambio de datos estándar, como JSON.</div>
+<div class="req"><b>RNF20 - Privacidad institucional</b><br>El sistema deberá utilizar los datos de los usuarios únicamente para fines relacionados con la gestión de reservas, préstamos y administración de la biblioteca de la UTN-FRD.</div>
+<h2 class="pb">4. Modelado del Comportamiento</h2><h3>4.1. Diagrama de Casos de Uso</h3>
+<div class="diag">
+<svg viewBox="0 0 780 700" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="Arial, Helvetica, sans-serif" font-size="12">
+<defs>
+ <marker id="a" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#333"/></marker>
+ <marker id="o" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8" fill="none" stroke="#333"/></marker>
+</defs>
+<rect x="290" y="10" width="470" height="680" rx="6" fill="#fff" stroke="#333"/>
+<text x="525" y="32" text-anchor="middle" font-weight="bold">Sistema de Reservas de Biblioteca UTN-FRD</text>
+<g fill="#eee" stroke="#333">
+ <ellipse cx="525" cy="85" rx="130" ry="28"/><ellipse cx="525" cy="165" rx="130" ry="28"/>
+ <ellipse cx="525" cy="245" rx="75" ry="24"/><ellipse cx="525" cy="325" rx="100" ry="24"/>
+ <ellipse cx="525" cy="410" rx="100" ry="28"/><ellipse cx="525" cy="490" rx="70" ry="24"/>
+ <ellipse cx="525" cy="570" rx="135" ry="28"/><ellipse cx="525" cy="650" rx="85" ry="24"/>
+</g>
+<g text-anchor="middle" fill="#111">
+ <text x="525" y="82">Consultar detalle</text><text x="525" y="98">y disponibilidad del libro</text>
+ <text x="525" y="162">Ver préstamos activos</text><text x="525" y="178">y fechas de devolución</text>
+ <text x="525" y="249">Iniciar sesión</text>
+ <text x="525" y="329">Validar stock disponible</text>
+ <text x="525" y="407">Solicitar préstamo</text><text x="525" y="423">/ reserva</text>
+ <text x="525" y="494">Buscar libro</text>
+ <text x="525" y="567">Gestionar préstamos activos</text><text x="525" y="583">y reservas activas</text>
+ <text x="525" y="654">Validar credenciales</text>
+</g>
+<g transform="translate(70,290)" stroke="#333" fill="none" stroke-width="1.5"><circle cx="0" cy="-30" r="9"/><path d="M0,-21 V15 M-20,-8 H20 M0,15 L-15,38 M0,15 L15,38"/></g><g transform="translate(70,540)" stroke="#333" fill="none" stroke-width="1.5"><circle cx="0" cy="-30" r="9"/><path d="M0,-21 V15 M-20,-8 H20 M0,15 L-15,38 M0,15 L15,38"/></g><g transform="translate(70,640)" stroke="#333" fill="none" stroke-width="1.5"><circle cx="0" cy="-30" r="9"/><path d="M0,-21 V15 M-20,-8 H20 M0,15 L-15,38 M0,15 L15,38"/></g>
+<g text-anchor="middle" fill="#111">
+ <text x="70" y="340">Usuario</text><text x="70" y="355">Alumno/Docente</text>
+ <text x="70" y="590">Bibliotecaria</text><text x="70" y="690">API SysAcad</text>
+</g>
+<g stroke="#333" fill="none" marker-end="url(#a)">
+ <path d="M95 275 C200 200 330 120 396 90"/>
+ <path d="M95 285 C220 230 330 190 396 168"/>
+ <path d="M95 295 L450 245"/>
+ <path d="M95 310 C200 360 330 395 426 408"/>
+ <path d="M95 320 C200 420 330 480 456 490"/>
+ <path d="M95 535 C200 545 330 560 392 568"/>
+ <path d="M95 640 C220 645 330 650 440 650"/>
+</g>
+<g stroke="#333" fill="none" stroke-dasharray="5,4" marker-end="url(#o)">
+ <path d="M525 382 L525 349"/>
+ <path d="M600 262 C740 330 740 580 608 640"/>
+</g>
+<text x="533" y="368" font-size="11">«include»</text>
+<text x="690" y="450" font-size="11">«include»</text>
+</svg>
+</div><div class="foot">BookTrack - Documentación técnica</div>
+<h3 class="pb">4.2. Casos de Uso Principales</h3><p>A continuación, se detallan al menos tres (3) de los casos de uso principales identificados para el sistema.</p>
+<h4>Caso de Uso Principal 1: CU01 - Iniciar sesión</h4><table class="cu"><tr><td class="k head">Campo</td><td class="head">Detalle</td></tr><tr><td class="k"><b>Identificador</b></td><td>CU01</td></tr><tr><td class="k"><b>Nombre</b></td><td>Iniciar sesión</td></tr><tr><td class="k"><b>Actor Principal</b></td><td>Usuario</td></tr><tr><td class="k"><b>Actor Secundario</b></td><td>API SysAcad</td></tr><tr><td class="k"><b>Objetivo</b></td><td>Permitir que el usuario acceda al sistema utilizando sus credenciales institucionales.</td></tr><tr><td class="k"><b>Flujo Principal</b></td><td><ol><li>El usuario ingresa sus credenciales.</li><li>El sistema envía los datos a la API de SysAcad o al servicio simulado.</li><li>La API valida si el usuario corresponde a un alumno, docente o personal autorizado.</li><li>El sistema permite el acceso.</li><li>El sistema muestra el tablero principal del usuario.</li></ol></td></tr><tr><td class="k"><b>Flujo alternativo</b></td><td><ul><li>Si las credenciales son incorrectas, el sistema muestra un mensaje de error.</li><li>Si la API de SysAcad no responde, el sistema informa que el servicio no está disponible.</li></ul></td></tr></table>
+<h4>Caso de Uso Principal 2: CU02 - Buscar libro</h4><table class="cu"><tr><td class="k head">Campo</td><td class="head">Detalle</td></tr><tr><td class="k"><b>Identificador</b></td><td>CU02</td></tr><tr><td class="k"><b>Nombre</b></td><td>Buscar libro</td></tr><tr><td class="k"><b>Actor Principal</b></td><td>Usuario</td></tr><tr><td class="k"><b>Objetivo</b></td><td>Permitir que el usuario encuentre libros dentro del catálogo.</td></tr><tr><td class="k"><b>Flujo Principal</b></td><td><ol><li>El usuario ingresa un título, autor o palabra clave.</li><li>El sistema busca coincidencias en el catálogo.</li><li>El sistema muestra el listado de libros encontrados.</li><li>El usuario selecciona un libro para ver más información.</li></ol></td></tr><tr><td class="k"><b>Flujo Alternativo</b></td><td>Si no hay resultados, el sistema informa que no se encontraron libros relacionados.</td></tr></table>
+<h4>Caso de Uso Principal 3: CU03 - Consultar detalle y disponibilidad del libro</h4><table class="cu"><tr><td class="k head">Campo</td><td class="head">Detalle</td></tr><tr><td class="k"><b>Identificador</b></td><td>CU03</td></tr><tr><td class="k"><b>Nombre</b></td><td>Consultar detalle y disponibilidad del libro</td></tr><tr><td class="k"><b>Actor Principal</b></td><td>Usuario</td></tr><tr><td class="k"><b>Objetivo</b></td><td>Permitir que el usuario vea la información completa del libro y su disponibilidad.</td></tr><tr><td class="k"><b>Flujo Principal</b></td><td><ol><li>El usuario selecciona un libro del catálogo.</li><li>El sistema muestra la ficha del libro.</li><li>El sistema informa si el libro está disponible, prestado o reservado.</li><li>El sistema muestra datos como autor, resumen, ubicación física y código del libro.</li></ol></td></tr><tr><td class="k"><b>Flujo Alternativo</b></td><td>Si el libro no tiene ejemplares disponibles, el sistema informa que no puede solicitarse en ese momento o permite generar una reserva, según la regla definida.</td></tr></table>
+<h4>Caso de Uso Principal 4: CU04 - Solicitar préstamo o reserva</h4><table class="cu"><tr><td class="k head">Campo</td><td class="head">Detalle</td></tr><tr><td class="k"><b>Identificador</b></td><td>CU04</td></tr><tr><td class="k"><b>Nombre</b></td><td>Solicitar préstamo o reserva</td></tr><tr><td class="k"><b>Actor Principal</b></td><td>Usuario</td></tr><tr><td class="k"><b>Objetivo</b></td><td>Permitir que el usuario solicite un libro disponible o reserve uno que se encuentre prestado.</td></tr><tr><td class="k"><b>Flujo Principal</b></td><td><ol><li>El usuario selecciona un libro.</li><li>El usuario presiona la opción de solicitar préstamo o reserva.</li><li>El sistema valida la disponibilidad del ejemplar.</li><li>El sistema registra la reserva en estado Activa.</li><li>El sistema muestra una confirmación de la operación.</li></ol></td></tr><tr><td class="k"><b>Flujo Alternativo</b></td><td><ul><li>Si no hay stock disponible, el sistema informa que no puede procesar el préstamo directo.</li><li>Si el usuario tiene restricciones o préstamos vencidos, el sistema puede impedir la operación.</li></ul></td></tr></table>
+<h4>Caso de Uso Principal 5: CU05 - Ver préstamos activos y fechas de devolución</h4><table class="cu"><tr><td class="k head">Campo</td><td class="head">Detalle</td></tr><tr><td class="k"><b>Identificador</b></td><td>CU05</td></tr><tr><td class="k"><b>Nombre</b></td><td>Ver préstamos activos y fechas de devolución</td></tr><tr><td class="k"><b>Actor Principal</b></td><td>Usuario</td></tr><tr><td class="k"><b>Objetivo</b></td><td>Permitir que el usuario consulte sus préstamos vigentes y sus fechas de vencimiento.</td></tr><tr><td class="k"><b>Flujo Principal</b></td><td><ol><li>El usuario accede a su panel o historial.</li><li>El sistema muestra sus préstamos activos.</li><li>El sistema indica la fecha de devolución de cada libro.</li><li>El sistema destaca los préstamos próximos a vencer (alerta derivada de la fecha de vencimiento).</li></ol></td></tr><tr><td class="k"><b>Flujo Alternativo</b></td><td>Si el usuario no tiene préstamos activos, el sistema muestra un mensaje informativo.</td></tr></table>
+<h4>Caso de Uso Principal 6: CU06 - Gestionar préstamos y reservas activas</h4><table class="cu"><tr><td class="k head">Campo</td><td class="head">Detalle</td></tr><tr><td class="k"><b>Identificador</b></td><td>CU06</td></tr><tr><td class="k"><b>Nombre</b></td><td>Gestionar préstamos y reservas activas</td></tr><tr><td class="k"><b>Actor Principal</b></td><td>Bibliotecaria</td></tr><tr><td class="k"><b>Objetivo</b></td><td>Permitir que el personal de biblioteca administre las reservas y préstamos activos.</td></tr><tr><td class="k"><b>Flujo Principal</b></td><td><ol><li>La bibliotecaria ingresa al panel administrativo.</li><li>El sistema muestra las reservas activas y los préstamos vigentes.</li><li>La bibliotecaria revisa una reserva.</li><li>La bibliotecaria registra el retiro del libro (la reserva pasa a Finalizada y se genera el préstamo), cancela la reserva o registra la devolución de un préstamo.</li><li>El sistema actualiza el estado de la reserva o préstamo.</li><li>El sistema registra la acción administrativa.</li></ol></td></tr><tr><td class="k"><b>Flujo Alternativo</b></td><td><ul><li>Si no hay reservas activas, el sistema muestra el panel vacío.</li><li>Si no hay stock disponible, el sistema impide registrar el retiro.</li></ul></td></tr></table>
+<h3 class="pb">4.3. Diagrama de estados - Reserva</h3>
+<p class="sub">Una reserva activa finaliza al retirar el libro y generar el préstamo.</p>
+<div class="diag"><img class="st" src="img/estados_reserva.png"></div>
+<p><b>Alerta (RF16):</b> «por vencer» no es un estado; es una condición derivada de la fecha de vencimiento de la reserva activa.</p><div class="foot">BookTrack - Documentación técnica</div>
+<h3 class="pb">4.4. Diagrama de estados - Préstamo</h3>
+<p class="sub">Un préstamo permanece vigente hasta su vencimiento o devolución.</p>
+<div class="diag"><img class="st" src="img/estados_prestamo.png"></div>
+<p><b>Alerta (RF16):</b> la proximidad al vencimiento es una condición derivada de fechaVencimiento, no un estado. La renovación solo se admite sobre un préstamo Vigente (RF12).</p><div class="foot">BookTrack - Documentación técnica</div>
+<div class="er"><h2>5. Diagrama entidad-relación</h2>
+<p class="sub">Lleva el modelo conceptual al nivel de datos, incorporando claves primarias, claves foráneas y relaciones entre las tablas.</p>
+<div class="diag"><img class="erimg" src="img/er.png"></div><div class="foot">BookTrack - Documentación técnica</div></div>
+<h2 class="pb">6. Registro de cambios (v2)</h2><p>Cambios respecto de la v1, a partir de las correcciones del profesor sobre los diagramas.</p>
+<table class="log"><tr><th>Sección</th><th>v1</th><th>v2</th></tr><tr><td>2. Definición del Proyecto</td><td>Historial de reservas «Pendientes», «Aprobadas», «Vencidas» o «Por vencer»; «aprobación o rechazo de reservas».</td><td>Reservas Activas, Canceladas, Vencidas o Finalizadas; préstamos Vigentes, Vencidos o Devueltos; «por vencer» como alerta; gestión de reservas, retiros y devoluciones.</td></tr><tr><td>RF11</td><td>Cancelar reserva pendiente o aprobada.</td><td>Cancelar reserva activa.</td></tr><tr><td>RF12</td><td>Reservas pendientes de otros usuarios.</td><td>Reservas activas de otros usuarios.</td></tr><tr><td>RF13</td><td>Aprobar o rechazar solicitudes de reserva.</td><td>Gestión de reservas y retiros (registrar retiro, cancelar, priorizar).</td></tr><tr><td>RF16</td><td>—</td><td>Aclara que «por vencer» es una condición derivada, no un estado.</td></tr><tr><td>RF17</td><td>Notificar aprobada, rechazada, cancelada o vencida.</td><td>Notificar creada (activa), cancelada, vencida o finalizada.</td></tr><tr><td>RF20</td><td>Aprobación de reservas, rechazo de solicitudes.</td><td>Registro de retiros, cancelaciones, devoluciones y renovaciones.</td></tr><tr><td>RNF02</td><td>Título con error tipográfico («d e sesión»).</td><td>Corregido a «Seguridad de sesión».</td></tr><tr><td>CU04</td><td>«Registra la solicitud».</td><td>«Registra la reserva en estado Activa».</td></tr><tr><td>CU05</td><td>Destaca préstamos próximos a vencer.</td><td>Aclara que es una alerta derivada de la fecha.</td></tr><tr><td>CU06</td><td>Reservas pendientes; aprobar o rechazar; impide aprobar sin stock.</td><td>Reservas activas; registrar retiro, cancelar o registrar devolución; impide registrar el retiro sin stock.</td></tr><tr><td>4.1 Casos de uso</td><td>«Gestionar préstamos activos y reservas pendientes».</td><td>«…y reservas activas». Diagrama regenerado.</td></tr><tr><td>4.3 Estados - Reserva</td><td>Pendiente, Aprobada, Por vencer, Vencida, Rechazada, Cancelada.</td><td>Activa → Cancelada / Vencida / Finalizada (retiro, genera Préstamo). Eliminados Pendiente, Aprobada, Rechazada y PorVencer.</td></tr><tr><td>4.4 Estados - Préstamo</td><td>Vigente, Por vencer, Vencido, Devuelto.</td><td>Vigente (renovar) → Vencido → Devuelto; Vigente → Devuelto. Eliminado PorVencer; no hay renovar desde Vencido.</td></tr><tr><td>5. ER</td><td>Reserva sin fecha de vencimiento ni prioridad; Préstamo con una sola fecha límite.</td><td>Reserva con fechaVencimiento y prioridad, estados Activa, Cancelada, Vencida y Finalizada; Préstamo con fechaVencimiento y fechaDevolucion; Libro con estado; Ejemplar con fechaAlta.</td></tr></table>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.3/dist/mermaid.min.js"></script>
+<script>
+mermaid.initialize({startOnLoad:false, theme:'neutral', themeVariables:{fontSize:'16px'}, er:{useMaxWidth:true,fontSize:14}});
+mermaid.run().then(()=>{document.body.setAttribute('data-ready','1')});
+</script></body></html>

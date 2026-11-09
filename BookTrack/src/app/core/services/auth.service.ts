@@ -11,9 +11,13 @@ export class AuthService {
 
   constructor(private http: HttpClient) {}
 
-  login(legajoOEmail: string, contrasena: string): Observable<{ token: string; user: User }> {
+  login(legajoOEmail: string, contrasena: string, recordarme = false): Observable<{ token: string; user: User }> {
     return this.http.post<{ token: string; user: User }>(`${this.api}/users/login/`, { legajoOEmail, contrasena }).pipe(
-      tap(res => localStorage.setItem(this.tokenKey, res.token))
+      tap(res => {
+        // Recordarme: localStorage sobrevive al cierre del navegador; si no, sessionStorage dura solo la pestaña.
+        this.logout();
+        (recordarme ? localStorage : sessionStorage).setItem(this.tokenKey, res.token);
+      })
     );
   }
 
@@ -27,6 +31,7 @@ export class AuthService {
 
   logout(): void {
     localStorage.removeItem(this.tokenKey);
+    sessionStorage.removeItem(this.tokenKey);
   }
 
   isAuthenticated(): boolean {
@@ -46,7 +51,7 @@ export class AuthService {
   }
 
   getToken(): string | null {
-    return localStorage.getItem(this.tokenKey);
+    return sessionStorage.getItem(this.tokenKey) ?? localStorage.getItem(this.tokenKey);
   }
 
   getUserRole(): 'usuario' | 'bibliotecario' | null {

@@ -156,7 +156,7 @@ export class Login {
   login() {
     if (!this.legajo || !this.password) { this.error = 'Completá los campos.'; return; }
     this.cargando = true; this.error = ''; this.legajoInvalido = false; this.passwordInvalido = false;
-    this.authService.login(this.legajo, this.password).subscribe({
+    this.authService.login(this.legajo, this.password, this.recordarme).subscribe({
       next: res => {
         this.cargando = false;
         this.router.navigate([res.user.categoria === 'bibliotecario' ? '/home-admin' : '/home']);
