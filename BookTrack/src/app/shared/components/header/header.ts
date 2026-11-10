@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { LoanService } from '../../../core/services/loan.service';
 import { BookService } from '../../../core/services/book.service';
+import { AuthService } from '../../../core/services/auth.service';
 
 interface NotifItem {
   id: string;
@@ -181,9 +182,12 @@ export class Header implements OnInit {
   notificaciones: NotifItem[] = [];
   private titulosPorLibro = new Map<number, string>();
 
-  constructor(private router: Router, private loanService: LoanService, private bookService: BookService) {}
+  constructor(private router: Router, private loanService: LoanService, private bookService: BookService, private authService: AuthService) {}
 
   ngOnInit() {
+    // El rol real manda: las vistas compartidas (búsqueda, detalle, préstamo) no saben quién las ve.
+    const rol = this.authService.getUserRole();
+    if (rol) this.esAdmin = rol === 'bibliotecario';
     // ponytail: sin backend de notificaciones dedicado; derivamos las novedades
     // del estado/fecha de los préstamos del usuario.
     if (!this.esAdmin) {

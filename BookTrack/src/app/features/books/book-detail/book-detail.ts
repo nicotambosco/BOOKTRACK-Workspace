@@ -3,6 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Header } from '../../../shared/components/header/header';
 import { BookService } from '../../../core/services/book.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { Book } from '../../../models/book.model';
 
 @Component({
@@ -11,7 +12,7 @@ import { Book } from '../../../models/book.model';
   imports: [Header, CommonModule],
   template: `
     <div class="home-page">
-      <app-header [esAdmin]="false"></app-header>
+      <app-header [esAdmin]="false" [mostrarComentarios]="false"></app-header>
       <div class="home-body">
         @if (cargando) {
           <p class="estado-msg">Cargando...</p>
@@ -131,7 +132,7 @@ export class BookDetail implements OnInit {
   libro: Book | null = null;
   cargando = true;
 
-  constructor(private route: ActivatedRoute, private router: Router, private bookService: BookService) {}
+  constructor(private route: ActivatedRoute, private router: Router, private bookService: BookService, private authService: AuthService) {}
 
   ngOnInit() {
     const id = Number(this.route.snapshot.paramMap.get('id'));
@@ -143,5 +144,5 @@ export class BookDetail implements OnInit {
 
   solicitarPrestamo() { if (this.libro?.id) this.router.navigate(['/loan-request', this.libro.id]); }
   verLibro(id: number) { this.router.navigate(['/book', id]); }
-  volver() { this.router.navigate(['/home']); }
+  volver() { this.router.navigate([this.authService.getUserRole() === 'bibliotecario' ? '/home-admin' : '/home']); }
 }
