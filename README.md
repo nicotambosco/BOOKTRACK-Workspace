@@ -101,6 +101,25 @@ Después ejecutá `python manage.py migrate`, creá las cuentas e iniciá el bac
 
 ## Verificación
 
+Todas las pruebas (frontend y backend) desde la raíz, con Docker iniciado:
+
+```powershell
+.\tests.ps1             # frontend + backend
+.\tests.ps1 -Solo front # solo Angular
+.\tests.ps1 -Solo back  # solo Django (reconstruye la imagen y usa el MySQL de Compose)
+```
+
+Antes de la primera vez, cada integrante necesita:
+
+1. Docker iniciado (el backend se reconstruye solo con el script).
+2. El `.env` de la raíz creado (ver [Montar con Docker](#montar-con-docker)).
+3. Dependencias del frontend, una sola vez: `cd BookTrack && npm ci`. `node_modules` no se versiona.
+4. PowerShell y Node 22 o superior. En Mac o Linux, correr a mano `npm --prefix BookTrack test` y `docker compose exec backend python manage.py test`.
+
+No hace falta correr migraciones ni cargar datos: las pruebas del backend usan una base temporal propia que se crea y se borra sola, sin tocar los datos de la aplicación.
+
+O por separado:
+
 Con el entorno virtual activo, desde `backend-booktrack`:
 
 ```bash

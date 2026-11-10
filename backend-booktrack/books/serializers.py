@@ -8,7 +8,14 @@ class BookSerializer(serializers.ModelSerializer):
     nroInventario = serializers.CharField(source='nro_inventario', allow_blank=True, allow_null=True)
 
     def validate_nroInventario(self, value):
-        return value or None  # '' rompería el unique; NULL puede repetirse
+        value = value or None  # '' rompería el unique; NULL puede repetirse
+        if value:
+            others = Book.objects.filter(nro_inventario=value)
+            if self.instance:
+                others = others.exclude(pk=self.instance.pk)
+            if others.exists():
+                raise serializers.ValidationError('Ya existe un libro con ese número de inventario.')
+        return value
 
     class Meta:
         model = Book

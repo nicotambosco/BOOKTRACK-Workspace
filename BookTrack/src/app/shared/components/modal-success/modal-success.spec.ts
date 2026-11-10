@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { testProviders } from '../../../testing/test-providers';
 
 import { ModalSuccess } from './modal-success';
 
@@ -9,6 +10,7 @@ describe('ModalSuccess', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ModalSuccess],
+      providers: testProviders,
     }).compileComponents();
 
     fixture = TestBed.createComponent(ModalSuccess);

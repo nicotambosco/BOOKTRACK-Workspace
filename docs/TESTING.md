@@ -1,5 +1,7 @@
 # Pruebas y CI
 
+**Todo junto, desde la raíz:** `.\tests.ps1` (PowerShell, con Docker iniciado). Opciones: `-Solo front` o `-Solo back`. Resultado actual: 115 pruebas de frontend y 85 de backend.
+
 ## Backend
 
 Con el entorno virtual activo, desde `backend-booktrack`:
@@ -11,6 +13,8 @@ python manage.py test
 ```
 
 Se usa la conexión configurada. Django crea una base de prueba independiente; en MySQL la cuenta necesita permiso para crear/eliminar esa base de prueba. Con SQLite se utiliza la configuración local del README.
+
+`users/test_api.py`, `books/tests.py` y `loans/test_database_rules.py` cubren registro, login y roles, catálogo (permisos, búsqueda, inventario único, portadas, baja con historial), categorías, comentarios, restricciones CHECK/UNIQUE/PROTECT de la base y el comando `actualizar_estados`. Las migraciones cargan el catálogo inicial, por eso esos tests vacían las tablas al empezar.
 
 `loans/tests.py` cubre reserva activa sin descuento de stock, espera sin disponibilidad, libros inactivos, validación de fechas, duplicados, permisos, prioridad/FIFO, retiro idempotente, devolución efectiva, devolución de vencidos, renovación, filtros, exportaciones y cierre de accesos CRUD que permitirían saltarse el ciclo.
 
@@ -28,7 +32,7 @@ npm test
 npm run build
 ```
 
-El script de pruebas ejecuta los contratos de autenticación, acciones de préstamos y reservas. Los specs generados originalmente por Angular que aún son esqueletos no forman parte de esa selección. Compilar verifica también los tipos y las plantillas de las pantallas.
+`npm test` ejecuta todos los specs (115 pruebas): servicios HTTP (contrato con la API), autenticación y «Recordarme», guard por rol, interceptor del token, y el comportamiento de las pantallas (login, registro, reserva, gestión de reservas y préstamos, renovaciones, reportes, usuarios, libros, catálogo, notificaciones del encabezado, comentarios). Las llamadas HTTP se simulan con `HttpTestingController`; `src/app/testing/test-providers.ts` agrupa los proveedores comunes. Los specs de componentes sin lógica propia solo comprueban que se crean. Compilar verifica también los tipos y las plantillas de las pantallas.
 
 La compilación de producción selecciona `environment.prod.ts`, con API relativa `/api`; `npm start` usa `environment.ts` y Django en 8000.
 

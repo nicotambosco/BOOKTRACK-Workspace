@@ -1,17 +1,41 @@
 import { TestBed } from '@angular/core/testing';
-import { CanActivateFn } from '@angular/router';
-
+import { ActivatedRouteSnapshot, Router, RouterStateSnapshot, UrlTree } from '@angular/router';
 import { authGuard } from './auth-guard';
+import { fakeJwt, testProviders } from '../../../testing/test-providers';
 
 describe('authGuard', () => {
-  const executeGuard: CanActivateFn = (...guardParameters) =>
-    TestBed.runInInjectionContext(() => authGuard(...guardParameters));
+  const run = (roles?: string[]) =>
+    TestBed.runInInjectionContext(() =>
+      authGuard({ data: roles ? { roles } : {} } as unknown as ActivatedRouteSnapshot, {} as RouterStateSnapshot));
+  const url = (r: unknown) => TestBed.inject(Router).serializeUrl(r as UrlTree);
 
   beforeEach(() => {
-    TestBed.configureTestingModule({});
+    localStorage.clear(); sessionStorage.clear();
+    TestBed.configureTestingModule({ providers: testProviders });
   });
 
-  it('should be created', () => {
-    expect(executeGuard).toBeTruthy();
+  it('sends anonymous visitors to /login', () => {
+    expect(url(run(['usuario']))).toBe('/login');
+  });
+
+  it('lets an authenticated user into a route without role restriction', () => {
+    localStorage.setItem('auth_token', fakeJwt());
+    expect(run()).toBe(true);
+  });
+
+  it('lets a librarian into a librarian-only route', () => {
+    localStorage.setItem('auth_token', fakeJwt({ categoria: 'bibliotecario' }));
+    expect(run(['bibliotecario'])).toBe(true);
+  });
+
+  it('redirects a regular user away from a librarian-only route', () => {
+    localStorage.setItem('auth_token', fakeJwt({ categoria: 'usuario' }));
+    expect(url(run(['bibliotecario']))).toBe('/home');
+  });
+
+  it('treats an expired token as anonymous', () => {
+    localStorage.setItem('auth_token', fakeJwt({ exp: Math.floor(Date.now() / 1000) - 10 }));
+    expect(url(run())).toBe('/login');
+    expect(localStorage.getItem('auth_token')).toBeNull();
   });
 });
