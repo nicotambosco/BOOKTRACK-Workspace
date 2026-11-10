@@ -116,8 +116,15 @@ import { AuthService } from '../../../core/services/auth.service';
     </div>
   `,
   styles: [`
-    .home-page { display:flex; flex-direction:column; min-height:100vh; background:#0a0a0a; }
-    .profile-body { flex:1; padding: 1.5rem 2rem; color:#e8e8e8; }
+    .home-page { display:flex; flex-direction:column; height:100vh; background:#0a0a0a; }
+    .profile-body {
+      flex:1; padding: 1.5rem 2rem; color:#e8e8e8;
+      overflow-y: auto; scrollbar-width: thin; scrollbar-color: #3a3a3a transparent;
+    }
+    .profile-body::-webkit-scrollbar { width: 8px; }
+    .profile-body::-webkit-scrollbar-track { background: transparent; }
+    .profile-body::-webkit-scrollbar-thumb { background: #3a3a3a; border-radius: 4px; }
+    .profile-body::-webkit-scrollbar-thumb:hover { background: #4a4a4a; }
 
     .content-header { display:flex; align-items:center; gap:1rem; margin-bottom: 1.5rem; }
     .title-icon {

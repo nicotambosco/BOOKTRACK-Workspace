@@ -60,8 +60,15 @@ import { BookService } from '../../../core/services/book.service';
     </div>
   `,
   styles: [`
-    .home-page { display:flex; flex-direction:column; min-height:100vh; background:#0d0d0d; }
-    .page-body { flex:1; padding: 1.5rem 2rem; color:#e8e8e8; }
+    .home-page { display:flex; flex-direction:column; height:100vh; background:#0d0d0d; }
+    .page-body {
+      flex:1; padding: 1.5rem 2rem; color:#e8e8e8;
+      overflow-y: auto; scrollbar-width: thin; scrollbar-color: #3a3a3a transparent;
+    }
+    .page-body::-webkit-scrollbar { width: 8px; }
+    .page-body::-webkit-scrollbar-track { background: transparent; }
+    .page-body::-webkit-scrollbar-thumb { background: #3a3a3a; border-radius: 4px; }
+    .page-body::-webkit-scrollbar-thumb:hover { background: #4a4a4a; }
 
     .content-header { display:flex; align-items:center; gap:1rem; margin-bottom: 1.5rem; }
     .title-icon { width:72px; height:72px; background:#1c1c1c; border-radius:14px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
