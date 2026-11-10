@@ -175,7 +175,7 @@ function toISODate(d: Date): string {
 })
 export class Header implements OnInit {
   @Input() esAdmin = false;
-  @Input() mostrarComentarios = true;
+  @Input() mostrarComentarios = false; // ponytail: oculto en todas las vistas de admin; pasar true para mostrarlo
   busqueda = '';
   tieneNotificaciones = false;
   mostrarNotificaciones = false;
