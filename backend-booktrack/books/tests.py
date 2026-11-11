@@ -3,7 +3,6 @@ from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from comments.models import Comment
 from loans.models import Prestamo
 from users.testing import make_user
 from .models import Ejemplar, Libro
@@ -156,31 +155,3 @@ class CoverUploadTests(TestCase):
         student = APIClient(); student.force_authenticate(self.student)
         self.assertEqual(self.upload(client=student).status_code, 403)
         self.assertEqual(self.upload(client=APIClient()).status_code, 401)
-
-
-class CommentApiTests(TestCase):
-    def setUp(self):
-        self.student = make_user('s')
-
-    def test_authenticated_user_can_comment_and_is_recorded(self):
-        client = APIClient(); client.force_authenticate(self.student)
-        response = client.post('/api/comments/', {'seccion': 'Catálogo', 'comentario': 'Falta un libro'}, format='json')
-        self.assertEqual(response.status_code, 201, response.data)
-        comment = Comment.objects.get()
-        self.assertEqual((comment.usuario, comment.seccion), (self.student, 'Catálogo'))
-        self.assertNotIn('user', response.data)
-
-    def test_anonymous_cannot_comment_and_fields_are_required(self):
-        self.assertEqual(APIClient().post('/api/comments/', {'seccion': 'a', 'comentario': 'b'}, format='json').status_code, 401)
-        client = APIClient(); client.force_authenticate(self.student)
-        self.assertEqual(client.post('/api/comments/', {'seccion': 'a'}, format='json').status_code, 400)
-        self.assertEqual(Comment.objects.count(), 0)
-
-    def test_comments_cannot_be_listed_through_the_api(self):
-        client = APIClient(); client.force_authenticate(self.student)
-        self.assertEqual(client.get('/api/comments/').status_code, 405)
-
-    def test_deleting_the_author_keeps_the_comment(self):
-        Comment.objects.create(usuario=self.student, seccion='a', comentario='b')
-        self.student.delete()
-        self.assertIsNone(Comment.objects.get().usuario)

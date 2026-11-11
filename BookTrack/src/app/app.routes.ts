@@ -18,7 +18,6 @@ import { ProfileUser } from './features/profile/profile-user/profile-user';
 import { ProfileAdmin } from './features/profile/profile-admin/profile-admin';
 import { UserManagement } from './features/admin/user-management/user-management';
 import { Reports } from './features/admin/reports/reports';
-import { CommentForm } from './features/comments/comment-form/comment-form';
 import { ModalSuccess } from './shared/components/modal-success/modal-success';
 import { ModalError } from './shared/components/modal-error/modal-error';
 import { BookSearch } from './features/books/book-search/book-search';
@@ -32,7 +31,7 @@ export const routes: Routes = [
   { path: 'register', component: Register },
   { path: 'forgot-password', component: ForgotPassword },
   { path: 'reset-password-sent', component: ResetPasswordSent },
-  
+
   {
     path: 'home',
     component: HomeUser,
@@ -105,12 +104,11 @@ export const routes: Routes = [
     data: { roles: ['bibliotecario'] }
   },
   {
-    path: 'reports', 
+    path: 'reports',
     component: Reports,
     canActivate: [authGuard],
     data: { roles: ['bibliotecario'] }
   },
-  { path: 'comment-form', component: CommentForm },
   { path: 'modal-success', component: ModalSuccess },
   { path: 'modal-error', component: ModalError },
   { path: 'book-search', component: BookSearch },

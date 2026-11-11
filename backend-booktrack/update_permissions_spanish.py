@@ -39,10 +39,6 @@ PERMISSION_TRANSLATIONS = {
     'delete_category': 'Puede eliminar categoría',
     'view_category': 'Puede ver categoría',
 
-    'add_comment': 'Puede agregar comentario',
-    'change_comment': 'Puede cambiar comentario',
-    'delete_comment': 'Puede eliminar comentario',
-    'view_comment': 'Puede ver comentario',
 
     'add_loan': 'Puede agregar préstamo',
     'change_loan': 'Puede cambiar préstamo',

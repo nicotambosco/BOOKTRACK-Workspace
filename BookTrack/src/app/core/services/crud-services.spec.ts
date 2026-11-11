@@ -2,7 +2,6 @@ import { TestBed } from '@angular/core/testing';
 import { HttpTestingController } from '@angular/common/http/testing';
 import { BookService } from './book.service';
 import { UserService } from './user.service';
-import { CommentService } from './comment.service';
 import { environment } from '../../../environments/environment';
 import { testProviders } from '../../testing/test-providers';
 
@@ -59,13 +58,4 @@ describe('HTTP services (contract with the API)', () => {
     });
   });
 
-  describe('CommentService', () => {
-    it('posts section and comment', () => {
-      TestBed.inject(CommentService).send('Catálogo', 'Muy bueno').subscribe();
-      const req = ctrl.expectOne(`${API}/comments/`);
-      expect(req.request.method).toBe('POST');
-      expect(req.request.body).toEqual({ seccion: 'Catálogo', comentario: 'Muy bueno' });
-      req.flush(null);
-    });
-  });
 });

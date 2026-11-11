@@ -12,7 +12,7 @@ import { Book } from '../../../models/book.model';
   imports: [Header, CommonModule],
   template: `
     <div class="home-page">
-      <app-header [esAdmin]="false" [mostrarComentarios]="false"></app-header>
+      <app-header [esAdmin]="false"></app-header>
       <div class="home-body">
         @if (cargando) {
           <p class="estado-msg">Cargando...</p>

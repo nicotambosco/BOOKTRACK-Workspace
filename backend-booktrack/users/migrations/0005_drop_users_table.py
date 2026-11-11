@@ -11,7 +11,6 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('users', '0004_legajo_como_clave'),
-        ('comments', '0003_comentario_de_usuario'),
         ('books', '0013_favorito_por_legajo'),
     ]
 
@@ -20,6 +19,7 @@ class Migration(migrations.Migration):
         migrations.RemoveField(model_name='bibliotecario', name='cuenta'),
         # El admin de Django se quitó: su bitácora (si existe) apunta a `users` y estorba al borrarla.
         migrations.RunSQL('DROP TABLE IF EXISTS django_admin_log', migrations.RunSQL.noop),
+        migrations.RunSQL('DROP TABLE IF EXISTS comments', migrations.RunSQL.noop),
         migrations.DeleteModel(name='User'),
         migrations.RunPython(migrations.RunPython.noop, refuse_rollback),  # al volver atrás, es lo primero que se ejecuta
     ]

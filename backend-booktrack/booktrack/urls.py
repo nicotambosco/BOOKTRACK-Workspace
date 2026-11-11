@@ -14,7 +14,6 @@ urlpatterns = [
     path('api/copies/', include('books.copy_urls')),
     path('api/notifications/', include('loans.notification_urls')),
     path('api/admin-actions/', include('loans.action_urls')),
-    path('api/comments/', include('comments.urls')),
 ]
 
 if settings.DEBUG:

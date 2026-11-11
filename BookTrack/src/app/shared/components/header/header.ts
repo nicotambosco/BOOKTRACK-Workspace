@@ -31,13 +31,7 @@ import { AuthService } from '../../../core/services/auth.service';
         </div>
       </div>
       <div class="header-right">
-        @if (esAdmin) {
-          @if (mostrarComentarios) {
-            <svg class="icon-btn" width="22" height="22" viewBox="0 0 24 24" fill="none" (click)="irAComentario()">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="white" stroke-width="2" fill="none"/>
-            </svg>
-          }
-        } @else {
+        @if (!esAdmin) {
           <div class="notif-wrap">
             <svg class="icon-btn" width="22" height="22" viewBox="0 0 24 24" fill="none" (click)="toggleNotificaciones()">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0" stroke="white" stroke-width="2" fill="none"/>
@@ -145,7 +139,6 @@ import { AuthService } from '../../../core/services/auth.service';
 })
 export class Header implements OnInit {
   @Input() esAdmin = false;
-  @Input() mostrarComentarios = false; // ponytail: oculto en todas las vistas de admin; pasar true para mostrarlo
   busqueda = '';
   tieneNotificaciones = false;
   mostrarNotificaciones = false;
@@ -193,6 +186,5 @@ export class Header implements OnInit {
   irAHome() { this.router.navigate([this.esAdmin ? '/home-admin' : '/home']); }
   irAPerfil() { this.router.navigate([this.esAdmin ? '/profile-admin' : '/profile']); }
   irAHistorial() { this.router.navigate(['/user-history']); }
-  irAComentario() { this.router.navigate(['/comment-form']); }
   buscar() { if (this.busqueda.trim()) this.router.navigate(['/book-search'], { queryParams: { q: this.busqueda } }); }
 }

@@ -13,7 +13,7 @@ import { CATEGORIAS } from '../../../models/categories';
   imports: [FormsModule, CommonModule, Header],
   template: `
     <div class="home-page">
-      <app-header [esAdmin]="true" [mostrarComentarios]="false"></app-header>
+      <app-header [esAdmin]="true"></app-header>
       <div class="page-body">
         <div class="content-header">
           <div class="title-icon">

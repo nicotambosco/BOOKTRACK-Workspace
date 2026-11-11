@@ -2,7 +2,6 @@ import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { HttpTestingController } from '@angular/common/http/testing';
 import { Header } from './header';
-import { CommentForm } from '../../../features/comments/comment-form/comment-form';
 import { environment } from '../../../../environments/environment';
 import { testProviders } from '../../../testing/test-providers';
 
@@ -75,21 +74,5 @@ describe('Header notifications (served by the API)', () => {
     header.busqueda = 'redes';
     header.buscar();
     expect(navigate).toHaveBeenCalledWith(['/book-search'], { queryParams: { q: 'redes' } });
-  });
-});
-
-describe('CommentForm screen', () => {
-  it('sends nothing until section and comment are filled, then posts them', () => {
-    TestBed.configureTestingModule({ imports: [CommentForm], providers: testProviders });
-    const ctrl = TestBed.inject(HttpTestingController);
-    const page = TestBed.createComponent(CommentForm).componentInstance;
-    page.enviar();
-    ctrl.expectNone(`${API}/comments/`);
-    page.seccion = 'Catálogo'; page.comentario = 'Falta un libro';
-    page.enviar();
-    const req = ctrl.expectOne(`${API}/comments/`);
-    expect(req.request.body).toEqual({ seccion: 'Catálogo', comentario: 'Falta un libro' });
-    req.flush(null);
-    expect(page.exito).toBe(true);
   });
 });

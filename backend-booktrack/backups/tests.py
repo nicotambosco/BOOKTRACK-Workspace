@@ -16,7 +16,6 @@ from django.utils import timezone
 
 from books.models import Ejemplar, Libro
 from books.testing import make_book
-from comments.models import Comment
 from loans.models import Prestamo, Reserva
 from users.models import Bibliotecario, Usuario
 from users.testing import make_user
@@ -50,7 +49,6 @@ class SnapshotTests(TransactionTestCase):
             fecha_vencimiento=timezone.localdate()+timedelta(days=7))
         self.reservation = Reserva.objects.create(usuario=self.user, libro=self.book, estado='finalizada',
             fecha_vencimiento=timezone.localdate(), fecha_devolucion_prevista=self.loan.fecha_vencimiento, prestamo=self.loan)
-        Comment.objects.create(usuario=self.user, seccion='Test', comentario='Texto privado')
         Session.objects.create(session_key='backup-test-session', session_data='test-session-data',
                                expire_date=timezone.now()+timedelta(days=1))
 
@@ -79,7 +77,7 @@ class SnapshotTests(TransactionTestCase):
         self.assertEqual(metadata['counts']['auth.group_permissions'], 1)
         _, files = read_snapshot(self.output, PASSWORD)
         labels = {entry['model'] for entry in json.loads(files['database.json'])}
-        self.assertTrue({'users.usuario', 'users.bibliotecario', 'books.libro', 'books.ejemplar', 'loans.prestamo', 'loans.reserva', 'comments.comment',
+        self.assertTrue({'users.usuario', 'users.bibliotecario', 'books.libro', 'books.ejemplar', 'loans.prestamo', 'loans.reserva',
                          'sessions.session', 'auth.group', 'auth.permission', 'contenttypes.contenttype'} <= labels)
         self.assertEqual(files['media/foto.jpg'], b'uploaded-image-test')
 
