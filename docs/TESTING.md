@@ -14,9 +14,9 @@ python manage.py test
 
 Se usa la conexión configurada. Django crea una base de prueba independiente; en MySQL la cuenta necesita permiso para crear/eliminar esa base de prueba. Con SQLite se utiliza la configuración local del README.
 
-`users/test_api.py`, `books/tests.py` y `loans/test_database_rules.py` cubren registro, login y roles, catálogo (permisos, búsqueda, ISBN único, ejemplares, favoritos, portadas, baja con historial), categorías, comentarios, restricciones CHECK/UNIQUE/PROTECT de la base y el comando `actualizar_estados`. Las migraciones cargan el catálogo inicial, por eso esos tests vacían las tablas al empezar.
+`users/test_api.py`, `books/tests.py` y `loans/test_database_rules.py` cubren registro, login y roles, catálogo (permisos, búsqueda, ISBN único, ejemplares, portadas, baja con historial), categorías, restricciones CHECK/UNIQUE/PROTECT de la base y el comando `actualizar_estados`. Las migraciones cargan el catálogo inicial, por eso esos tests vacían las tablas al empezar.
 
-`loans/tests.py` cubre reserva activa sin descuento de stock, espera sin disponibilidad, libros inactivos, validación de fechas, duplicados, permisos, prioridad/FIFO, retiro idempotente, devolución efectiva, devolución de vencidos, renovación, filtros, exportaciones y cierre de accesos CRUD que permitirían saltarse el ciclo.
+`loans/tests.py` cubre reserva activa sin descuento de stock, espera sin disponibilidad, libros inactivos, validación de fechas, duplicados, permisos, orden de la cola, retiro idempotente, devolución efectiva, devolución de vencidos, filtros, exportaciones y cierre de accesos CRUD que permitirían saltarse el ciclo.
 
 `loans/test_migrations.py` crea una base SQLite temporal, aplica el esquema anterior, inserta solicitudes y préstamos antiguos, ejecuta la actualización y verifica la conservación de datos, fechas, identificadores y stock. También comprueba que un rollback no cambie parcialmente el esquema. No usa la base del operador.
 
@@ -32,7 +32,7 @@ npm test
 npm run build
 ```
 
-`npm test` ejecuta todos los specs (115 pruebas): servicios HTTP (contrato con la API), autenticación y «Recordarme», guard por rol, interceptor del token, y el comportamiento de las pantallas (login, registro, reserva, gestión de reservas y préstamos, renovaciones, reportes, usuarios, libros, catálogo, notificaciones del encabezado, comentarios). Las llamadas HTTP se simulan con `HttpTestingController`; `src/app/testing/test-providers.ts` agrupa los proveedores comunes. Los specs de componentes sin lógica propia solo comprueban que se crean. Compilar verifica también los tipos y las plantillas de las pantallas.
+`npm test` ejecuta todos los specs (115 pruebas): servicios HTTP (contrato con la API), autenticación y «Recordarme», guard por rol, interceptor del token, y el comportamiento de las pantallas (login, registro, reserva, gestión de reservas y préstamos, reportes, usuarios, libros, catálogo, notificaciones del encabezado). Las llamadas HTTP se simulan con `HttpTestingController`; `src/app/testing/test-providers.ts` agrupa los proveedores comunes. Los specs de componentes sin lógica propia solo comprueban que se crean. Compilar verifica también los tipos y las plantillas de las pantallas.
 
 La compilación de producción selecciona `environment.prod.ts`, con API relativa `/api`; `npm start` usa `environment.ts` y Django en 8000.
 
@@ -41,9 +41,7 @@ La compilación de producción selecciona `environment.prod.ts`, con API relativ
 1. Iniciar sesión como usuario y reservar un libro activo con fechas vigentes. Confirmar que aparece activa y el stock no cambia.
 2. Cancelar una reserva activa; comprobar que el stock sigue igual.
 3. Crear dos reservas del mismo libro con usuarios distintos y una sola copia disponible.
-4. Como bibliotecario, cambiar la prioridad y verificar que se entrega primero según la cola.
 5. Registrar retiro: la reserva debe finalizar y aparecer un solo préstamo vigente. Repetir la llamada no descuenta otra copia.
-6. Como usuario, pedir renovación. Como bibliotecario, aprobarla y verificar siete días más, sin tocar la fecha de inicio.
 7. Registrar devolución: guardar la fecha efectiva, conservar vencimiento y reponer una copia una sola vez.
 8. Consultar archivo y exportaciones: estados y ambas fechas deben coincidir.
 9. Inactivar el libro: no debe admitir nuevas reservas ni retiros, pero sí devoluciones de préstamos abiertos.

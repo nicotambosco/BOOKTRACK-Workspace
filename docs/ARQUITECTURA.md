@@ -22,12 +22,10 @@ flowchart LR
 | `backend-booktrack/users/` | Usuario personalizado, registro, sesión y perfiles |
 | `backend-booktrack/books/` | Catálogo, stock agregado y portadas |
 | `backend-booktrack/loans/` | Reservas, préstamos, transiciones y exportaciones |
-| `backend-booktrack/categories/` | Catálogo de categorías |
-| `backend-booktrack/comments/` | Recepción de comentarios de usuarios |
 
 ## Comunicación
 
-Django expone `/api/users/`, `/api/books/`, `/api/reservations/`, `/api/loans/`, `/api/categories/`, `/api/comments/` y `/api/token/refresh/`. La API entrega listas planas, sin paginación global, porque así las consumen los servicios existentes.
+Django expone `/api/users/`, `/api/books/`, `/api/reservations/`, `/api/loans/`, y `/api/token/refresh/`. La API entrega listas planas, sin paginación global, porque así las consumen los servicios existentes.
 
 En desarrollo Angular corre en 4200 y llama directamente a Django en 8000. CORS admite los orígenes locales 4200 y 4202. En Compose Angular se compila como archivos estáticos, Nginx escucha en 80 dentro del contenedor y publica 4202. `/api/` se reenvía a `backend:8000`; la configuración de producción usa una URL relativa.
 
@@ -37,7 +35,7 @@ En desarrollo Angular corre en 4200 y llama directamente a Django en 8000. CORS 
 
 - JWT SimpleJWT: access de ocho horas y refresh de siete días. El login actual entrega solo el access; el endpoint de refresh existe pero la interfaz no implementa una renovación automática con refresh.
 - El backend verifica rol y propiedad de cada reserva/préstamo; el guard del navegador es una ayuda de navegación.
-- El registro público crea usuarios comunes. Las operaciones de retiro, devolución y resolución de renovaciones requieren bibliotecario.
+- El registro público crea usuarios comunes. Las operaciones de retiro y devolución requieren bibliotecario.
 - Las modificaciones del catálogo requieren bibliotecario. Un usuario común accede a su propio perfil.
 - Las transiciones viven en `loans/services.py`. Las operaciones de stock bloquean primero el libro y luego la reserva o el préstamo dentro de una transacción.
 - Reservas y préstamos no admiten PATCH/DELETE genéricos. Solo cambian de estado por las acciones del bibliotecario, que dejan registro.

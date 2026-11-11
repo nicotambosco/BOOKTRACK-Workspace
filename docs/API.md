@@ -30,23 +30,22 @@ En las llamadas protegidas enviar `Authorization: Bearer <token>`. El cliente no
 | `POST reservations/` | Autenticado | Crea reserva activa propia |
 | `PATCH reservations/{id}/cancelar/` | Propietario o bibliotecario | Activa a cancelada |
 | `PATCH reservations/{id}/retirar/` | Bibliotecario | Activa a finalizada y crea préstamo |
-| `PATCH reservations/{id}/priorizar/` | Bibliotecario | Modifica prioridad de una activa |
 
 Crear:
 
 ```json
 {
   "libroId": 7,
-  "fechaVencimiento": "2026-11-01",
-  "fechaDevolucionPrevista": "2026-11-08"
+  "fechaRetiro": "2026-11-01",
+  "fechaVencimiento": "2026-11-08"
 }
 ```
 
-Las fechas del ejemplo deben reemplazarse por fechas vigentes al probar. El primer campo de fecha limita el retiro; el segundo será el vencimiento del préstamo. No se envía `estudianteId`, `estado`, `codigoReserva` ni `prioridad`: los determina el servidor.
+Las fechas del ejemplo deben reemplazarse por fechas vigentes al probar. La fecha de retiro limita cuándo retirar y el vencimiento define el plazo del préstamo. No se envía `estudianteId` ni `estado`: los determina el servidor.
 
-La respuesta incluye `id`, `codigoReserva`, `estudianteId`, `estudianteNombre`, `libroId`, `libroTitulo`, `fechaReserva`, ambas fechas solicitadas, `prioridad`, `estado`, `prestamoId` y `bibliotecarioId`. `prestamoId` es nulo hasta retirar.
+La respuesta incluye `id`, `estudianteId`, `estudianteNombre`, `libroId`, `libroTitulo`, `fechaReserva`, `fechaRetiro`, `fechaVencimiento`, `estado`, `prestamoId` y `bibliotecarioId`. `prestamoId` es nulo hasta retirar.
 
-Para priorizar, enviar `{ "prioridad": 2 }`. Retiro y cancelación reciben `{}`. `GET reservations/?estado=activa` permite filtrar por un estado válido. El orden es prioridad descendente, fecha de reserva e ID ascendentes.
+Para seleccionar un ejemplar al retirar, enviar `{ "ejemplarId": "código" }`; la cancelación recibe `{}`. El vencimiento del préstamo es el de la reserva. `GET reservations/?estado=activa` permite filtrar por un estado válido. El orden es por fecha de reserva e ID ascendentes.
 
 Retirar y cancelar son idempotentes cuando se reintenta la misma operación ya terminada. Una operación incompatible con el estado, las fechas, la disponibilidad o la cola devuelve 400. PATCH/PUT/DELETE directos sobre una reserva no están habilitados.
 
@@ -56,9 +55,6 @@ Retirar y cancelar son idempotentes cuando se reintenta la misma operación ya t
 | --- | --- | --- |
 | `GET loans/`, `GET loans/{id}/` | Propietario o bibliotecario | Consulta de préstamos reales |
 | `PATCH loans/{id}/devolver/` | Bibliotecario | Registra devolución efectiva y repone una copia |
-| `PATCH loans/{id}/solicitar-extension/` | Propietario o bibliotecario | Solicita renovación de un vigente |
-| `PATCH loans/{id}/aprobar-extension/` | Bibliotecario | Resuelve pendiente y suma siete días |
-| `PATCH loans/{id}/denegar-extension/` | Bibliotecario | Resuelve sin cambiar vencimiento |
 | `GET loans/export/pdf/` | Autenticado | PDF del historial visible para el usuario |
 | `GET loans/export/excel/` | Autenticado | XLSX del historial visible para el usuario |
 
@@ -73,9 +69,7 @@ Las acciones reciben `{}`. Una respuesta contiene:
   "fechaInicio": "2026-11-01",
   "fechaVencimiento": "2026-11-08",
   "fechaDevolucion": null,
-  "estado": "vigente",
-  "extensionPendiente": false,
-  "extensionEstado": ""
+  "estado": "vigente"
 }
 ```
 
@@ -83,7 +77,7 @@ Además se entregan `estudianteLegajo`, `estudianteNombre`, `libroTitulo` y `pla
 
 Los préstamos solo se crean al retirar una reserva. `POST loans/`, PATCH/PUT/DELETE genéricos, `/aprobar/` y `/denegar/` del flujo antiguo ya no están disponibles. `fechaFin` fue reemplazada por `fechaVencimiento`; la devolución efectiva está en `fechaDevolucion`. Frontend y backend deben actualizarse juntos.
 
-Una renovación requiere una solicitud pendiente y un préstamo vigente. Su aprobación no se puede repetir para sumar días dos veces. Devolver nuevamente un préstamo ya devuelto no repone otra copia.
+Devolver nuevamente un préstamo ya devuelto no repone otra copia.
 
 ## Otros recursos
 
@@ -92,12 +86,9 @@ Una renovación requiere una solicitud pendiente y un préstamo vigente. Su apro
 | `books/` | Catálogo público; filtros `q` por título y `categoria`; escrituras requieren bibliotecario |
 | `books/{isbn}/` | Detalle y modificación; el `id` de un libro es su ISBN. Incluye `ejemplares`, `disponibles` (cuántos están disponibles) y `estado` (`activo` o `inactivo`). Al crear, `disponibles` genera esa cantidad de ejemplares; al editar, ajusta los disponibles sin borrar ejemplares |
 | `copies/` | Ejemplares (`?isbn=` filtra por libro); lectura pública, escrituras de bibliotecario. No se puede borrar un ejemplar con préstamos |
-| `favorites/` | GET lista los libros favoritos del usuario; POST `{isbn}` agrega; `favorites/{isbn}/` DELETE quita. Solo usuarios, no bibliotecarios |
 | `notifications/` | Avisos del usuario autenticado (más nuevos primero) |
 | `admin-actions/` | Registro de acciones administrativas; solo bibliotecario |
 | `books/upload-image/` | POST multipart `file`, bibliotecario; JPG, PNG o WebP hasta 1 MB, devuelve data URI |
-| `categories/` | Consulta pública; escrituras requieren bibliotecario |
-| `comments/` | POST autenticado con sección y comentario |
 
 ## Errores
 

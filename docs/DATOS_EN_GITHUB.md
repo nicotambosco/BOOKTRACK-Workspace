@@ -1,6 +1,6 @@
 # Incluir los datos en GitHub
 
-El repositorio puede guardar una **copia cifrada de todos los datos de BookTrack** en `data/booktrack.btbak`. Incluye usuarios y sus hashes de contraseña, grupos/permisos, libros, reservas, préstamos, comentarios, categorías, sesiones, registros administrativos de Django y todos los archivos de `media`. Las portadas y fotos guardadas como data URI viajan dentro de los registros.
+El repositorio puede guardar una **copia cifrada de todos los datos de BookTrack** en `data/booktrack.btbak`. Incluye usuarios y sus hashes de contraseña, grupos/permisos, libros, reservas, préstamos, sesiones, registros administrativos de Django y todos los archivos de `media`. Las portadas y fotos guardadas como data URI viajan dentro de los registros.
 
 Es una copia portable de los modelos administrados por Django, con sus IDs y relaciones. El esquema y las migraciones viajan en el código. No es un dump de otras bases o tablas externas a Django del servidor MySQL. No incluye `.env`, la contraseña de MySQL, `SECRET_KEY` ni la clave de cifrado.
 

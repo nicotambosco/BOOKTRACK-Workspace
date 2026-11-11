@@ -61,7 +61,7 @@ En Compose: `docker compose exec backend python manage.py actualizar_estados`. E
 | API 403 | Comprobar `categoria` de la cuenta; ser superusuario Django no reemplaza ese campo para la aplicación |
 | Frontend local no conecta | Backend en 8000, `environment.ts` y origen CORS permitido |
 | Compilación con Nginx no conecta | Usar ambos servicios del Compose; `/api` necesita el proxy hacia `backend:8000` |
-| Reserva no permite retiro | Activa, plazo vigente, libro activo, devolución prevista válida, stock y posición de la cola |
+| Reserva no permite retiro | Activa, plazo vigente, libro activo, vencimiento de la reserva vigente, stock y posición de la cola |
 | Reserva histórica sin plazo de devolución | Cancelarla y crear una nueva con ambas fechas |
 | Libro/usuario no se puede borrar | Tiene historial protegido; para libros, inactivar |
 
