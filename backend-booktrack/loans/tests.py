@@ -8,19 +8,20 @@ from django.test import TestCase, TransactionTestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from books.models import Book
-from users.models import User
-from .models import Loan, Reservation
+from books.testing import make_book, set_stock, stock
+from users.models import Bibliotecario, Usuario
+from users.testing import make_user
+from .models import AccionAdministrativa, Notificacion, Prestamo, Reserva
 from . import services
 
 
 class LifecycleTests(TestCase):
     def setUp(self):
         self.today = timezone.localdate()
-        self.student = User.objects.create_user(username='student', password='test-pass', legajo='S1')
-        self.other = User.objects.create_user(username='other', password='test-pass', legajo='S2')
-        self.librarian = User.objects.create_user(username='librarian', password='test-pass', legajo='L1', categoria='bibliotecario')
-        self.book = Book.objects.create(titulo='Libro 📚', categoria='sistemas', disponibles=1)
+        self.student = make_user('S1')
+        self.other = make_user('S2')
+        self.librarian = make_user('L1', 'bibliotecario')
+        self.book = make_book('Libro 📚', categoria='sistemas', disponibles=1)
         self.client = APIClient()
         self.client.force_authenticate(self.student)
         self.other_client = APIClient()
@@ -50,17 +51,15 @@ class LifecycleTests(TestCase):
         self.assertEqual(response.data['prioridad'], 0)
         self.assertEqual(response.data['estudianteId'], self.student.pk)
         self.assertIsNone(response.data['prestamoId'])
-        self.book.refresh_from_db()
-        self.assertEqual(self.book.disponibles, 1)
-        self.assertEqual(Loan.objects.count(), 0)
+        self.assertEqual(stock(self.book), 1)
+        self.assertEqual(Prestamo.objects.count(), 0)
 
     def test_reservations_allow_waiting_for_a_copy(self):
-        self.book.disponibles = 0
-        self.book.save()
+        set_stock(self.book, 0)
         response = self.reserve()
         self.assertEqual(response.status_code, 201)
         self.assertEqual(self.admin.patch(f"/api/reservations/{response.data['id']}/retirar/").status_code, 400)
-        self.assertEqual(Loan.objects.count(), 0)
+        self.assertEqual(Prestamo.objects.count(), 0)
 
     def test_inactive_book_cannot_be_reserved_or_delivered(self):
         response = self.reserve()
@@ -91,14 +90,13 @@ class LifecycleTests(TestCase):
         second = self.admin.patch(url)
         self.assertEqual(first.data['estado'], 'finalizada')
         self.assertEqual(first.data['prestamoId'], second.data['prestamoId'])
-        self.assertEqual(Loan.objects.count(), 1)
-        loan = Loan.objects.get()
+        self.assertEqual(Prestamo.objects.count(), 1)
+        loan = Prestamo.objects.get()
         self.assertEqual(loan.estado, 'vigente')
-        self.assertEqual(loan.fecha_inicio, self.today)
+        self.assertEqual(loan.fecha_prestamo, self.today)
         self.assertEqual(loan.fecha_vencimiento, self.today + timedelta(days=9))
         self.assertIsNone(loan.fecha_devolucion)
-        self.book.refresh_from_db()
-        self.assertEqual(self.book.disponibles, 0)
+        self.assertEqual(stock(self.book), 0)
 
     def test_actual_return_is_recorded_once_without_changing_deadline(self):
         loan_id = self.pickup()
@@ -106,12 +104,11 @@ class LifecycleTests(TestCase):
         self.assertEqual(self.client.patch(url).status_code, 403)
         self.assertEqual(self.admin.patch(url).status_code, 200)
         self.assertEqual(self.admin.patch(url).status_code, 200)
-        loan = Loan.objects.get(pk=loan_id)
+        loan = Prestamo.objects.get(pk=loan_id)
         self.assertEqual(loan.estado, 'devuelto')
         self.assertEqual(loan.fecha_devolucion, self.today)
         self.assertEqual(loan.fecha_vencimiento, self.today + timedelta(days=9))
-        self.book.refresh_from_db()
-        self.assertEqual(self.book.disponibles, 1)
+        self.assertEqual(stock(self.book), 1)
 
     def test_cancel_is_owned_idempotent_and_releases_no_stock(self):
         reservation_id = self.reserve().data['id']
@@ -120,17 +117,16 @@ class LifecycleTests(TestCase):
         self.assertEqual(self.client.patch(url).data['estado'], 'cancelada')
         self.assertEqual(self.client.patch(url).data['estado'], 'cancelada')
         self.assertEqual(self.admin.patch(f'/api/reservations/{reservation_id}/retirar/').status_code, 400)
-        self.book.refresh_from_db()
-        self.assertEqual(self.book.disponibles, 1)
+        self.assertEqual(stock(self.book), 1)
 
     def test_finalized_reservation_cannot_be_cancelled(self):
         self.pickup()
-        reservation = Reservation.objects.get()
+        reservation = Reserva.objects.get()
         self.assertEqual(self.admin.patch(f'/api/reservations/{reservation.id}/cancelar/').status_code, 400)
 
     def test_expiration_is_applied_before_state_filters(self):
         reservation_id = self.reserve().data['id']
-        Reservation.objects.filter(pk=reservation_id).update(fecha_vencimiento=self.today-timedelta(days=1))
+        Reserva.objects.filter(pk=reservation_id).update(fecha_vencimiento=self.today-timedelta(days=1))
         self.assertEqual(self.client.get('/api/reservations/?estado=activa').data, [])
         response = self.client.get('/api/reservations/?estado=vencida')
         self.assertEqual(response.data[0]['id'], reservation_id)
@@ -140,7 +136,7 @@ class LifecycleTests(TestCase):
     def test_deadline_is_inclusive_in_argentina_local_date(self):
         response = self.reserve(fechaVencimiento=str(self.today))
         self.assertEqual(self.admin.patch(f"/api/reservations/{response.data['id']}/retirar/").status_code, 200)
-        loan = Loan.objects.get()
+        loan = Prestamo.objects.get()
         loan.fecha_vencimiento = self.today
         loan.save()
         services.refresh_states()
@@ -149,7 +145,7 @@ class LifecycleTests(TestCase):
 
     def test_overdue_loan_can_be_returned_but_not_renewed(self):
         loan_id = self.pickup()
-        Loan.objects.filter(pk=loan_id).update(fecha_vencimiento=self.today-timedelta(days=1))
+        Prestamo.objects.filter(pk=loan_id).update(fecha_vencimiento=self.today-timedelta(days=1))
         response = self.client.get('/api/loans/?estado=vencido')
         self.assertEqual(response.data[0]['id'], loan_id)
         self.assertEqual(self.client.patch(f'/api/loans/{loan_id}/solicitar-extension/').status_code, 400)
@@ -168,8 +164,7 @@ class LifecycleTests(TestCase):
         self.assertEqual(response.data['fechaInicio'], str(self.today))
         self.assertIsNone(response.data['fechaDevolucion'])
         self.assertEqual(self.admin.patch(approve).status_code, 400)
-        self.book.refresh_from_db()
-        self.assertEqual(self.book.disponibles, 0)
+        self.assertEqual(stock(self.book), 0)
 
     def test_denied_extension_does_not_change_deadline(self):
         loan_id = self.pickup()
@@ -188,22 +183,20 @@ class LifecycleTests(TestCase):
         self.assertEqual(self.admin.patch(url, {'prioridad': 9}, format='json').status_code, 200)
         self.assertEqual(self.admin.patch(f'/api/reservations/{first}/retirar/').status_code, 400)
         self.assertEqual(self.admin.patch(f'/api/reservations/{second}/retirar/').status_code, 200)
-        self.assertEqual(Loan.objects.count(), 1)
+        self.assertEqual(Prestamo.objects.count(), 1)
 
     def test_fifo_and_multiple_copies(self):
         first = self.reserve().data['id']
         second = self.reserve(self.other_client).data['id']
         self.assertEqual(self.admin.patch(f'/api/reservations/{second}/retirar/').status_code, 400)
-        self.book.disponibles = 2
-        self.book.save()
+        set_stock(self.book, 2)
         self.assertEqual(self.admin.patch(f'/api/reservations/{second}/retirar/').status_code, 200)
         self.assertEqual(self.admin.patch(f'/api/reservations/{first}/retirar/').status_code, 200)
-        self.book.refresh_from_db()
-        self.assertEqual(self.book.disponibles, 0)
+        self.assertEqual(stock(self.book), 0)
 
     def test_lifecycle_cannot_be_bypassed_with_crud(self):
         loan_id = self.pickup()
-        reservation = Reservation.objects.get()
+        reservation = Reserva.objects.get()
         for client in [self.client, self.admin]:
             self.assertEqual(client.post('/api/loans/', {}, format='json').status_code, 405)
             self.assertEqual(client.patch(f'/api/loans/{loan_id}/', {'estado': 'devuelto'}).status_code, 405)
@@ -241,7 +234,8 @@ class LifecycleTests(TestCase):
         response = APIClient().post('/api/users/register/', {'nombreApellido': 'New User', 'email': 'new@example.test',
             'legajo': 'NEW', 'contrasena': 'password123', 'categoria': 'bibliotecario'}, format='json')
         self.assertEqual(response.status_code, 201, response.data)
-        self.assertEqual(User.objects.get(legajo='NEW').categoria, 'usuario')
+        self.assertEqual(Usuario.objects.get(pk='NEW').categoria, 'usuario')
+        self.assertFalse(Bibliotecario.objects.filter(pk='NEW').exists())
 
     def test_history_is_protected_and_book_states_are_validated(self):
         self.pickup()
@@ -253,23 +247,77 @@ class LifecycleTests(TestCase):
     def test_anonymous_users_cannot_create_reservations(self):
         self.assertEqual(self.reserve(APIClient()).status_code, 401)
 
+    def test_pickup_lends_one_copy_and_leaves_a_trace(self):
+        reservation_id = self.reserve().data['id']
+        copy = self.book.ejemplares.get()
+        loan_id = self.admin.patch(f'/api/reservations/{reservation_id}/retirar/').data['prestamoId']
+        copy.refresh_from_db()
+        loan = Prestamo.objects.get(pk=loan_id)
+        self.assertEqual((copy.estado, loan.ejemplar_id, loan.usuario_id), ('prestado', copy.pk, self.student.pk))
+        self.assertEqual(loan.bibliotecario_id, self.librarian.pk)
+        action = AccionAdministrativa.objects.get(tipo_accion='retiro_reserva')
+        self.assertEqual((action.bibliotecario_id, action.prestamo_id, action.ejemplar_id, action.libro_id),
+                         (self.librarian.pk, loan_id, copy.pk, self.book.pk))
+        self.assertEqual(list(Notificacion.objects.values_list('tipo', flat=True).order_by('id')), ['reserva_creada', 'prestamo_iniciado'])
+
+    def test_return_frees_the_same_copy_and_is_logged(self):
+        loan_id = self.pickup()
+        copy = Prestamo.objects.get(pk=loan_id).ejemplar
+        self.admin.patch(f'/api/loans/{loan_id}/devolver/')
+        copy.refresh_from_db()
+        self.assertEqual(copy.estado, 'disponible')
+        self.assertTrue(AccionAdministrativa.objects.filter(tipo_accion='devolucion', ejemplar=copy).exists())
+        self.assertTrue(Notificacion.objects.filter(tipo='devolucion_registrada', usuario=self.student).exists())
+
+    def test_notifications_are_private_and_include_expirations(self):
+        reservation_id = self.reserve().data['id']
+        Reserva.objects.filter(pk=reservation_id).update(fecha_vencimiento=self.today-timedelta(days=1))
+        types = [n['tipo'] for n in self.client.get('/api/notifications/').data]
+        self.assertEqual(sorted(types), ['reserva_creada', 'reserva_vencida'])
+        self.assertEqual(self.other_client.get('/api/notifications/').data, [])
+        self.assertEqual(self.admin.get('/api/notifications/').data, [])
+        self.assertEqual(APIClient().get('/api/notifications/').status_code, 401)
+        self.client.get('/api/reservations/')  # volver a consultar no duplica el aviso
+        self.assertEqual(len(self.client.get('/api/notifications/').data), 2)
+
+    def test_due_soon_warning_is_sent_once(self):
+        loan_id = self.pickup()
+        Prestamo.objects.filter(pk=loan_id).update(fecha_vencimiento=self.today+timedelta(days=1))
+        for _ in range(2):
+            self.client.get('/api/loans/')
+        types = [n['tipo'] for n in self.client.get('/api/notifications/').data]
+        self.assertEqual(types.count('prestamo_por_vencer'), 1)
+        Prestamo.objects.filter(pk=loan_id).update(fecha_vencimiento=self.today+timedelta(days=30))
+        other = Notificacion.objects.filter(tipo='prestamo_por_vencer').count()
+        self.client.get('/api/loans/')
+        self.assertEqual(Notificacion.objects.filter(tipo='prestamo_por_vencer').count(), other)
+
+    def test_admin_actions_are_visible_to_librarians_only(self):
+        self.pickup()
+        self.assertEqual(self.client.get('/api/admin-actions/').status_code, 403)
+        self.assertEqual(APIClient().get('/api/admin-actions/').status_code, 401)
+        self.assertEqual([a['tipoAccion'] for a in self.admin.get('/api/admin-actions/').data], ['retiro_reserva'])
+
+    def test_librarians_cannot_make_reservations(self):
+        self.assertEqual(self.reserve(self.admin).status_code, 403)
+
 
 @skipUnless(connection.vendor == 'mysql', 'Requires MySQL row locks; SQLite is not a concurrency proof.')
 class ConcurrentPickupTests(TransactionTestCase):
     def test_two_simultaneous_pickups_consume_one_copy_once(self):
         today = timezone.localdate()
-        student = User.objects.create_user(username='concurrent-student')
-        librarian = User.objects.create_user(username='concurrent-librarian', categoria='bibliotecario')
-        book = Book.objects.create(titulo='Concurrent', categoria='sistemas', disponibles=1)
-        reservation = Reservation.objects.create(estudiante=student, libro=book,
+        student = make_user('concurrent-student')
+        librarian = make_user('concurrent-librarian', 'bibliotecario')
+        book = make_book('Concurrent', categoria='sistemas', disponibles=1)
+        reservation = Reserva.objects.create(usuario=student, libro=book,
             fecha_vencimiento=today, fecha_devolucion_prevista=today+timedelta(days=7))
         barrier = Barrier(2)
 
         def deliver():
             close_old_connections()
             try:
-                current = Reservation.objects.get(pk=reservation.pk)
-                actor = User.objects.get(pk=librarian.pk)
+                current = Reserva.objects.get(pk=reservation.pk)
+                actor = Bibliotecario.objects.get(pk=librarian.pk)
                 barrier.wait(timeout=10)
                 return services.pick_up(current, actor).prestamo_id
             finally:
@@ -279,6 +327,5 @@ class ConcurrentPickupTests(TransactionTestCase):
             futures = [pool.submit(deliver) for _ in range(2)]
             ids = [future.result(timeout=20) for future in futures]
         self.assertEqual(ids[0], ids[1])
-        self.assertEqual(Loan.objects.count(), 1)
-        book.refresh_from_db()
-        self.assertEqual(book.disponibles, 0)
+        self.assertEqual(Prestamo.objects.count(), 1)
+        self.assertEqual(stock(book), 0)

@@ -114,7 +114,7 @@ export class LoanExtension implements OnInit {
   seleccionado: number | null = null;
   modal = false;
   modalMsg = '';
-  private titulosPorLibro = new Map<number, string>();
+  private titulosPorLibro = new Map<string, string>();
 
   constructor(public router: Router, private loanService: LoanService, private bookService: BookService) {}
 
@@ -127,7 +127,7 @@ export class LoanExtension implements OnInit {
     });
   }
 
-  tituloLibro(libroId: number): string {
+  tituloLibro(libroId: string): string {
     return this.titulosPorLibro.get(libroId) ?? `Libro #${libroId}`;
   }
 

@@ -33,6 +33,16 @@ describe('authGuard', () => {
     expect(url(run(['bibliotecario']))).toBe('/home');
   });
 
+  it('sends a librarian who opens a user-only route back to the librarian panel', () => {
+    localStorage.setItem('auth_token', fakeJwt({ categoria: 'bibliotecario' }));
+    expect(url(run(['usuario']))).toBe('/home-admin');
+  });
+
+  it('lets a regular user into a user-only route', () => {
+    localStorage.setItem('auth_token', fakeJwt({ categoria: 'usuario' }));
+    expect(run(['usuario'])).toBe(true);
+  });
+
   it('treats an expired token as anonymous', () => {
     localStorage.setItem('auth_token', fakeJwt({ exp: Math.floor(Date.now() / 1000) - 10 }));
     expect(url(run())).toBe('/login');

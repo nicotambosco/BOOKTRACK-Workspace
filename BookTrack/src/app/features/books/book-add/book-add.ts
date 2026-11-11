@@ -52,14 +52,14 @@ import { CategoryService } from '../../../core/services/category.service';
             </select>
           </div>
           <div class="right-panel">
+            <div class="campo"><label>ISBN</label><input [(ngModel)]="libro.isbn" placeholder="Ingrese ISBN"/></div>
             <div class="campo"><label>TÍTULO</label><input [(ngModel)]="libro.titulo" placeholder="Ingrese Título"/></div>
             <div class="campo"><label>AUTOR</label><input [(ngModel)]="libro.autor" placeholder="Ingrese Autor"/></div>
-            <div class="campo"><label>EDITORIAL</label><input [(ngModel)]="libro.editorial" placeholder="Ingrese Editorial"/></div>
-            <div class="campo"><label>FECHA DE PUBLICACIÓN</label><input [(ngModel)]="libro.fechaPublicacion" placeholder="Ingrese Fecha de Publicación"/></div>
-            <div class="campo"><label>DESCRIPCIÓN</label><textarea [(ngModel)]="libro.descripcion" rows="4" placeholder="Ingrese una descripción del libro..."></textarea></div>
+            <div class="campo"><label>AÑO DE PUBLICACIÓN</label><input type="number" [(ngModel)]="libro.anioPublicacion" placeholder="Ingrese Año de Publicación"/></div>
+            <div class="campo"><label>RESUMEN</label><textarea [(ngModel)]="libro.resumen" rows="4" placeholder="Ingrese un resumen del libro..."></textarea></div>
             <div class="codigos-row">
-              <div class="campo"><label>NRO DE CÓDIGO</label><input [(ngModel)]="libro.nroCodigo" placeholder="ingrese numero"/></div>
-              <div class="campo"><label>NRO DE INVENTARIO</label><input [(ngModel)]="libro.nroInventario" placeholder="ingrese numero"/></div>
+              <div class="campo"><label>PALABRAS CLAVE</label><input [(ngModel)]="libro.palabrasClave" placeholder="separadas por coma"/></div>
+              <div class="campo"><label>DISPONIBLES</label><input type="number" min="0" [(ngModel)]="libro.disponibles" placeholder="cantidad"/></div>
             </div>
             <div class="botones">
               <button class="btn-primary" (click)="guardar()">GUARDAR</button>
@@ -141,7 +141,7 @@ import { CategoryService } from '../../../core/services/category.service';
 export class BookAdd implements OnInit {
   modal=false; modalMsg=''; categoriaSeleccionada='';
   categorias: string[] = [];
-  libro = { titulo:'', autor:'', editorial:'', fechaPublicacion:'', descripcion:'', nroCodigo:'', nroInventario:'', imagen:'' };
+  libro = { isbn:'', titulo:'', autor:'', anioPublicacion: null as number | null, resumen:'', palabrasClave:'', disponibles: 1, imagen:'' };
 
   constructor(private router: Router, private bookService: BookService, private categoryService: CategoryService) {}
 
@@ -153,11 +153,11 @@ export class BookAdd implements OnInit {
   }
 
   guardar() {
-    if (!this.libro.titulo || !this.libro.autor) { this.modalMsg='¡Revise y complete todos los campos!'; this.modal=true; return; }
+    if (!this.libro.isbn.trim() || !this.libro.titulo || !this.libro.autor) { this.modalMsg='¡Revise y complete todos los campos!'; this.modal=true; return; }
     if (!this.categoriaSeleccionada) { this.modalMsg='¡Seleccione una categoría!'; this.modal=true; return; }
-    this.bookService.create({ ...this.libro, categoria: this.categoriaSeleccionada }).subscribe({
+    this.bookService.create({ ...this.libro, isbn: this.libro.isbn.trim(), categoria: this.categoriaSeleccionada }).subscribe({
       next: () => { this.modalMsg='¡Libro añadido exitosamente!'; this.modal=true; },
-      error: () => { this.modalMsg='Error al guardar. Intente de nuevo.'; this.modal=true; }
+      error: () => { this.modalMsg='Error al guardar. ¿Ya existe un libro con ese ISBN?'; this.modal=true; }
     });
   }
 

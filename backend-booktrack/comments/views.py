@@ -9,5 +9,5 @@ class CommentCreateView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def perform_create(self, serializer):
-        user = self.request.user if self.request.user.is_authenticated else None
-        serializer.save(user=user)
+        user = self.request.user
+        serializer.save(usuario=user if user.is_authenticated and user.categoria == 'usuario' else None)

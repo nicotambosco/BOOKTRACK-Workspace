@@ -15,7 +15,7 @@ export class UserManagement implements OnInit {
   usuarios: User[] = [];
   cargando = false;
   error: string | null = null;
-  usuarioEnEdicion: number | null = null;
+  usuarioEnEdicion: string | null = null;
   rolesDisponibles = ['usuario', 'bibliotecario'];
 
   constructor(private userService: UserService) {}
@@ -39,7 +39,7 @@ export class UserManagement implements OnInit {
     });
   }
 
-  editarRol(usuarioId: number | undefined) {
+  editarRol(usuarioId: string | undefined) {
     if (usuarioId) {
       this.usuarioEnEdicion = usuarioId;
     }
@@ -64,7 +64,7 @@ export class UserManagement implements OnInit {
     this.cargarUsuarios();
   }
 
-  eliminarUsuario(usuarioId: number | undefined) {
+  eliminarUsuario(usuarioId: string | undefined) {
     if (!usuarioId) return;
     if (confirm('¿Está seguro que desea eliminar este usuario?')) {
       this.userService.delete(usuarioId).subscribe({

@@ -30,11 +30,12 @@ describe('HTTP services (contract with the API)', () => {
 
     it('creates, updates (PUT), deletes and fetches by id', () => {
       const s = TestBed.inject(BookService);
-      const book = { titulo: 'T', autor: 'A', editorial: 'E', fechaPublicacion: '2020', descripcion: '', categoria: 'Basicas' };
-      s.create(book).subscribe(); s.update(4, book).subscribe(); s.delete(4).subscribe(); s.getById(4).subscribe();
+      const isbn = '9780000000004';
+      const book = { isbn, titulo: 'T', autor: 'A', resumen: '', categoria: 'Basicas' };
+      s.create(book).subscribe(); s.update(isbn, book).subscribe(); s.delete(isbn).subscribe(); s.getById(isbn).subscribe();
       const reqs = ctrl.match(() => true);
       expect(reqs.map(line)).toEqual([
-        `POST ${API}/books/`, `PUT ${API}/books/4/`, `DELETE ${API}/books/4/`, `GET ${API}/books/4/`]);
+        `POST ${API}/books/`, `PUT ${API}/books/9780000000004/`, `DELETE ${API}/books/9780000000004/`, `GET ${API}/books/9780000000004/`]);
       reqs.forEach(r => r.flush({}));
     });
 
@@ -50,11 +51,11 @@ describe('HTTP services (contract with the API)', () => {
   describe('UserService', () => {
     it('uses the expected routes and verbs', () => {
       const s = TestBed.inject(UserService);
-      s.getAll().subscribe(); s.getProfile().subscribe(); s.getById(3).subscribe();
-      s.update(3, { nombreApellido: 'Z' }).subscribe(); s.delete(3).subscribe();
+      s.getAll().subscribe(); s.getProfile().subscribe(); s.getById('13885').subscribe();
+      s.update('13885', { nombreApellido: 'Z' }).subscribe(); s.delete('13885').subscribe();
       const reqs = ctrl.match(() => true);
       expect(reqs.map(line)).toEqual([
-        `GET ${API}/users/`, `GET ${API}/users/me/`, `GET ${API}/users/3/`, `PATCH ${API}/users/3/`, `DELETE ${API}/users/3/`]);
+        `GET ${API}/users/`, `GET ${API}/users/me/`, `GET ${API}/users/13885/`, `PATCH ${API}/users/13885/`, `DELETE ${API}/users/13885/`]);
       reqs.forEach(r => r.flush({}));
     });
   });

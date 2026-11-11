@@ -40,7 +40,7 @@ export class BookSearch implements OnInit {
     }
   }
 
-  irADetalle(id: number) { this.router.navigate(['/book', id]); }
+  irADetalle(id: string) { this.router.navigate(['/book', id]); }
 
   colorLibro(i: number) { return this.colores[i % this.colores.length]; }
 }

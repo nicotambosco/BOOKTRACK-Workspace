@@ -23,7 +23,7 @@ Desde la pantalla de inicio administrativa se accede al catálogo, usuarios, rep
 - Aprobar o denegar una solicitud de renovación. Esa decisión no cambia el ciclo de estados de la reserva.
 - Consultar el archivo y exportar los préstamos a PDF o Excel, respetando el filtro de estado.
 - Ver totales de libros, usuarios, reservas activas y préstamos vigentes, vencidos o devueltos.
-- Consultar y administrar perfiles. La asignación de roles se realiza en Django Admin, no mediante registro público ni edición ordinaria de perfil.
+- Consultar y administrar perfiles. El rol lo define la tabla (`Usuario` o `Bibliotecario`); no se asigna mediante registro público ni edición de perfil.
 
 La eliminación de un libro o usuario con historial devuelve un error de validación. Para retirar un título del servicio se usa el estado inactivo.
 

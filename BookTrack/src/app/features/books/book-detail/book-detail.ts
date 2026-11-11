@@ -3,6 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Header } from '../../../shared/components/header/header';
 import { BookService } from '../../../core/services/book.service';
+import { FavoriteService } from '../../../core/services/favorite.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { Book } from '../../../models/book.model';
 
@@ -43,8 +44,7 @@ import { Book } from '../../../models/book.model';
                 }
               </div>
               <div class="codigos">
-                <small>{{ libro.nroCodigo }}</small>
-                <small>{{ libro.nroInventario }}</small>
+                <small>ISBN {{ libro.isbn }}</small>
               </div>
             </div>
 
@@ -54,11 +54,11 @@ import { Book } from '../../../models/book.model';
               <div class="info-row"><span class="label">TÍTULO</span><span>{{ libro.titulo }}</span></div>
               <div class="info-row"><span class="label">AUTOR</span><span>{{ libro.autor }}</span></div>
               <div class="info-row"><span class="label">CATEGORÍA</span><span>{{ libro.categoria }}</span></div>
-              <div class="info-row"><span class="label">EDITORIAL</span><span>{{ libro.editorial }}</span></div>
-              <div class="info-row"><span class="label">FECHA DE PUBLICACIÓN</span><span>{{ libro.fechaPublicacion }}</span></div>
+              @if (libro.anioPublicacion) { <div class="info-row"><span class="label">AÑO DE PUBLICACIÓN</span><span>{{ libro.anioPublicacion }}</span></div> }
+              @if (libro.palabrasClave) { <div class="info-row"><span class="label">PALABRAS CLAVE</span><span>{{ libro.palabrasClave }}</span></div> }
               <div class="campo">
-                <label>DESCRIPCIÓN</label>
-                <p class="descripcion-texto">{{ libro.descripcion || 'Sin descripción.' }}</p>
+                <label>RESUMEN</label>
+                <p class="descripcion-texto">{{ libro.resumen || 'Sin resumen.' }}</p>
               </div>
               <div class="disponibles">Estado: {{ libro.estado || 'activo' }}</div>
               <div class="disponibles">Disponibles: {{ libro.disponibles }}</div>
@@ -66,9 +66,13 @@ import { Book } from '../../../models/book.model';
                 <button class="btn-primary" (click)="solicitarPrestamo()" [disabled]="libro.estado === 'inactivo'">
                   {{ libro.estado === 'inactivo' ? 'LIBRO INACTIVO' : 'RESERVAR LIBRO' }}
                 </button>
+                @if (!esAdmin) {
+                  <button class="btn-outline" (click)="alternarFavorito()" [disabled]="guardandoFavorito">
+                    {{ esFavorito ? '★ QUITAR DE FAVORITOS' : '☆ AGREGAR A FAVORITOS' }}
+                  </button>
+                }
                 <button class="btn-outline" (click)="volver()">VOLVER</button>
               </div>
-              @if (libro.tipo) { <div class="tipo-badge">{{ libro.tipo }}</div> }
             </div>
           </div>
         }
@@ -131,18 +135,37 @@ import { Book } from '../../../models/book.model';
 export class BookDetail implements OnInit {
   libro: Book | null = null;
   cargando = true;
+  esFavorito = false;
+  guardandoFavorito = false;
+  get esAdmin() { return this.authService.getUserRole() === 'bibliotecario'; }
 
-  constructor(private route: ActivatedRoute, private router: Router, private bookService: BookService, private authService: AuthService) {}
+  constructor(private route: ActivatedRoute, private router: Router, private bookService: BookService, private authService: AuthService,
+    private favoriteService: FavoriteService) {}
 
   ngOnInit() {
-    const id = Number(this.route.snapshot.paramMap.get('id'));
+    const id = this.route.snapshot.paramMap.get('id') ?? '';
     this.bookService.getById(id).subscribe({
       next: l => { this.libro = l; this.cargando = false; },
       error: () => { this.cargando = false; }
     });
+    if (!this.esAdmin) {
+      this.favoriteService.getAll().subscribe({ next: libros => this.esFavorito = libros.some(l => l.id === id), error: () => {} });
+    }
+  }
+
+  alternarFavorito() {
+    const isbn = this.libro?.isbn;
+    if (!isbn || this.guardandoFavorito) return;
+    this.guardandoFavorito = true;
+    const observer = {
+      next: () => { this.esFavorito = !this.esFavorito; this.guardandoFavorito = false; },
+      error: () => { this.guardandoFavorito = false; }
+    };
+    if (this.esFavorito) this.favoriteService.remove(isbn).subscribe(observer);
+    else this.favoriteService.add(isbn).subscribe(observer);
   }
 
   solicitarPrestamo() { if (this.libro?.id) this.router.navigate(['/loan-request', this.libro.id]); }
-  verLibro(id: number) { this.router.navigate(['/book', id]); }
+  verLibro(id: string) { this.router.navigate(['/book', id]); }
   volver() { this.router.navigate([this.authService.getUserRole() === 'bibliotecario' ? '/home-admin' : '/home']); }
 }

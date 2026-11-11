@@ -2,30 +2,9 @@ import { Component, Input, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { LoanService } from '../../../core/services/loan.service';
-import { BookService } from '../../../core/services/book.service';
+import { NotificationService } from '../../../core/services/notification.service';
+import { Notificacion } from '../../../models/notification.model';
 import { AuthService } from '../../../core/services/auth.service';
-
-interface NotifItem {
-  id: string;
-  tipo: 'vigente' | 'porVencer' | 'vencido' | 'extensionAprobada' | 'extensionDenegada';
-  libroId: number;
-}
-
-function esFinDeSemana(d: Date): boolean {
-  const dia = d.getDay();
-  return dia === 0 || dia === 6;
-}
-
-function diaHabilAnterior(fecha: Date): Date {
-  const d = new Date(fecha);
-  do { d.setDate(d.getDate() - 1); } while (esFinDeSemana(d));
-  return d;
-}
-
-function toISODate(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
 
 @Component({
   selector: 'app-header',
@@ -72,15 +51,7 @@ function toISODate(d: Date): string {
                 } @else {
                   @for (n of notificaciones; track n.id) {
                     <div class="notif-item" [class]="n.tipo">
-                      <span class="notif-msg">
-                        @switch (n.tipo) {
-                          @case ('vigente') { Tu préstamo de "{{ tituloLibro(n.libroId) }}" está <strong>vigente</strong>. }
-                          @case ('porVencer') { Tu préstamo de "{{ tituloLibro(n.libroId) }}" <strong>vence pronto</strong>. }
-                          @case ('vencido') { Tu préstamo de "{{ tituloLibro(n.libroId) }}" está <strong>vencido</strong>. }
-                          @case ('extensionAprobada') { Tu solicitud de extensión de "{{ tituloLibro(n.libroId) }}" fue <strong>aprobada</strong>. }
-                          @case ('extensionDenegada') { Tu solicitud de extensión de "{{ tituloLibro(n.libroId) }}" fue <strong>denegada</strong>. }
-                        }
-                      </span>
+                      <span class="notif-msg">{{ n.mensaje }}</span>
                     </div>
                   }
                 }
@@ -157,12 +128,11 @@ function toISODate(d: Date): string {
     .notif-vacio { margin: 0; color: #8a8a8a; font-size: 0.8rem; font-style: italic; }
     .notif-item { padding: 0.6rem 0.7rem; border-radius: 8px; background: #101010; margin-bottom: 0.5rem; }
     .notif-item:last-child { margin-bottom: 0; }
-    .notif-item.vigente { border-left: 3px solid #2ecc71; }
-    .notif-item.denegado { border-left: 3px solid #e74c3c; }
-    .notif-item.porVencer { border-left: 3px solid #e8a020; }
-    .notif-item.vencido { border-left: 3px solid #e74c3c; background: rgba(231,76,60,0.08); }
-    .notif-item.extensionAprobada { border-left: 3px solid #2ecc71; }
-    .notif-item.extensionDenegada { border-left: 3px solid #e74c3c; }
+    .notif-item.prestamo_iniciado, .notif-item.renovacion_aprobada, .notif-item.devolucion_registrada { border-left: 3px solid #2ecc71; }
+    .notif-item.prestamo_por_vencer, .notif-item.reserva_vencida { border-left: 3px solid #e8a020; }
+    .notif-item.prestamo_vencido { border-left: 3px solid #e74c3c; background: rgba(231,76,60,0.08); }
+    .notif-item.renovacion_denegada, .notif-item.reserva_cancelada { border-left: 3px solid #e74c3c; }
+    .notif-item.reserva_creada { border-left: 3px solid #3a8fd6; }
     .notif-msg { font-size: 0.8rem; color: #d8d8d8; line-height: 1.4; }
     .profile-icon {
       width: 32px; height: 32px;
@@ -179,51 +149,22 @@ export class Header implements OnInit {
   busqueda = '';
   tieneNotificaciones = false;
   mostrarNotificaciones = false;
-  notificaciones: NotifItem[] = [];
-  private titulosPorLibro = new Map<number, string>();
+  notificaciones: Notificacion[] = [];
 
-  constructor(private router: Router, private loanService: LoanService, private bookService: BookService, private authService: AuthService) {}
+  constructor(private router: Router, private notificationService: NotificationService, private authService: AuthService) {}
 
   ngOnInit() {
     // El rol real manda: las vistas compartidas (búsqueda, detalle, préstamo) no saben quién las ve.
     const rol = this.authService.getUserRole();
     if (rol) this.esAdmin = rol === 'bibliotecario';
-    // ponytail: sin backend de notificaciones dedicado; derivamos las novedades
-    // del estado/fecha de los préstamos del usuario.
+    // Los avisos los genera el servidor (reservas, retiros, vencimientos, renovaciones); el bibliotecario no recibe.
     if (!this.esAdmin) {
-      this.loanService.getAll().subscribe({
-        next: loans => {
-          const hoy = toISODate(new Date());
-          this.notificaciones = loans.flatMap((l): NotifItem[] => {
-            const items: NotifItem[] = [];
-            if (l.estado === 'vigente') {
-              items.push({ id: `${l.id}-${l.estado}`, tipo: l.estado, libroId: l.libroId });
-            }
-            if (l.estado === 'vigente' && l.fechaVencimiento) {
-              if (l.fechaVencimiento < hoy) {
-                items.push({ id: `${l.id}-vencido`, tipo: 'vencido', libroId: l.libroId });
-              } else {
-                const avisoDesde = toISODate(diaHabilAnterior(new Date(l.fechaVencimiento + 'T00:00:00')));
-                if (avisoDesde === hoy) {
-                  items.push({ id: `${l.id}-porVencer`, tipo: 'porVencer', libroId: l.libroId });
-                }
-              }
-            }
-            if (l.estado === 'vencido') { items.push({ id: `${l.id}-vencido`, tipo: 'vencido', libroId: l.libroId }); }
-            if (l.extensionEstado === 'aprobada') {
-              items.push({ id: `${l.id}-extensionAprobada`, tipo: 'extensionAprobada', libroId: l.libroId });
-            } else if (l.extensionEstado === 'denegada') {
-              items.push({ id: `${l.id}-extensionDenegada`, tipo: 'extensionDenegada', libroId: l.libroId });
-            }
-            return items;
-          });
+      this.notificationService.getAll().subscribe({
+        next: items => {
+          this.notificaciones = items;
           const leidas = this.idsLeidas();
-          this.tieneNotificaciones = this.notificaciones.some(n => !leidas.has(n.id));
+          this.tieneNotificaciones = items.some(n => !leidas.has(String(n.id)));
         },
-        error: () => {}
-      });
-      this.bookService.getAll().subscribe({
-        next: libros => libros.forEach(l => { if (l.id) this.titulosPorLibro.set(l.id, l.titulo); }),
         error: () => {}
       });
     }
@@ -244,13 +185,9 @@ export class Header implements OnInit {
 
   private marcarComoLeidas() {
     const leidas = this.idsLeidas();
-    this.notificaciones.forEach(n => leidas.add(n.id));
+    this.notificaciones.forEach(n => leidas.add(String(n.id)));
     localStorage.setItem('notif_leidas', JSON.stringify([...leidas]));
     this.tieneNotificaciones = false;
-  }
-
-  tituloLibro(libroId: number): string {
-    return this.titulosPorLibro.get(libroId) ?? `Libro #${libroId}`;
   }
 
   irAHome() { this.router.navigate([this.esAdmin ? '/home-admin' : '/home']); }

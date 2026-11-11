@@ -35,8 +35,7 @@ import { Book } from '../../../models/book.model';
               @if (libro?.imagen) { <img [src]="libro!.imagen" alt="portada"/> }
             </div>
             <div class="codigos">
-              <small>{{ libro?.nroCodigo }}</small>
-              <small>{{ libro?.nroInventario }}</small>
+              <small>ISBN {{ libro?.isbn }}</small>
             </div>
           </div>
 
@@ -116,7 +115,7 @@ import { Book } from '../../../models/book.model';
   `]
 })
 export class LoanRequest implements OnInit {
-  desde = ''; hasta = ''; exito = false; error = ''; bookId = 0;
+  desde = ''; hasta = ''; exito = false; error = ''; bookId = '';
   hoy = new Date().toLocaleDateString('en-CA');
   enviando = false;
   libro: Book | null = null;
@@ -125,7 +124,7 @@ export class LoanRequest implements OnInit {
     private bookService: BookService, private reservationService: ReservationService, private authService: AuthService) {}
 
   ngOnInit() {
-    this.bookId = Number(this.route.snapshot.paramMap.get('bookId'));
+    this.bookId = this.route.snapshot.paramMap.get('bookId') ?? '';
     this.bookService.getById(this.bookId).subscribe({
       next: l => this.libro = l,
       error: () => {}

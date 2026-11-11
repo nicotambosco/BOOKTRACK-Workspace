@@ -9,10 +9,10 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-cambiar-en-produccion
 DEBUG = config('DEBUG', default=True, cast=bool)
 ALLOWED_HOSTS = [host.strip() for host in config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',') if host.strip()]
 
-AUTH_USER_MODEL = 'users.User'
+# Quien inicia sesión es un Usuario o un Bibliotecario (el legajo es la clave); no hay tabla de cuentas aparte.
+AUTH_USER_MODEL = 'users.Usuario'
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -112,7 +112,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # ─────────────────────────────────────────────────────────────────
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'users.authentication.PersonaJWTAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticatedOrReadOnly',

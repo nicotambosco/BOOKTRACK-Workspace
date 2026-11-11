@@ -14,7 +14,7 @@ export class UserService {
     return this.http.get<User[]>(`${this.api}/`);
   }
 
-  getById(id: number): Observable<User> {
+  getById(id: string): Observable<User> {
     return this.http.get<User>(`${this.api}/${id}/`);
   }
 
@@ -26,11 +26,11 @@ export class UserService {
     return this.http.post<User>(`${this.api}/register/`, user);
   }
 
-  update(id: number, user: Partial<User>): Observable<User> {
+  update(id: string, user: Partial<User>): Observable<User> {
     return this.http.patch<User>(`${this.api}/${id}/`, user);
   }
 
-  delete(id: number): Observable<void> {
+  delete(id: string): Observable<void> {
     return this.http.delete<void>(`${this.api}/${id}/`);
   }
 }

@@ -178,7 +178,7 @@ export class UserHistory implements OnInit {
   get vencidos() { return this.prestamos.filter(p => p.estado === 'vencido').length; }
   get activos() { return this.prestamos.filter(p => p.estado === 'vigente').length; }
 
-  private titulosPorLibro = new Map<number, string>();
+  private titulosPorLibro = new Map<string, string>();
 
   constructor(public router: Router, private loanService: LoanService, private userService: UserService, private reservationService: ReservationService, private bookService: BookService) {}
 
@@ -191,7 +191,7 @@ export class UserHistory implements OnInit {
     });
   }
 
-  tituloLibro(libroId: number): string {
+  tituloLibro(libroId: string): string {
     return this.titulosPorLibro.get(libroId) ?? `Libro #${libroId}`;
   }
 

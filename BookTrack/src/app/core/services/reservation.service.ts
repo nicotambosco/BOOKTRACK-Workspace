@@ -13,7 +13,7 @@ export class ReservationService {
     return this.http.get<Reservation[]>(`${this.api}/`, { params: estado ? { estado } : {} });
   }
 
-  request(libroId: number, fechaVencimiento: string, fechaDevolucionPrevista: string): Observable<Reservation> {
+  request(libroId: string, fechaVencimiento: string, fechaDevolucionPrevista: string): Observable<Reservation> {
     return this.http.post<Reservation>(`${this.api}/`, { libroId, fechaVencimiento, fechaDevolucionPrevista });
   }
 

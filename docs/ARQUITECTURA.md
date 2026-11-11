@@ -40,7 +40,7 @@ En desarrollo Angular corre en 4200 y llama directamente a Django en 8000. CORS 
 - El registro público crea usuarios comunes. Las operaciones de retiro, devolución y resolución de renovaciones requieren bibliotecario.
 - Las modificaciones del catálogo requieren bibliotecario. Un usuario común accede a su propio perfil.
 - Las transiciones viven en `loans/services.py`. Las operaciones de stock bloquean primero el libro y luego la reserva o el préstamo dentro de una transacción.
-- Reservas y préstamos no admiten PATCH/DELETE genéricos. Django Admin los muestra en modo de consulta para no saltarse las transiciones.
+- Reservas y préstamos no admiten PATCH/DELETE genéricos. Solo cambian de estado por las acciones del bibliotecario, que dejan registro.
 - Las relaciones con usuarios y libros protegen el historial frente al borrado.
 
 SQLite permite desarrollar y probar los contratos, pero no ofrece la misma semántica de bloqueo de filas que MySQL. La prueba simultánea de retiros se ejecuta únicamente en MySQL.

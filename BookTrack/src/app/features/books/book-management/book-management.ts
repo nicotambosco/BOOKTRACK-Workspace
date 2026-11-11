@@ -29,7 +29,7 @@ import { BookService } from '../../../core/services/book.service';
         <input
           class="search-input"
           type="text"
-          placeholder="Buscar por título, autor, editorial o categoría..."
+          placeholder="Buscar por título, autor, ISBN o categoría..."
           [(ngModel)]="busqueda"
         />
 
@@ -45,7 +45,7 @@ import { BookService } from '../../../core/services/book.service';
                   <th>Portada</th>
                   <th>Título</th>
                   <th>Autor</th>
-                  <th>Editorial</th>
+                  <th>ISBN</th>
                   <th>Categoría</th>
                   <th>Disponibles</th>
                   <th>Acciones</th>
@@ -63,7 +63,7 @@ import { BookService } from '../../../core/services/book.service';
                     </td>
                     <td>{{ libro.titulo }}</td>
                     <td>{{ libro.autor }}</td>
-                    <td>{{ libro.editorial }}</td>
+                    <td>{{ libro.isbn }}</td>
                     <td>{{ libro.categoria }}</td>
                     <td>{{ libro.disponibles }}</td>
                     <td>
@@ -159,7 +159,7 @@ export class BookManagement implements OnInit {
     const q = this.busqueda.trim().toLowerCase();
     if (!q) return this.libros;
     return this.libros.filter(l =>
-      [l.titulo, l.autor, l.editorial, l.categoria].some(campo => campo?.toLowerCase().includes(q))
+      [l.titulo, l.autor, l.isbn, l.categoria].some(campo => campo?.toLowerCase().includes(q))
     );
   }
 
@@ -192,11 +192,11 @@ export class BookManagement implements OnInit {
     sessionStorage.setItem(this.scrollKey, String(this.pageBody.nativeElement.scrollTop));
   }
 
-  editarLibro(id: number) {
+  editarLibro(id: string) {
     this.router.navigate(['/book-edit', id]);
   }
 
-  eliminarLibro(id: number) {
+  eliminarLibro(id: string) {
     if (!confirm('¿Está seguro que desea eliminar este libro?')) return;
     this.bookService.delete(id).subscribe({
       next: () => this.cargarLibros(),

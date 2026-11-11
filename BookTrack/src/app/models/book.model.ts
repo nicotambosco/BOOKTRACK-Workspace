@@ -1,18 +1,27 @@
+export interface Ejemplar {
+  id: number;
+  codigo: string;
+  estado: 'disponible' | 'prestado' | 'baja';
+  ubicacion: string;
+  observaciones: string;
+  fechaAlta: string;
+  isbn: string;
+}
+
 export interface Book {
-  id?: number;
+  id?: string;             // el ISBN (también viene en `isbn`)
+  isbn?: string;
   estado?: 'activo' | 'inactivo';
   titulo: string;
   autor: string;
-  editorial: string;
-  fechaPublicacion: string;
-  descripcion: string;
-  imagen?: string;         // portada
-  nroCodigo?: string;      // ej: LIB-ING/MUS-MK-1996
-  nroInventario?: string;  // ej: ID-ADM-260611
   categoria: string;       // sistemas, química, electricia, mecánica, básicas, cursos
-  anio?: number;           // año de cursada de la materia (0 = sin año / electivas)
-  disponibles?: number;
-  tipo?: 'libro base' | 'libro de consulta';
+  anioPublicacion?: number | null;
+  resumen?: string;
+  palabrasClave?: string;
+  imagen?: string;         // portada
+  anioCursada?: number;    // año de cursada de la materia (0 = sin año / electivas)
+  disponibles?: number;    // ejemplares disponibles
+  ejemplares?: Ejemplar[];
   sugerencias?: Book[];    // libros relacionados
 }
 

@@ -212,7 +212,7 @@ import { AuthService } from '../../../core/services/auth.service';
 })
 export class ProfileAdmin implements OnInit {
   editando = false; exito = false; verPassword = false;
-  usuarioId: number | null = null;
+  usuarioId: string | null = null;
   usuario = { nombreApellido:'', legajo:'', email:'', password:'', imagen:'' };
 
   constructor(private router: Router, private userService: UserService, private authService: AuthService) {}

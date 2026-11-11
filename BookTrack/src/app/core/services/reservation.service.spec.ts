@@ -6,9 +6,9 @@ describe('ReservationService', () => {
   it('creates a reservation with separate pickup and return deadlines', async () => {
     const post = vi.fn().mockReturnValue(of({ id: 1, estado: 'activa' }));
     const service = new ReservationService({ post } as unknown as HttpClient);
-    await firstValueFrom(service.request(7, '2026-11-01', '2026-11-08'));
+    await firstValueFrom(service.request('9780000000007', '2026-11-01', '2026-11-08'));
     expect(post).toHaveBeenCalledWith('http://127.0.0.1:8000/api/reservations/', {
-      libroId: 7, fechaVencimiento: '2026-11-01', fechaDevolucionPrevista: '2026-11-08',
+      libroId: '9780000000007', fechaVencimiento: '2026-11-01', fechaDevolucionPrevista: '2026-11-08',
     });
   });
 

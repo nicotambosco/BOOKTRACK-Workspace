@@ -36,8 +36,8 @@ Con la aplicación detenida, copiá `backend-booktrack/db.local.sqlite3`. Si con
 
 - `.env` de la raíz: variables para Docker Compose.
 - `backend-booktrack/.env`: variables del backend local.
-- `create_admin.py`: crea `12473` como bibliotecario/superusuario y `13885` como usuario cuando faltan. Requiere contraseñas configuradas para las cuentas nuevas; no restablece las existentes.
-- `python manage.py createsuperuser`: crea una cuenta administrativa de Django. Para usar también las pantallas de bibliotecario, asigná `categoria=bibliotecario` desde Django Admin.
+- `create_admin.py`: crea `12473` como bibliotecario y `13885` como usuario cuando faltan. Requiere contraseñas configuradas para las cuentas nuevas; no restablece las existentes.
+- Para sumar más bibliotecarios o usuarios sin pasar por el registro, creá la fila en la tabla `Bibliotecario` o `Usuario` (`python manage.py shell`: `p = Bibliotecario(id="<legajo>", nombre="…"); p.set_password("…"); p.save()`). El legajo no puede repetirse entre ambas tablas. El admin de Django ya no existe.
 - Las claves `.env`, archivos SQLite y respaldos sin cifrar no se versionan. El publicador puede incluir una copia cifrada de los datos y media, como explica [DATOS_EN_GITHUB](DATOS_EN_GITHUB.md). Si actualizás desde una versión que incluía `.env` en Git, preservá primero tu configuración local.
 
 ## Vencimientos

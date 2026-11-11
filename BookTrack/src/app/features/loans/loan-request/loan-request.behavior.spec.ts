@@ -19,7 +19,7 @@ describe('LoanRequest screen (create reservation)', () => {
     TestBed.configureTestingModule({ imports: [LoanRequest], providers: testProviders });
     page = TestBed.createComponent(LoanRequest).componentInstance;
     ctrl = TestBed.inject(HttpTestingController);
-    page.bookId = 7;
+    page.bookId = '9780000000007';
   });
 
   it('does not call the API when a date is missing', () => {
@@ -46,7 +46,7 @@ describe('LoanRequest screen (create reservation)', () => {
     page.enviar();
     const req = ctrl.expectOne(URL);
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({ libroId: 7, fechaVencimiento: iso(1), fechaDevolucionPrevista: iso(8) });
+    expect(req.request.body).toEqual({ libroId: '9780000000007', fechaVencimiento: iso(1), fechaDevolucionPrevista: iso(8) });
     req.flush({ id: 1, estado: 'activa' });
     expect(page.exito).toBe(true);
     expect(page.enviando).toBe(false);
@@ -65,6 +65,6 @@ describe('LoanRequest screen (create reservation)', () => {
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     page.continuar(); page.volver();
     expect(navigate).toHaveBeenCalledWith(['/user-history']);
-    expect(navigate).toHaveBeenCalledWith(['/book', 7]);
+    expect(navigate).toHaveBeenCalledWith(['/book', '9780000000007']);
   });
 });

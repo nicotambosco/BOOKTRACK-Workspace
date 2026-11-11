@@ -90,7 +90,11 @@ Una renovación requiere una solicitud pendiente y un préstamo vigente. Su apro
 | Ruta | Comportamiento |
 | --- | --- |
 | `books/` | Catálogo público; filtros `q` por título y `categoria`; escrituras requieren bibliotecario |
-| `books/{id}/` | Detalle y modificación; `estado` admite `activo` o `inactivo` |
+| `books/{isbn}/` | Detalle y modificación; el `id` de un libro es su ISBN. Incluye `ejemplares`, `disponibles` (cuántos están disponibles) y `estado` (`activo` o `inactivo`). Al crear, `disponibles` genera esa cantidad de ejemplares; al editar, ajusta los disponibles sin borrar ejemplares |
+| `copies/` | Ejemplares (`?isbn=` filtra por libro); lectura pública, escrituras de bibliotecario. No se puede borrar un ejemplar con préstamos |
+| `favorites/` | GET lista los libros favoritos del usuario; POST `{isbn}` agrega; `favorites/{isbn}/` DELETE quita. Solo usuarios, no bibliotecarios |
+| `notifications/` | Avisos del usuario autenticado (más nuevos primero) |
+| `admin-actions/` | Registro de acciones administrativas; solo bibliotecario |
 | `books/upload-image/` | POST multipart `file`, bibliotecario; JPG, PNG o WebP hasta 1 MB, devuelve data URI |
 | `categories/` | Consulta pública; escrituras requieren bibliotecario |
 | `comments/` | POST autenticado con sección y comentario |

@@ -219,7 +219,7 @@ export class HomeUser implements OnInit {
     });
   }
 
-  verLibro(id: number) { this.router.navigate(['/book', id]); }
+  verLibro(id: string) { this.router.navigate(['/book', id]); }
 
   filtrar(cat: string) {
     this.catActiva = cat;
@@ -237,7 +237,7 @@ export class HomeUser implements OnInit {
   agrupar(libros: Book[]) {
     const mapa = new Map<number, Book[]>();
     for (const libro of libros) {
-      const anio = libro.anio ?? 0;
+      const anio = libro.anioCursada ?? 0;
       if (!mapa.has(anio)) mapa.set(anio, []);
       mapa.get(anio)!.push(libro);
     }

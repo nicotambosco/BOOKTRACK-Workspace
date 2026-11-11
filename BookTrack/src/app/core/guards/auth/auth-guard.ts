@@ -14,7 +14,8 @@ export const authGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
   if (roles) {
     const userRole = authService.getUserRole();
     if (!userRole || !roles.includes(userRole)) {
-      return router.createUrlTree(['/home']);
+      // cada rol vuelve a su propio inicio: el bibliotecario al panel, el usuario al catálogo
+      return router.createUrlTree([userRole === 'bibliotecario' ? '/home-admin' : '/home']);
     }
   }
 

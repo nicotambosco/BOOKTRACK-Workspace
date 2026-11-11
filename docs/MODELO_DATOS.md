@@ -1,28 +1,50 @@
 # Modelo de datos y reglas
 
+El esquema sigue el diagrama de clases del proyecto: tablas `Usuario`, `Bibliotecario`, `Libro`, `Ejemplar`, `Reserva`, `Prestamo`, `Favorito`, `Notificacion` y `AccionAdministrativa`, con los nombres de columna del diagrama (`idUsuario`, `fechaReserva`, `ISBN`…).
+
 ## Entidades implementadas
 
 ```mermaid
 erDiagram
-  USER ||--o{ RESERVATION : reserva
-  USER ||--o{ LOAN : recibe
-  USER o|--o{ RESERVATION : gestiona
-  BOOK ||--o{ RESERVATION : tiene
-  BOOK ||--o{ LOAN : tiene
-  LOAN o|--o| RESERVATION : origina
-  USER o|--o{ COMMENT : escribe
+  USUARIO ||--o{ RESERVA : reserva
+  USUARIO ||--o{ PRESTAMO : recibe
+  USUARIO ||--o{ FAVORITO : marca
+  USUARIO ||--o{ NOTIFICACION : recibe
+  BIBLIOTECARIO o|--o{ RESERVA : gestiona
+  BIBLIOTECARIO o|--o{ PRESTAMO : entrega
+  BIBLIOTECARIO o|--o{ ACCIONADMINISTRATIVA : realiza
+  LIBRO ||--|{ EJEMPLAR : tiene
+  LIBRO ||--o{ RESERVA : "se reserva"
+  LIBRO ||--o{ FAVORITO : "es favorito"
+  EJEMPLAR ||--o{ PRESTAMO : "se presta"
+  PRESTAMO o|--o| RESERVA : origina
+  RESERVA o|--o{ NOTIFICACION : avisa
+  PRESTAMO o|--o{ NOTIFICACION : avisa
+  RESERVA o|--o{ ACCIONADMINISTRATIVA : registra
+  PRESTAMO o|--o{ ACCIONADMINISTRATIVA : registra
+  USUARIO o|--o{ COMMENT : escribe
 ```
 
-| Modelo / tabla | Datos principales |
+| Tabla (modelo) | Columnas principales |
 | --- | --- |
-| `User` / `users` | Usuario Django personalizado, nombre, email, legajo, código, categoría `usuario` o `bibliotecario`, imagen |
-| `Book` / `books` | PK numérica, título, autor, editorial, fecha de publicación, descripción, portada, códigos, categoría, año de cursada, disponibles, tipo, estado |
-| `Reservation` / `reservations` | Código único, usuario, libro, bibliotecario opcional, fechas de reserva/retiro/devolución prevista, prioridad, estado, préstamo generado opcional, copia histórica de solicitudes migradas |
-| `Loan` / `loans` | Usuario, libro, tipo, fecha de inicio, vencimiento, devolución efectiva, estado, período original, solicitud y resultado de renovación |
-| `Category` / `categories` | Categorías ofrecidas por la aplicación |
-| `Comment` / `comments` | Usuario opcional, sección, comentario y fecha |
+| `Usuario` (`users.Usuario`) | `idUsuario` PK (**el legajo**), `nombre`, `apellido`, `email`, `emailAlternativo`, `telefono`, `tipoUsuario` (`alumno` o `docente`); además `password`, `last_login`, `is_active`, `imagen` y `codigo` (código de invitación) |
+| `Bibliotecario` (`users.Bibliotecario`) | `idBibliotecario` PK (**el legajo**), `nombre`, `apellido`, `email`; además `password`, `last_login`, `is_active` e `imagen` |
+| `Libro` (`books.Libro`) | `ISBN` PK, `titulo`, `autor`, `categoria`, `anioPublicacion`, `resumen`, `palabrasClave`, `estado`; además `imagen` (portada) y `anioCursada` (año de cursada, 0 = general, 99 = electivas) |
+| `Ejemplar` (`books.Ejemplar`) | `idEjemplar` PK, `codigo` único, `estado` (`disponible`, `prestado`, `baja`), `ubicacion`, `observaciones`, `fechaAlta`, `ISBN` FK |
+| `Reserva` (`loans.Reserva`) | `idReserva` PK, `codigoReserva` único, `prioridad`, `fechaReserva`, `fechaVencimiento`, `estado`, `idUsuario`, `ISBN`, `idBibliotecario` (opcional); además `fechaDevolucionPrevista` e `idPrestamo` (el préstamo que generó) |
+| `Prestamo` (`loans.Prestamo`) | `idPrestamo` PK, `fechaPrestamo`, `fechaVencimiento`, `fechaDevolucion`, `estado`, `idUsuario`, `idEjemplar`, `idBibliotecario` (opcional); además `extensionPendiente` y `extensionEstado` (renovaciones) |
+| `Favorito` (`books.Favorito`) | PK compuesta (`idUsuario`, `ISBN`) |
+| `Notificacion` (`loans.Notificacion`) | `idNotificacion` PK, `fecha`, `tipo`, `mensaje`, `idUsuario`, `idReserva` y `idPrestamo` (opcionales) |
+| `AccionAdministrativa` (`loans.AccionAdministrativa`) | `idAccion` PK, `fecha`, `tipoAccion`, `descripcion`, `idBibliotecario`, `idReserva`, `idPrestamo`, `ISBN`, `idEjemplar` (opcionales) |
+| `categories`, `comments` | Categorías ofrecidas por la aplicación y comentarios (con `idUsuario` opcional); fuera del diagrama |
 
-`Book.estado` es `activo` o `inactivo`. Inactivar bloquea nuevas reservas y entregas; mantiene el historial y permite devolver préstamos abiertos. `disponibles` sigue siendo un contador agregado de copias, no una tabla de ejemplares individuales.
+Las columnas "además" no están en el diagrama; la aplicación las necesita (portada, año de cursada, renovaciones, fecha de devolución pedida al reservar).
+
+No hay tabla de cuentas: `Usuario` y `Bibliotecario` son las tablas de login. La clave primaria de cada una es el legajo, con el que se inicia sesión (también se acepta el email). El legajo es único entre las dos tablas: el registro y la migración lo verifican. El rol es la tabla a la que pertenece la persona, viaja en el token (`categoria`) y decide qué vistas se muestran: el usuario ve las de usuario y el bibliotecario las de bibliotecario. La API identifica a las personas por su legajo (`id`, `legajo`, `estudianteId`, `bibliotecarioId`).
+
+`Libro.estado` es `activo` o `inactivo`. Inactivar bloquea nuevas reservas y entregas; mantiene el historial y permite devolver préstamos abiertos. El stock (`disponibles` en la API) es la cantidad de ejemplares en estado `disponible`. Bajar el stock desde la edición del libro pasa los ejemplares sobrantes a `baja`: no se borran ni se tocan los prestados.
+
+Las acciones del bibliotecario (retiro, devolución, cancelación, priorización, renovación aprobada o denegada) dejan una `AccionAdministrativa`. Las novedades del usuario (reserva creada, cancelada o vencida, retiro, vencimiento próximo, vencido, devolución, renovación) dejan una `Notificacion`; el encabezado las lee de `GET /api/notifications/`.
 
 ## Reserva
 
@@ -68,36 +90,21 @@ stateDiagram-v2
 - `extension_pendiente` y `extension_estado` describen la gestión de una renovación. No son estados del préstamo.
 - Un aviso visual de "vence pronto" tampoco representa un estado `PorVencer`.
 
-## Correspondencia con el diseño conceptual
-
-El PDF es un modelo de análisis. La implementación conserva los nombres y claves que ya usa este repositorio:
-
-| Concepto del PDF | Implementación |
-| --- | --- |
-| Usuario / Bibliotecario separados | Un modelo `User` con `categoria` |
-| Libro identificado por ISBN | `Book.id` numérico y códigos de catálogo/inventario |
-| Reserva | `Reservation`, con estados y campos corregidos |
-| Préstamo | `Loan`, relacionado con el libro y no con un ejemplar individual |
-| Ejemplar | Stock agregado `Book.disponibles`; no hay tabla ni CRUD de ejemplares |
-| Notificación | Avisos calculados por el encabezado Angular; no hay tabla ni entrega por email |
-| AcciónAdministrativa | No existe una tabla específica de auditoría de negocio |
-| Favorito | No hay una tabla ni funcionalidad implementada |
-
-No se agregó una estructura de ejemplares, favoritos o auditoría completa a partir de notas ilegibles. Estas diferencias quedan explícitas para que el PDF no se confunda con una descripción exacta del esquema físico.
-
 ## Migración de datos existentes
 
-`books.0009` agrega el estado activo a libros existentes. `loans.0006` renombra `fecha_fin` a `fecha_vencimiento`, agrega devolución efectiva y separa solicitudes de préstamos reales:
+Las migraciones `users.0003`, `books.0010`, `loans.0007`, `loans.0008` y `books.0011` pasan los datos del esquema anterior (`books`, `loans`, `reservations`) al del diagrama, conservando los IDs de préstamos y reservas:
 
-| Estado anterior | Resultado |
+| Antes | Después |
 | --- | --- |
-| `pendiente` | Reserva activa si su inicio aún no pasó; vencida en caso contrario |
-| `denegado` | Reserva cancelada |
-| `aprobado` | Préstamo vigente o vencido según su fecha límite |
-| `devuelto` | Conserva el préstamo devuelto |
+| Cuenta con `categoria='bibliotecario'` | Fila en `Bibliotecario`; el resto va a `Usuario`. `nombre_apellido` se divide en `nombre` y `apellido` (primera palabra / resto). La contraseña (hash), imagen y código pasan a la persona |
+| Tabla `users` | Se elimina (`users.0005`). La clave primaria de `Usuario` y `Bibliotecario` pasa de un número a el legajo (si la cuenta no tenía legajo, su nombre de usuario) y todas las referencias se actualizan |
+| Libro con `nro_codigo` `ISBN-…` | Ese código sin el prefijo pasa a ser el `ISBN` |
+| Libro sin código | `ISBN` provisorio `SIN-ISBN-<id de 6 dígitos>`; editalo cuando tengas el real |
+| `disponibles` N y M préstamos abiertos | N ejemplares `disponible` y M `prestado`. El `nro_inventario` queda como código del primer ejemplar; los demás son `<código>-02`, `-03`… |
+| `tipo` y `editorial` del libro | Se conservan en `palabrasClave`; `descripcion` pasa a `resumen` y `anio` a `anioCursada` |
+| Préstamo de un libro | Apunta a un ejemplar del libro: los abiertos a uno `prestado`, los devueltos a cualquiera. Un libro con historial y sin ejemplares recibe uno en `baja` |
+| Cuenta de bibliotecario que había pedido un libro | Deja de figurar como `Usuario`: sus préstamos, reservas y avisos como usuario se eliminan (los ejemplares prestados vuelven a disponibles). Un bibliotecario no puede ser usuario |
 
-Las solicitudes convertidas guardan todos sus campos originales y el ID anterior en `Reservation.datos_legacy`, con código `LEGACY-<id>`. Se conservan los IDs de los préstamos reales y sus fechas. La migración no recalcula ni modifica stock. Una fecha histórica desconocida permanece nula: no se inventan fechas de devolución ni plazos.
-
-La fecha de inicio de una solicitud antigua se usa como límite de retiro porque el esquema anterior no guardaba una fecha de reserva independiente. Si una reserva histórica activa carece de devolución prevista, no se puede retirar: se cancela y se registra una nueva con fechas completas.
+El admin de Django se quitó (su bitácora apuntaba a `users`); los comentarios de un bibliotecario pierden autor. `tipo_prestamo`, `plazo_de_solicitud` y `datos_legacy` no tienen columna en el esquema nuevo y se descartan. El stock no cambia. Una fecha histórica desconocida sigue nula.
 
 La separación no admite rollback automático; el intento falla antes de revertir el esquema. Para volver a la versión anterior hace falta restaurar un respaldo consistente junto con el código anterior. Ver [OPERACION](OPERACION.md).

@@ -37,7 +37,7 @@ export const routes: Routes = [
     path: 'home',
     component: HomeUser,
     canActivate: [authGuard],
-    data: { roles: ['usuario', 'bibliotecario'] }
+    data: { roles: ['usuario'] }
   },
   {
     path: 'home-admin', //falta
@@ -71,7 +71,8 @@ export const routes: Routes = [
   {
     path: 'loan-request/:bookId',
     component: LoanRequest,
-    canActivate: [authGuard]
+    canActivate: [authGuard],
+    data: { roles: ['usuario'] }
   },
   {
     path: 'loan-management',
@@ -88,7 +89,8 @@ export const routes: Routes = [
   {
     path: 'profile',
     component: ProfileUser,
-    canActivate: [authGuard]
+    canActivate: [authGuard],
+    data: { roles: ['usuario'] }
   },
   {
     path: 'profile-admin',
@@ -112,8 +114,8 @@ export const routes: Routes = [
   { path: 'modal-success', component: ModalSuccess },
   { path: 'modal-error', component: ModalError },
   { path: 'book-search', component: BookSearch },
-  { path: 'loan-extension', component: LoanExtension, canActivate: [authGuard] },
-  { path: 'user-history', component: UserHistory, canActivate: [authGuard] },
+  { path: 'loan-extension', component: LoanExtension, canActivate: [authGuard], data: { roles: ['usuario'] } },
+  { path: 'user-history', component: UserHistory, canActivate: [authGuard], data: { roles: ['usuario'] } },
   { path: 'loan-archive', component: LoanArchive, canActivate: [authGuard], data: { roles: ['bibliotecario'] } },
   { path: '**', redirectTo: '' }
 ];

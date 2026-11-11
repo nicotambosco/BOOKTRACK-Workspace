@@ -1,9 +1,9 @@
 export interface Reservation {
   id: number;
   codigoReserva: string;
-  estudianteId: number;
+  estudianteId: string;
   estudianteNombre: string;
-  libroId: number;
+  libroId: string;
   libroTitulo: string;
   fechaReserva: string;
   fechaVencimiento: string;
@@ -11,5 +11,5 @@ export interface Reservation {
   prioridad: number;
   estado: 'activa' | 'cancelada' | 'vencida' | 'finalizada';
   prestamoId: number | null;
-  bibliotecarioId: number | null;
+  bibliotecarioId: string | null;
 }

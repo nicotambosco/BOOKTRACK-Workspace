@@ -46,7 +46,7 @@ class Migration(migrations.Migration):
     dependencies = [
         ('books', '0009_book_estado'),
         ('loans', '0005_alter_loan_fecha_inicio'),
-        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+        ('users', '0001_initial'),
     ]
 
     operations = [
@@ -85,7 +85,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='loan',
             name='estudiante',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='loans', to=settings.AUTH_USER_MODEL),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='loans', to='users.user'),
         ),
         migrations.AlterField(
             model_name='loan',
@@ -100,12 +100,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='reservation',
             name='bibliotecario',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='managed_reservations', to=settings.AUTH_USER_MODEL),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='managed_reservations', to='users.user'),
         ),
         migrations.AddField(
             model_name='reservation',
             name='estudiante',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='reservations', to=settings.AUTH_USER_MODEL),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='reservations', to='users.user'),
         ),
         migrations.AddField(
             model_name='reservation',

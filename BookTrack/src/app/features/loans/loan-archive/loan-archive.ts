@@ -49,7 +49,7 @@ import { Loan } from '../../../models/loan.model';
                 <th>LEGAJO</th>
                 <th>ESTUDIANTE</th>
                 <th>LIBRO</th>
-                <th>TIPO</th>
+                <th>EJEMPLAR</th>
                 <th>PERÍODO</th>
                 <th>ESTADO</th>
                 <th>DEVOLUCIÓN</th>
@@ -61,7 +61,7 @@ import { Loan } from '../../../models/loan.model';
                   <td>{{ obtenerlLegajo(p) }}</td>
                   <td>{{ obtenerNombre(p) }}</td>
                   <td>{{ tituloLibro(p.libroId) }}</td>
-                  <td>{{ p.tipoPrestamo }}</td>
+                  <td>{{ p.ejemplarCodigo }}</td>
                   <td>{{ p.fechaInicio }} → {{ p.fechaVencimiento || '-' }}</td>
                   <td><span class="badge" [class]="p.estado">{{ label(p.estado) }}</span></td><td>{{ p.fechaDevolucion || '-' }}</td>
                 </tr>
@@ -134,7 +134,7 @@ export class LoanArchive implements OnInit {
   prestamos: Loan[] = [];
   filtrados: Loan[] = [];
   filtroEstado = '';
-  private titulosPorLibro = new Map<number, string>();
+  private titulosPorLibro = new Map<string, string>();
 
   constructor(public router: Router, private loanService: LoanService, private bookService: BookService) {}
 
@@ -145,7 +145,7 @@ export class LoanArchive implements OnInit {
     });
   }
 
-  tituloLibro(libroId: number): string {
+  tituloLibro(libroId: string): string {
     return this.titulosPorLibro.get(libroId) ?? `Libro #${libroId}`;
   }
 

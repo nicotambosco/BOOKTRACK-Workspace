@@ -6,7 +6,7 @@ import { BookManagement } from './book-management/book-management';
 import { BookDetail } from './book-detail/book-detail';
 import { HomeUser } from '../home/home-user/home-user';
 import { environment } from '../../../environments/environment';
-import { testProviders } from '../../testing/test-providers';
+import { fakeJwt, testProviders } from '../../testing/test-providers';
 
 const API = environment.apiUrl;
 
@@ -29,35 +29,35 @@ describe('BookAdd screen', () => {
     expect(page.categorias).toEqual(['Basicas', 'Sistemas']);
   });
 
-  it('requires title and author', () => {
+  it('requires ISBN, title and author', () => {
     page.guardar();
     expect(page.modalMsg).toBe('¡Revise y complete todos los campos!');
     expect(page.modal).toBe(true);
   });
 
   it('requires a category', () => {
-    page.libro.titulo = 'Cálculo'; page.libro.autor = 'Stewart';
+    page.libro.isbn = '9780000000001'; page.libro.titulo = 'Cálculo'; page.libro.autor = 'Stewart';
     page.guardar();
     expect(page.modalMsg).toBe('¡Seleccione una categoría!');
   });
 
   it('creates the book with the chosen category and returns to the admin home on close', () => {
-    page.libro.titulo = 'Cálculo'; page.libro.autor = 'Stewart'; page.categoriaSeleccionada = 'Basicas';
+    page.libro.isbn = ' 9780000000001 '; page.libro.titulo = 'Cálculo'; page.libro.autor = 'Stewart'; page.categoriaSeleccionada = 'Basicas';
     page.guardar();
     const req = ctrl.expectOne(`${API}/books/`);
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toMatchObject({ titulo: 'Cálculo', autor: 'Stewart', categoria: 'Basicas' });
-    req.flush({ id: 200 });
+    expect(req.request.body).toMatchObject({ isbn: '9780000000001', titulo: 'Cálculo', autor: 'Stewart', categoria: 'Basicas', disponibles: 1 });
+    req.flush({ id: '9780000000001' });
     expect(page.modalMsg).toBe('¡Libro añadido exitosamente!');
     page.cerrarModal();
     expect(navigate).toHaveBeenCalledWith(['/home-admin']);
   });
 
   it('stays on the form and reports an error when saving fails', () => {
-    page.libro.titulo = 'X'; page.libro.autor = 'Y'; page.categoriaSeleccionada = 'Basicas';
+    page.libro.isbn = '9780000000002'; page.libro.titulo = 'X'; page.libro.autor = 'Y'; page.categoriaSeleccionada = 'Basicas';
     page.guardar();
-    ctrl.expectOne(`${API}/books/`).flush({}, { status: 403, statusText: 'Forbidden' });
-    expect(page.modalMsg).toBe('Error al guardar. Intente de nuevo.');
+    ctrl.expectOne(`${API}/books/`).flush({}, { status: 400, statusText: 'Bad Request' });
+    expect(page.modalMsg).toContain('ISBN');
     page.cerrarModal();
     expect(navigate).not.toHaveBeenCalled();
   });
@@ -74,18 +74,20 @@ describe('BookManagement screen', () => {
     TestBed.configureTestingModule({ imports: [BookManagement], providers: testProviders });
     const page = TestBed.createComponent(BookManagement).componentInstance;
     page.libros = [
-      { id: 1, titulo: 'Álgebra Lineal', autor: 'Grossman', editorial: 'McGraw', categoria: 'Basicas' },
-      { id: 2, titulo: 'Redes', autor: 'Tanenbaum', editorial: 'Pearson', categoria: 'Sistemas' }];
+      { id: '9781', isbn: '9781', titulo: 'Álgebra Lineal', autor: 'Grossman', categoria: 'Basicas' },
+      { id: '9782', isbn: '9782', titulo: 'Redes', autor: 'Tanenbaum', categoria: 'Sistemas' }];
     return page;
   };
 
-  it('filters by title, author, publisher or category, ignoring case', () => {
+  it('filters by title, author, ISBN or category, ignoring case', () => {
     const page = create();
     expect(page.librosFiltrados).toHaveLength(2);
     page.busqueda = 'tanen';
-    expect(page.librosFiltrados.map(l => l.id)).toEqual([2]);
+    expect(page.librosFiltrados.map(l => l.id)).toEqual(['9782']);
     page.busqueda = 'BASICAS';
-    expect(page.librosFiltrados.map(l => l.id)).toEqual([1]);
+    expect(page.librosFiltrados.map(l => l.id)).toEqual(['9781']);
+    page.busqueda = '9782';
+    expect(page.librosFiltrados.map(l => l.id)).toEqual(['9782']);
     page.busqueda = 'zzz';
     expect(page.librosFiltrados).toEqual([]);
   });
@@ -96,19 +98,19 @@ describe('BookManagement screen', () => {
     const confirm = vi.spyOn(window, 'confirm');
     const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => undefined);
     confirm.mockReturnValueOnce(false);
-    page.eliminarLibro(1);
-    ctrl.expectNone(`${API}/books/1/`);
+    page.eliminarLibro('9781');
+    ctrl.expectNone(`${API}/books/9781/`);
     confirm.mockReturnValueOnce(true);
-    page.eliminarLibro(1);
-    ctrl.expectOne(`${API}/books/1/`).flush(['historial'], { status: 400, statusText: 'Bad Request' });
+    page.eliminarLibro('9781');
+    ctrl.expectOne(`${API}/books/9781/`).flush(['historial'], { status: 400, statusText: 'Bad Request' });
     expect(alertSpy).toHaveBeenCalledWith('Error al eliminar el libro');
   });
 
   it('opens the edit screen', () => {
     const page = create();
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
-    page.editarLibro(2);
-    expect(navigate).toHaveBeenCalledWith(['/book-edit', 2]);
+    page.editarLibro('9782');
+    expect(navigate).toHaveBeenCalledWith(['/book-edit', '9782']);
   });
 });
 
@@ -119,9 +121,36 @@ describe('BookDetail screen', () => {
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     page.solicitarPrestamo();
     expect(navigate).not.toHaveBeenCalled();
-    page.libro = { id: 12, titulo: 'T', autor: '', editorial: '', fechaPublicacion: '', descripcion: '', categoria: 'Basicas' };
+    page.libro = { id: '9780000000012', isbn: '9780000000012', titulo: 'T', autor: '', categoria: 'Basicas' };
     page.solicitarPrestamo();
-    expect(navigate).toHaveBeenCalledWith(['/loan-request', 12]);
+    expect(navigate).toHaveBeenCalledWith(['/loan-request', '9780000000012']);
+  });
+});
+
+describe('BookDetail favorites', () => {
+  const create = (role: string) => {
+    localStorage.setItem('auth_token', fakeJwt({ categoria: role }));
+    TestBed.configureTestingModule({ imports: [BookDetail], providers: testProviders });
+    const page = TestBed.createComponent(BookDetail).componentInstance;
+    page.libro = { id: '9781', isbn: '9781', titulo: 'T', autor: '', categoria: 'Basicas' };
+    return { page, ctrl: TestBed.inject(HttpTestingController) };
+  };
+  afterEach(() => localStorage.clear());
+
+  it('adds and removes the book from the favorites of a user', () => {
+    const { page, ctrl } = create('usuario');
+    expect(page.esAdmin).toBe(false);
+    page.alternarFavorito();
+    ctrl.expectOne(r => r.method === 'POST' && r.url === `${API}/favorites/`).flush({});
+    expect(page.esFavorito).toBe(true);
+    page.alternarFavorito();
+    ctrl.expectOne(r => r.method === 'DELETE' && r.url === `${API}/favorites/9781/`).flush(null);
+    expect(page.esFavorito).toBe(false);
+    ctrl.verify();
+  });
+
+  it('does not offer favorites to a librarian', () => {
+    expect(create('bibliotecario').page.esAdmin).toBe(true);
   });
 });
 
@@ -140,7 +169,7 @@ describe('HomeUser screen (catalog)', () => {
     page.ngOnInit();
     ctrl.expectOne(`${API}/categories/`).flush([{ id: 2, nombre: 'Sistemas' }, { id: 1, nombre: 'Basicas' }]);
     ctrl.expectOne(`${API}/books/?categoria=Basicas`).flush([
-      { id: 1, titulo: 'A', anio: 2 }, { id: 2, titulo: 'B', anio: 1 }, { id: 3, titulo: 'C', anio: 2 }, { id: 4, titulo: 'D', anio: 0 }]);
+      { id: '1', titulo: 'A', anioCursada: 2 }, { id: '2', titulo: 'B', anioCursada: 1 }, { id: '3', titulo: 'C', anioCursada: 2 }, { id: '4', titulo: 'D', anioCursada: 0 }]);
     expect(page.catActiva).toBe('Basicas');
     expect(page.gruposPorAnio.map(g => [g.anio, g.libros.length])).toEqual([[0, 1], [1, 1], [2, 2]]);
   });
@@ -161,7 +190,7 @@ describe('HomeUser screen (catalog)', () => {
 
   it('opens a book detail', () => {
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
-    page.verLibro(8);
-    expect(navigate).toHaveBeenCalledWith(['/book', 8]);
+    page.verLibro('9780000000008');
+    expect(navigate).toHaveBeenCalledWith(['/book', '9780000000008']);
   });
 });

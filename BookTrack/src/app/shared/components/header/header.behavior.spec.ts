@@ -8,7 +8,7 @@ import { testProviders } from '../../../testing/test-providers';
 
 const API = environment.apiUrl;
 
-describe('Header notifications (derived from loans)', () => {
+describe('Header notifications (served by the API)', () => {
   let header: Header;
   let ctrl: HttpTestingController;
 
@@ -20,46 +20,43 @@ describe('Header notifications (derived from loans)', () => {
   });
   afterEach(() => ctrl.verify());
 
-  const load = (loans: object[]) => {
+  const aviso = (o: object = {}) => ({ id: 1, fecha: '2026-11-10T12:00:00-03:00', tipo: 'prestamo_vencido',
+    mensaje: 'Tu préstamo de "Álgebra" está vencido.', reservaId: null, prestamoId: 5, ...o });
+  const load = (items: object[]) => {
     header.ngOnInit();
-    ctrl.expectOne(`${API}/loans/`).flush(loans);
-    ctrl.expectOne(`${API}/books/`).flush([{ id: 9, titulo: 'Álgebra' }]);
+    ctrl.expectOne(`${API}/notifications/`).flush(items);
   };
 
-  it('warns about an overdue loan and resolves the book title', () => {
-    load([{ id: 1, libroId: 9, estado: 'vencido', fechaVencimiento: '2020-01-01' }]);
-    expect(header.notificaciones.map(n => n.tipo)).toContain('vencido');
+  it('shows the notifications sent by the server and flags the unread ones', () => {
+    load([aviso(), aviso({ id: 2, tipo: 'renovacion_aprobada', mensaje: 'La biblioteca aprobó la renovación.' })]);
+    expect(header.notificaciones.map(n => n.tipo)).toEqual(['prestamo_vencido', 'renovacion_aprobada']);
     expect(header.tieneNotificaciones).toBe(true);
-    expect(header.tituloLibro(9)).toBe('Álgebra');
-    expect(header.tituloLibro(77)).toBe('Libro #77');
-  });
-
-  it('reports the outcome of a renewal request', () => {
-    load([{ id: 2, libroId: 9, estado: 'vigente', fechaVencimiento: '2999-01-01', extensionEstado: 'aprobada' },
-          { id: 3, libroId: 9, estado: 'vigente', fechaVencimiento: '2999-01-01', extensionEstado: 'denegada' }]);
-    const tipos = header.notificaciones.map(n => n.tipo);
-    expect(tipos).toContain('extensionAprobada');
-    expect(tipos).toContain('extensionDenegada');
   });
 
   it('marks notifications as read when the panel is opened and remembers it', () => {
-    load([{ id: 1, libroId: 9, estado: 'vencido', fechaVencimiento: '2020-01-01' }]);
+    load([aviso()]);
     header.toggleNotificaciones();
     expect(header.mostrarNotificaciones).toBe(true);
     expect(header.tieneNotificaciones).toBe(false);
-    expect(JSON.parse(localStorage.getItem('notif_leidas') ?? '[]')).toContain('1-vencido');
+    expect(JSON.parse(localStorage.getItem('notif_leidas') ?? '[]')).toContain('1');
   });
 
-  it('does not alert about returned loans', () => {
-    load([{ id: 4, libroId: 9, estado: 'devuelto', fechaVencimiento: '2020-01-01' }]);
+  it('does not flag notifications that were already read', () => {
+    localStorage.setItem('notif_leidas', JSON.stringify(['1']));
+    load([aviso()]);
+    expect(header.tieneNotificaciones).toBe(false);
+  });
+
+  it('has nothing to flag without notifications', () => {
+    load([]);
     expect(header.notificaciones).toEqual([]);
     expect(header.tieneNotificaciones).toBe(false);
   });
 
-  it('does not query loans for the librarian header', () => {
+  it('does not query notifications for the librarian header', () => {
     header.esAdmin = true;
     header.ngOnInit();
-    ctrl.expectNone(`${API}/loans/`);
+    ctrl.expectNone(`${API}/notifications/`);
   });
 
   it('navigates according to the role', () => {

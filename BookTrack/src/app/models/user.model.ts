@@ -1,9 +1,14 @@
 import type { Loan } from './loan.model';
 
 export interface User {
-  id?: number;
+  id?: string;             // el legajo
   username?: string;
   nombreApellido: string;
+  nombre?: string;
+  apellido?: string;
+  emailAlternativo?: string;
+  telefono?: string;
+  tipoUsuario?: string;
   email: string;
   legajo?: string;
   contrasena?: string;

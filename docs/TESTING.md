@@ -14,7 +14,7 @@ python manage.py test
 
 Se usa la conexión configurada. Django crea una base de prueba independiente; en MySQL la cuenta necesita permiso para crear/eliminar esa base de prueba. Con SQLite se utiliza la configuración local del README.
 
-`users/test_api.py`, `books/tests.py` y `loans/test_database_rules.py` cubren registro, login y roles, catálogo (permisos, búsqueda, inventario único, portadas, baja con historial), categorías, comentarios, restricciones CHECK/UNIQUE/PROTECT de la base y el comando `actualizar_estados`. Las migraciones cargan el catálogo inicial, por eso esos tests vacían las tablas al empezar.
+`users/test_api.py`, `books/tests.py` y `loans/test_database_rules.py` cubren registro, login y roles, catálogo (permisos, búsqueda, ISBN único, ejemplares, favoritos, portadas, baja con historial), categorías, comentarios, restricciones CHECK/UNIQUE/PROTECT de la base y el comando `actualizar_estados`. Las migraciones cargan el catálogo inicial, por eso esos tests vacían las tablas al empezar.
 
 `loans/tests.py` cubre reserva activa sin descuento de stock, espera sin disponibilidad, libros inactivos, validación de fechas, duplicados, permisos, prioridad/FIFO, retiro idempotente, devolución efectiva, devolución de vencidos, renovación, filtros, exportaciones y cierre de accesos CRUD que permitirían saltarse el ciclo.
 

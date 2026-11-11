@@ -1,16 +1,17 @@
 export interface Loan {
   id?: number;
-  estudianteId: number;
+  estudianteId: string;
   estudianteLegajo?: string;
   estudianteNombre?: string;
-  libroId: number;
+  libroId: string;
+  ejemplarId?: number;
+  ejemplarCodigo?: string;
+  bibliotecarioId?: string | null;
   libroTitulo?: string;
-  tipoPrestamo: string;
   fechaInicio: string;
   fechaVencimiento: string | null;
   fechaDevolucion: string | null;
   estado: 'vigente' | 'vencido' | 'devuelto';
-  plazoDeSolicitud?: string;
   extensionPendiente?: boolean;
   extensionEstado?: '' | 'aprobada' | 'denegada';
 }

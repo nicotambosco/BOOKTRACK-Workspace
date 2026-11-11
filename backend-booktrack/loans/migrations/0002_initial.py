@@ -12,14 +12,14 @@ class Migration(migrations.Migration):
     dependencies = [
         ('books', '0001_initial'),
         ('loans', '0001_initial'),
-        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+        ('users', '0001_initial'),
     ]
 
     operations = [
         migrations.AddField(
             model_name='loan',
             name='estudiante',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='loans', to=settings.AUTH_USER_MODEL),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='loans', to='users.user'),
         ),
         migrations.AddField(
             model_name='loan',

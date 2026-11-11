@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { CommonModule, Location } from '@angular/common';
 import { Header } from '../../../shared/components/header/header';
 import { BookService } from '../../../core/services/book.service';
+import { Ejemplar } from '../../../models/book.model';
 import { CategoryService } from '../../../core/services/category.service';
 
 @Component({
@@ -46,16 +47,22 @@ import { CategoryService } from '../../../core/services/category.service';
             </select>
           </div>
           <div class="right-panel">
+            <div class="campo"><label>ISBN</label><input [ngModel]="libro.isbn" disabled/></div>
             <div class="campo"><label>TÍTULO</label><input [(ngModel)]="libro.titulo" placeholder="Ingrese Título"/></div>
             <div class="campo"><label>AUTOR</label><input [(ngModel)]="libro.autor" placeholder="Ingrese Autor"/></div>
-            <div class="campo"><label>EDITORIAL</label><input [(ngModel)]="libro.editorial" placeholder="Ingrese Editorial"/></div>
-            <div class="campo"><label>FECHA DE PUBLICACIÓN</label><input [(ngModel)]="libro.fechaPublicacion" placeholder="Ingrese Fecha de Publicación"/></div>
-            <div class="campo"><label>DESCRIPCIÓN</label><textarea [(ngModel)]="libro.descripcion" rows="4" placeholder="Ingrese una descripción del libro..."></textarea></div>
+            <div class="campo"><label>AÑO DE PUBLICACIÓN</label><input type="number" [(ngModel)]="libro.anioPublicacion" placeholder="Ingrese Año de Publicación"/></div>
+            <div class="campo"><label>RESUMEN</label><textarea [(ngModel)]="libro.resumen" rows="4" placeholder="Ingrese un resumen del libro..."></textarea></div>
             <div class="codigos-row">
-              <div class="campo"><label>NRO DE CÓDIGO</label><input [(ngModel)]="libro.nroCodigo" placeholder="ingrese numero"/></div>
-              <div class="campo"><label>NRO DE INVENTARIO</label><input [(ngModel)]="libro.nroInventario" placeholder="ingrese numero"/></div>
-              <div class="campo"><label>DISPONIBLES</label><input type="number" [(ngModel)]="libro.disponibles" placeholder="cantidad"/></div>
+              <div class="campo"><label>PALABRAS CLAVE</label><input [(ngModel)]="libro.palabrasClave" placeholder="separadas por coma"/></div>
+              <div class="campo"><label>DISPONIBLES</label><input type="number" min="0" [(ngModel)]="libro.disponibles" placeholder="cantidad"/></div>
             </div>
+            @if (libro.ejemplares.length) {
+              <div class="campo"><label>EJEMPLARES</label>
+                <div class="ejemplares">
+                  @for (e of libro.ejemplares; track e.id) { <span class="ejemplar" [class]="e.estado">{{ e.codigo }} · {{ e.estado }}</span> }
+                </div>
+              </div>
+            }
             <div class="campo"><label for="estadoLibro">ESTADO</label>
               <select id="estadoLibro" [(ngModel)]="libro.estado"><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select>
             </div>
@@ -118,6 +125,10 @@ import { CategoryService } from '../../../core/services/category.service';
       background:#101010; color:#e8e8e8; font-size:0.85rem; resize:none;
     }
     .campo input::placeholder, .campo textarea::placeholder { color:#6a6a6a; }
+    .ejemplares { display:flex; flex-wrap:wrap; gap:0.4rem; }
+    .ejemplar { font-size:0.72rem; padding:0.25rem 0.6rem; border-radius:12px; background:#101010; border:1px solid #2a2a2a; color:#c8c8c8; }
+    .ejemplar.prestado { border-color:#e8a020; }
+    .ejemplar.baja { border-color:#e74c3c; color:#8a8a8a; }
     .codigos-row { display:flex; gap:1rem; }
     .codigos-row .campo { flex:1; }
 
@@ -142,8 +153,8 @@ import { CategoryService } from '../../../core/services/category.service';
 export class BookEdit implements OnInit {
   modal=false; modalMsg=''; categoriaSeleccionada='';
   categorias: string[] = [];
-  bookId!: number;
-  libro = { titulo:'', autor:'', editorial:'', fechaPublicacion:'', descripcion:'', nroCodigo:'', nroInventario:'', imagen:'', disponibles:0, estado: 'activo' as 'activo' | 'inactivo' };
+  bookId = '';
+  libro = { isbn:'', titulo:'', autor:'', anioPublicacion: null as number | null, resumen:'', palabrasClave:'', imagen:'', disponibles:0, ejemplares: [] as Ejemplar[], estado: 'activo' as 'activo' | 'inactivo' };
 
   constructor(
     private router: Router,
@@ -154,14 +165,14 @@ export class BookEdit implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.bookId = Number(this.route.snapshot.paramMap.get('id'));
+    this.bookId = this.route.snapshot.paramMap.get('id') ?? '';
     this.categoryService.getAll().subscribe({
       next: cats => this.categorias = cats.map(c => c.nombre),
       error: () => this.categorias = ['sistemas','química','electricia','mecánica','básicas']
     });
     this.bookService.getById(this.bookId).subscribe({
       next: b => {
-        this.libro = { ...this.libro, ...b };
+        this.libro = { ...this.libro, ...b, anioPublicacion: b.anioPublicacion ?? null, ejemplares: b.ejemplares ?? [] };
         this.categoriaSeleccionada = b.categoria;
       },
       error: () => { this.modalMsg='No se pudo cargar el libro.'; this.modal=true; }
@@ -171,7 +182,8 @@ export class BookEdit implements OnInit {
   guardar() {
     if (!this.libro.titulo || !this.libro.autor) { this.modalMsg='¡Revise y complete todos los campos!'; this.modal=true; return; }
     if (!this.categoriaSeleccionada) { this.modalMsg='¡Seleccione una categoría!'; this.modal=true; return; }
-    this.bookService.update(this.bookId, { ...this.libro, categoria: this.categoriaSeleccionada }).subscribe({
+    const { ejemplares, ...datos } = this.libro;
+    this.bookService.update(this.bookId, { ...datos, categoria: this.categoriaSeleccionada }).subscribe({
       next: () => { this.modalMsg='¡Libro actualizado exitosamente!'; this.modal=true; },
       error: () => { this.modalMsg='Error al guardar. Intente de nuevo.'; this.modal=true; }
     });

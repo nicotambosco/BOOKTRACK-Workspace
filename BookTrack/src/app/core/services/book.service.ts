@@ -14,7 +14,7 @@ export class BookService {
     return this.http.get<Book[]>(`${this.api}/`);
   }
 
-  getById(id: number): Observable<Book> {
+  getById(id: string): Observable<Book> {
     return this.http.get<Book>(`${this.api}/${id}/`);
   }
 
@@ -30,11 +30,11 @@ export class BookService {
     return this.http.post<Book>(`${this.api}/`, book);
   }
 
-  update(id: number, book: Book): Observable<Book> {
+  update(id: string, book: Book): Observable<Book> {
     return this.http.put<Book>(`${this.api}/${id}/`, book);
   }
 
-  delete(id: number): Observable<void> {
+  delete(id: string): Observable<void> {
     return this.http.delete<void>(`${this.api}/${id}/`);
   }
 

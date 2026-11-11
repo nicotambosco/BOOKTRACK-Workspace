@@ -214,7 +214,7 @@ import { AuthService } from '../../../core/services/auth.service';
 })
 export class ProfileUser implements OnInit {
   editando = false; exito = false; mostrarHistorial = false; verPassword = false;
-  usuarioId: number | null = null;
+  usuarioId: string | null = null;
   usuario = { nombreApellido:'', legajo:'', email:'', password:'', categoria:'', imagen:'' };
 
   constructor(private router: Router, private userService: UserService, private authService: AuthService) {}

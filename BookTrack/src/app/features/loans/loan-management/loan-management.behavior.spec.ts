@@ -9,10 +9,10 @@ import { environment } from '../../../../environments/environment';
 import { testProviders } from '../../../testing/test-providers';
 
 const API = environment.apiUrl;
-const loan = (o: Partial<Loan> = {}): Loan => ({ id: 1, estudianteId: 3, libroId: 9, tipoPrestamo: 'normal', fechaInicio: '2026-11-01',
+const loan = (o: Partial<Loan> = {}): Loan => ({ id: 1, estudianteId: '13885', libroId: '9', fechaInicio: '2026-11-01',
   fechaVencimiento: '2026-11-08', fechaDevolucion: null, estado: 'vigente', extensionPendiente: false, ...o });
-const reservation = (o: Partial<Reservation> = {}): Reservation => ({ id: 10, codigoReserva: 'abc', estudianteId: 3, estudianteNombre: 'Pedro',
-  libroId: 9, libroTitulo: 'Álgebra', fechaReserva: '2026-11-01', fechaVencimiento: '2026-11-10', fechaDevolucionPrevista: '2026-11-17',
+const reservation = (o: Partial<Reservation> = {}): Reservation => ({ id: 10, codigoReserva: 'abc', estudianteId: '13885', estudianteNombre: 'Pedro',
+  libroId: '9', libroTitulo: 'Álgebra', fechaReserva: '2026-11-01', fechaVencimiento: '2026-11-10', fechaDevolucionPrevista: '2026-11-17',
   prioridad: 0, estado: 'activa', prestamoId: null, bibliotecarioId: null, ...o });
 
 describe('LoanManagement screen (librarian)', () => {

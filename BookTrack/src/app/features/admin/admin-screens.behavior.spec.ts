@@ -37,8 +37,8 @@ describe('UserManagement screen', () => {
   let page: UserManagement;
   let ctrl: HttpTestingController;
   const users = () => [
-    { id: 2, nombreApellido: 'Franco', email: '', categoria: 'bibliotecario' },
-    { id: 3, nombreApellido: 'Pedro', email: '', categoria: 'usuario' }];
+    { id: '12473', nombreApellido: 'Franco', email: '', categoria: 'bibliotecario' },
+    { id: '13885', nombreApellido: 'Pedro', email: '', categoria: 'usuario' }];
 
   beforeEach(() => {
     TestBed.configureTestingModule({ imports: [UserManagement], providers: testProviders });
@@ -55,10 +55,10 @@ describe('UserManagement screen', () => {
   });
 
   it('saves an edited user with PATCH and leaves edit mode', () => {
-    page.editarRol(3);
-    expect(page.usuarioEnEdicion).toBe(3);
+    page.editarRol('13885');
+    expect(page.usuarioEnEdicion).toBe('13885');
     page.guardarRol(page.usuarios[1]);
-    const req = ctrl.expectOne(`${API}/users/3/`);
+    const req = ctrl.expectOne(`${API}/users/13885/`);
     expect(req.request.method).toBe('PATCH');
     req.flush({});
     expect(page.usuarioEnEdicion).toBeNull();
@@ -67,11 +67,11 @@ describe('UserManagement screen', () => {
   it('asks for confirmation before deleting and reloads the list', () => {
     const confirm = vi.spyOn(window, 'confirm');
     confirm.mockReturnValueOnce(false);
-    page.eliminarUsuario(3);
-    ctrl.expectNone(`${API}/users/3/`);
+    page.eliminarUsuario('13885');
+    ctrl.expectNone(`${API}/users/13885/`);
     confirm.mockReturnValueOnce(true);
-    page.eliminarUsuario(3);
-    const req = ctrl.expectOne(`${API}/users/3/`);
+    page.eliminarUsuario('13885');
+    const req = ctrl.expectOne(`${API}/users/13885/`);
     expect(req.request.method).toBe('DELETE');
     req.flush(null);
     ctrl.expectOne(`${API}/users/`).flush(users().slice(0, 1));
@@ -80,8 +80,8 @@ describe('UserManagement screen', () => {
 
   it('shows an error when the deletion is refused', () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true);
-    page.eliminarUsuario(3);
-    ctrl.expectOne(`${API}/users/3/`).flush(['tiene historial'], { status: 400, statusText: 'Bad Request' });
+    page.eliminarUsuario('13885');
+    ctrl.expectOne(`${API}/users/13885/`).flush(['tiene historial'], { status: 400, statusText: 'Bad Request' });
     expect(page.error).toContain('Error al eliminar usuario');
   });
 });

@@ -1,11 +1,11 @@
 from django.db.models.deletion import ProtectedError
-from rest_framework.exceptions import ValidationError
-from rest_framework import generics, permissions, status
+from rest_framework import generics, permissions
+from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import User
 from loans.permissions import IsLibrarian
-from .serializers import UserSerializer, RegisterSerializer, LoginSerializer
+from .models import Bibliotecario, Usuario, find_persona
+from .serializers import LoginSerializer, RegisterSerializer, UserSerializer
 
 
 class LoginView(APIView):
@@ -20,7 +20,6 @@ class LoginView(APIView):
 
 
 class RegisterView(generics.CreateAPIView):
-    queryset = User.objects.all()
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]
 
@@ -34,27 +33,29 @@ class ProfileView(generics.RetrieveUpdateAPIView):
 
 
 class UserListView(generics.ListAPIView):
-    queryset = User.objects.all()
+    """Todas las personas con cuenta: bibliotecarios primero, luego usuarios."""
     serializer_class = UserSerializer
     permission_classes = [IsLibrarian]
 
+    def get_queryset(self):
+        return [*Bibliotecario.objects.order_by('pk'), *Usuario.objects.order_by('pk')]
+
 
 class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def get_queryset(self):
-        if self.request.user.categoria == 'bibliotecario':
-            return User.objects.all()
-        return User.objects.filter(pk=self.request.user.pk)
+    def get_object(self):
+        legajo = self.kwargs['pk']
+        if self.request.user.categoria != 'bibliotecario' and legajo != self.request.user.pk:
+            raise NotFound()  # nadie ve ni edita la cuenta de otro, salvo un bibliotecario
+        person = find_persona(legajo)
+        if person is None:
+            raise NotFound()
+        return person
 
     def perform_destroy(self, instance):
         try:
             instance.delete()
         except ProtectedError:
             raise ValidationError('El registro tiene historial de reservas o préstamos y no se puede eliminar.')
-
-    def update(self, request, *args, **kwargs):
-        # Permitir actualizar solo ciertos campos
-        return super().update(request, *args, **kwargs)

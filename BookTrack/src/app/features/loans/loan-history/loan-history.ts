@@ -33,7 +33,7 @@ import { BookService } from '../../../core/services/book.service';
               <tr>
                 <th>ESTUDIANTE</th>
                 <th>CÓDIGO DE LIBRO</th>
-                <th>TIPO DE PRÉSTAMO</th>
+                <th>EJEMPLAR</th>
                 <th>ID</th>
                 <th>PERÍODO DE PRÉSTAMO</th><th>ESTADO</th><th>DEVOLUCIÓN</th>
               </tr>
@@ -92,7 +92,7 @@ import { BookService } from '../../../core/services/book.service';
 })
 export class LoanHistory implements OnInit {
   historial: any[] = [];
-  private titulosPorLibro = new Map<number, string>();
+  private titulosPorLibro = new Map<string, string>();
 
   constructor(private router: Router, private loanService: LoanService, private bookService: BookService) {}
 
@@ -106,7 +106,7 @@ export class LoanHistory implements OnInit {
         id: p.id,
         estudiante: p.estudianteNombre || `Usuario #${p.estudianteId}`,
         codigo: p.libroTitulo || this.titulosPorLibro.get(p.libroId) || `Libro #${p.libroId}`,
-        tipo: p.tipoPrestamo,
+        tipo: p.ejemplarCodigo ?? '-',
         estado: p.estado,
         devolucion: p.fechaDevolucion || '-',
         periodo: `${p.fechaInicio} → ${p.fechaVencimiento || '-'}`
