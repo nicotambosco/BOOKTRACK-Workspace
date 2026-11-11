@@ -41,12 +41,3 @@ class Ejemplar(models.Model):
 
     def __str__(self):
         return f'{self.codigo} ({self.estado})'
-
-
-class Favorito(models.Model):
-    pk = models.CompositePrimaryKey('usuario_id', 'libro_id')
-    usuario = models.ForeignKey('users.Usuario', on_delete=models.CASCADE, related_name='favoritos', db_column='idUsuario')
-    libro = models.ForeignKey(Libro, on_delete=models.CASCADE, related_name='favoritos', db_column='ISBN')
-
-    class Meta:
-        db_table = 'Favorito'

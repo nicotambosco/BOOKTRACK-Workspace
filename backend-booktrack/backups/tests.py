@@ -14,7 +14,7 @@ from django.core.management.base import CommandError
 from django.test import TransactionTestCase, override_settings
 from django.utils import timezone
 
-from books.models import Ejemplar, Favorito, Libro
+from books.models import Ejemplar, Libro
 from books.testing import make_book
 from categories.models import Category
 from comments.models import Comment
@@ -49,7 +49,6 @@ class SnapshotTests(TransactionTestCase):
         self.book = make_book('Título privado 📚', categoria='Prueba', estado='inactivo', disponibles=1)
         self.loan = Prestamo.objects.create(usuario=self.user, ejemplar=self.book.ejemplares.get(),
             fecha_vencimiento=timezone.localdate()+timedelta(days=7))
-        Favorito.objects.create(usuario=self.user, libro=self.book)
         self.reservation = Reserva.objects.create(usuario=self.user, libro=self.book, estado='finalizada',
             fecha_vencimiento=timezone.localdate(), fecha_devolucion_prevista=self.loan.fecha_vencimiento, prestamo=self.loan)
         Category.objects.create(nombre='Prueba de copia')
@@ -82,7 +81,7 @@ class SnapshotTests(TransactionTestCase):
         self.assertEqual(metadata['counts']['auth.group_permissions'], 1)
         _, files = read_snapshot(self.output, PASSWORD)
         labels = {entry['model'] for entry in json.loads(files['database.json'])}
-        self.assertTrue({'users.usuario', 'users.bibliotecario', 'books.libro', 'books.ejemplar', 'books.favorito', 'loans.prestamo', 'loans.reserva', 'comments.comment',
+        self.assertTrue({'users.usuario', 'users.bibliotecario', 'books.libro', 'books.ejemplar', 'loans.prestamo', 'loans.reserva', 'comments.comment',
                          'sessions.session', 'auth.group', 'auth.permission', 'contenttypes.contenttype'} <= labels)
         self.assertEqual(files['media/foto.jpg'], b'uploaded-image-test')
 
@@ -96,7 +95,6 @@ class SnapshotTests(TransactionTestCase):
         self.assertTrue(recovery.exists())
         self.assertFalse(Libro.objects.filter(pk=extra.pk).exists())
         self.assertEqual(Libro.objects.get(pk=self.book.pk).titulo, 'Título privado 📚')
-        self.assertTrue(Favorito.objects.filter(usuario=self.user, libro=self.book).exists())
         restored = Usuario.objects.get(pk=self.user.pk)
         self.assertTrue(restored.check_password('original-user-password'))
         self.assertEqual(restored.imagen, 'data:image/png;base64,cHJpdmF0ZQ==')

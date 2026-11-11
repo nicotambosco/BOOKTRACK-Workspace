@@ -8,7 +8,7 @@ from django.db.models.deletion import ProtectedError
 from django.test import TestCase
 from django.utils import timezone
 
-from books.models import Ejemplar, Favorito
+from books.models import Ejemplar
 from books.testing import make_book
 from users.testing import make_user
 from .models import Notificacion, Prestamo, Reserva
@@ -63,11 +63,6 @@ class DatabaseRulesTests(TestCase):
             Ejemplar.objects.filter(pk=self.copy.pk).update(estado='perdido')
         with self.assertRaises(IntegrityError), transaction.atomic():
             Ejemplar.objects.create(libro=self.book, codigo=self.copy.codigo)
-
-    def test_a_favorite_is_unique_per_user_and_book(self):
-        Favorito.objects.create(usuario=self.student, libro=self.book)
-        with self.assertRaises(IntegrityError), transaction.atomic():
-            Favorito.objects.create(usuario=self.student, libro=self.book)
 
     def test_isbn_is_the_book_primary_key(self):
         self.assertEqual(self.book.pk, self.book.isbn)

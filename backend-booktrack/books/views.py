@@ -2,14 +2,13 @@ import base64
 from django.db import transaction
 from django.db.models import Count, Q
 from django.db.models.deletion import ProtectedError
-from rest_framework import permissions, status, viewsets
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.exceptions import ValidationError
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
-from rest_framework.views import APIView
 from loans.permissions import ReadOnlyOrLibrarian
-from .models import Ejemplar, Favorito, Libro
+from .models import Ejemplar, Libro
 from .serializers import EjemplarSerializer, LibroSerializer
 
 HISTORY_ERROR = 'El registro tiene historial de reservas o préstamos y no se puede eliminar.'
@@ -65,28 +64,3 @@ class EjemplarViewSet(viewsets.ModelViewSet):
             instance.delete()
         except ProtectedError:
             raise ValidationError(HISTORY_ERROR)
-
-
-def _usuario(request):
-    if request.user.categoria != 'usuario':
-        raise PermissionDenied('Los favoritos son para usuarios, no para bibliotecarios.')
-    return request.user
-
-
-class FavoriteView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request):
-        libros = Libro.objects.filter(favoritos__usuario=_usuario(request)).prefetch_related('ejemplares').order_by('titulo')
-        return Response(LibroSerializer(libros, many=True).data)
-
-    def post(self, request, isbn=None):
-        libro = Libro.objects.filter(pk=request.data.get('isbn')).first()
-        if libro is None:
-            raise ValidationError({'isbn': 'El libro no existe.'})
-        Favorito.objects.get_or_create(usuario=_usuario(request), libro=libro)
-        return Response(LibroSerializer(libro).data, status=status.HTTP_201_CREATED)
-
-    def delete(self, request, isbn=None):
-        Favorito.objects.filter(usuario=_usuario(request), libro_id=isbn).delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)

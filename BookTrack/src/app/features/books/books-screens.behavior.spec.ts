@@ -127,33 +127,6 @@ describe('BookDetail screen', () => {
   });
 });
 
-describe('BookDetail favorites', () => {
-  const create = (role: string) => {
-    localStorage.setItem('auth_token', fakeJwt({ categoria: role }));
-    TestBed.configureTestingModule({ imports: [BookDetail], providers: testProviders });
-    const page = TestBed.createComponent(BookDetail).componentInstance;
-    page.libro = { id: '9781', isbn: '9781', titulo: 'T', autor: '', categoria: 'Basicas' };
-    return { page, ctrl: TestBed.inject(HttpTestingController) };
-  };
-  afterEach(() => localStorage.clear());
-
-  it('adds and removes the book from the favorites of a user', () => {
-    const { page, ctrl } = create('usuario');
-    expect(page.esAdmin).toBe(false);
-    page.alternarFavorito();
-    ctrl.expectOne(r => r.method === 'POST' && r.url === `${API}/favorites/`).flush({});
-    expect(page.esFavorito).toBe(true);
-    page.alternarFavorito();
-    ctrl.expectOne(r => r.method === 'DELETE' && r.url === `${API}/favorites/9781/`).flush(null);
-    expect(page.esFavorito).toBe(false);
-    ctrl.verify();
-  });
-
-  it('does not offer favorites to a librarian', () => {
-    expect(create('bibliotecario').page.esAdmin).toBe(true);
-  });
-});
-
 describe('HomeUser screen (catalog)', () => {
   let page: HomeUser;
   let ctrl: HttpTestingController;

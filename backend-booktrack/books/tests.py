@@ -132,30 +132,6 @@ class CopyApiTests(TestCase):
         self.assertEqual(self.c_lib.delete(f'/api/copies/{copy.pk}/').status_code, 400)
 
 
-class FavoriteApiTests(TestCase):
-    def setUp(self):
-        self.book = make_book('T')
-        self.student = make_user('s')
-        self.c_student = APIClient(); self.c_student.force_authenticate(self.student)
-
-    def test_add_list_and_remove(self):
-        self.assertEqual(self.c_student.get('/api/favorites/').data, [])
-        for _ in range(2):  # agregar dos veces no duplica
-            self.assertEqual(self.c_student.post('/api/favorites/', {'isbn': self.book.pk}, format='json').status_code, 201)
-        self.assertEqual([b['id'] for b in self.c_student.get('/api/favorites/').data], [self.book.pk])
-        self.assertEqual(self.c_student.delete(f'/api/favorites/{self.book.pk}/').status_code, 204)
-        self.assertEqual(self.c_student.get('/api/favorites/').data, [])
-
-    def test_favorites_are_private_and_validated(self):
-        other = APIClient(); other.force_authenticate(make_user('o'))
-        self.c_student.post('/api/favorites/', {'isbn': self.book.pk}, format='json')
-        self.assertEqual(other.get('/api/favorites/').data, [])
-        self.assertEqual(self.c_student.post('/api/favorites/', {'isbn': 'no-existe'}, format='json').status_code, 400)
-        self.assertEqual(APIClient().get('/api/favorites/').status_code, 401)
-        librarian = APIClient(); librarian.force_authenticate(make_user('l', 'bibliotecario'))
-        self.assertEqual(librarian.get('/api/favorites/').status_code, 403)
-
-
 class CoverUploadTests(TestCase):
     url = '/api/books/upload-image/'
 

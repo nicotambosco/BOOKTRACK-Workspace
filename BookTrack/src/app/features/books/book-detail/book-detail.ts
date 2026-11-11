@@ -3,7 +3,6 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Header } from '../../../shared/components/header/header';
 import { BookService } from '../../../core/services/book.service';
-import { FavoriteService } from '../../../core/services/favorite.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { Book } from '../../../models/book.model';
 
@@ -66,11 +65,6 @@ import { Book } from '../../../models/book.model';
                 <button class="btn-primary" (click)="solicitarPrestamo()" [disabled]="libro.estado === 'inactivo'">
                   {{ libro.estado === 'inactivo' ? 'LIBRO INACTIVO' : 'RESERVAR LIBRO' }}
                 </button>
-                @if (!esAdmin) {
-                  <button class="btn-outline" (click)="alternarFavorito()" [disabled]="guardandoFavorito">
-                    {{ esFavorito ? '★ QUITAR DE FAVORITOS' : '☆ AGREGAR A FAVORITOS' }}
-                  </button>
-                }
                 <button class="btn-outline" (click)="volver()">VOLVER</button>
               </div>
             </div>
@@ -135,12 +129,8 @@ import { Book } from '../../../models/book.model';
 export class BookDetail implements OnInit {
   libro: Book | null = null;
   cargando = true;
-  esFavorito = false;
-  guardandoFavorito = false;
-  get esAdmin() { return this.authService.getUserRole() === 'bibliotecario'; }
 
-  constructor(private route: ActivatedRoute, private router: Router, private bookService: BookService, private authService: AuthService,
-    private favoriteService: FavoriteService) {}
+  constructor(private route: ActivatedRoute, private router: Router, private bookService: BookService, private authService: AuthService) {}
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id') ?? '';
@@ -148,21 +138,6 @@ export class BookDetail implements OnInit {
       next: l => { this.libro = l; this.cargando = false; },
       error: () => { this.cargando = false; }
     });
-    if (!this.esAdmin) {
-      this.favoriteService.getAll().subscribe({ next: libros => this.esFavorito = libros.some(l => l.id === id), error: () => {} });
-    }
-  }
-
-  alternarFavorito() {
-    const isbn = this.libro?.isbn;
-    if (!isbn || this.guardandoFavorito) return;
-    this.guardandoFavorito = true;
-    const observer = {
-      next: () => { this.esFavorito = !this.esFavorito; this.guardandoFavorito = false; },
-      error: () => { this.guardandoFavorito = false; }
-    };
-    if (this.esFavorito) this.favoriteService.remove(isbn).subscribe(observer);
-    else this.favoriteService.add(isbn).subscribe(observer);
   }
 
   solicitarPrestamo() { if (this.libro?.id) this.router.navigate(['/loan-request', this.libro.id]); }
