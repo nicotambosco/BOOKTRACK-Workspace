@@ -39,6 +39,15 @@ describe('LoanManagement screen (librarian)', () => {
     expect(page.ocupado).toBe(false);
   });
 
+  it('shows only what still waits for an answer and leaves the answered ones to the archive', () => {
+    flushLists(
+      [loan({ id: 1, estado: 'vigente' }), loan({ id: 2, estado: 'vencido' }), loan({ id: 3, estado: 'devuelto' })],
+      [reservation({ id: 10 }), reservation({ id: 11, estado: 'finalizada', prestamoId: 1 }),
+       reservation({ id: 12, estado: 'cancelada' }), reservation({ id: 13, estado: 'vencida' })]);
+    expect(page.reservasPendientes.map(r => r.id)).toEqual([10]);
+    expect(page.prestamosAbiertos.map(p => p.id)).toEqual([1, 2]);
+  });
+
   it('offers only available copies and does not submit an invalid selection', () => {
     flushLists([], [reservation()]);
     expect(page.disponibles(reservation())).toEqual(['E-1']);

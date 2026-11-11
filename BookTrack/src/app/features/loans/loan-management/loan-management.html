@@ -2,13 +2,13 @@
   <app-header [esAdmin]="true"></app-header>
   <main class="page-body">
     <h1>Reservas y préstamos</h1>
-    <p>Registrá el retiro del libro para finalizar la reserva y crear el préstamo.</p>
+    <p>Registrá el retiro del libro para finalizar la reserva y crear el préstamo. Las reservas ya respondidas y los préstamos devueltos están en el <a routerLink="/loan-archive">archivo</a>.</p>
     @if (mensaje) { <p class="mensaje" role="status">{{ mensaje }}</p> }
     <button (click)="cargar()" [disabled]="ocupado">ACTUALIZAR</button>
     <section>
       <h2>Reservas</h2>
       <p>Las reservas se atienden por fecha de reserva y, si coinciden, por orden de registro.</p>
-      @for (r of reservas; track r.id) {
+      @for (r of reservasPendientes; track r.id) {
         <article>
           <div><strong>{{ r.libroTitulo }}</strong> · {{ r.estudianteNombre || 'Usuario #' + r.estudianteId }}
             <p>Reserva #{{ r.id }} · {{ r.estado }}</p>
@@ -44,11 +44,11 @@
             </div>
           }
         </article>
-      } @empty { <p class="sin-reservas">No hay reservas para mostrar.</p> }
+      } @empty { <p class="sin-reservas">No hay reservas pendientes de respuesta.</p> }
     </section>
     <section>
       <h2>Préstamos</h2>
-      @for (p of prestamos; track p.id) {
+      @for (p of prestamosAbiertos; track p.id) {
         <article>
           <div><strong>{{ p.libroTitulo }}</strong> · {{ p.estudianteNombre || 'Usuario #' + p.estudianteId }}
             <p>{{ p.estado }} · Inicio {{ p.fechaInicio }} · Vence {{ p.fechaVencimiento || 'fecha no registrada' }}</p>
@@ -60,7 +60,7 @@
             }
           </div>
         </article>
-      } @empty { <p>No hay préstamos.</p> }
+      } @empty { <p>No hay préstamos pendientes de devolución.</p> }
     </section>
   </main>
 </div>

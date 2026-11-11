@@ -22,6 +22,7 @@ import { ModalSuccess } from './shared/components/modal-success/modal-success';
 import { ModalError } from './shared/components/modal-error/modal-error';
 import { BookSearch } from './features/books/book-search/book-search';
 import { UserHistory } from './features/loans/user-history/user-history';
+import { UserLoans } from './features/loans/user-loans/user-loans';
 import { LoanArchive } from './features/loans/loan-archive/loan-archive';
 
 export const routes: Routes = [
@@ -99,6 +100,12 @@ export const routes: Routes = [
   {
     path: 'user-management',
     component: UserManagement,
+    canActivate: [authGuard],
+    data: { roles: ['bibliotecario'] }
+  },
+  {
+    path: 'user-loans/:legajo',
+    component: UserLoans,
     canActivate: [authGuard],
     data: { roles: ['bibliotecario'] }
   },

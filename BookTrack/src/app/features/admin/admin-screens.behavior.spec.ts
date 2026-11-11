@@ -1,3 +1,4 @@
+import { Router } from '@angular/router';
 import { TestBed } from '@angular/core/testing';
 import { HttpTestingController } from '@angular/common/http/testing';
 import { Reports } from './reports/reports';
@@ -54,34 +55,14 @@ describe('UserManagement screen', () => {
     expect(page.cargando).toBe(false);
   });
 
-  it('saves an edited user with PATCH and leaves edit mode', () => {
-    page.editarRol('13885');
-    expect(page.usuarioEnEdicion).toBe('13885');
-    page.guardarRol(page.usuarios[1]);
-    const req = ctrl.expectOne(`${API}/users/13885/`);
-    expect(req.request.method).toBe('PATCH');
-    req.flush({});
-    expect(page.usuarioEnEdicion).toBeNull();
+  it('is read-only: it has no edit or delete actions', () => {
+    const anyPage = page as unknown as Record<string, unknown>;
+    for (const accion of ['editarRol', 'guardarRol', 'cancelarEdicion', 'eliminarUsuario']) expect(anyPage[accion]).toBeUndefined();
   });
 
-  it('asks for confirmation before deleting and reloads the list', () => {
-    const confirm = vi.spyOn(window, 'confirm');
-    confirm.mockReturnValueOnce(false);
-    page.eliminarUsuario('13885');
-    ctrl.expectNone(`${API}/users/13885/`);
-    confirm.mockReturnValueOnce(true);
-    page.eliminarUsuario('13885');
-    const req = ctrl.expectOne(`${API}/users/13885/`);
-    expect(req.request.method).toBe('DELETE');
-    req.flush(null);
-    ctrl.expectOne(`${API}/users/`).flush(users().slice(0, 1));
-    expect(page.usuarios).toHaveLength(1);
-  });
-
-  it('shows an error when the deletion is refused', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
-    page.eliminarUsuario('13885');
-    ctrl.expectOne(`${API}/users/13885/`).flush(['tiene historial'], { status: 400, statusText: 'Bad Request' });
-    expect(page.error).toContain('Error al eliminar usuario');
+  it('opens the loan history of a user', () => {
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    page.verHistorial(page.usuarios[1]);
+    expect(navigate).toHaveBeenCalledWith(['/user-loans', '13885']);
   });
 });

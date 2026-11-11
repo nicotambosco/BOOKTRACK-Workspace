@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { Header } from '../../../shared/components/header/header';
 import { BookService } from '../../../core/services/book.service';
@@ -13,7 +14,7 @@ import { Reservation } from '../../../models/reservation.model';
 @Component({
   selector: 'app-loan-management',
   standalone: true,
-  imports: [Header, CommonModule, FormsModule],
+  imports: [Header, CommonModule, FormsModule, RouterLink],
   templateUrl: './loan-management.html',
   styleUrl: './loan-management.scss',
 })
@@ -28,6 +29,10 @@ export class LoanManagement implements OnInit {
   ocupado = false;
 
   constructor(private loanService: LoanService, private reservationService: ReservationService, private bookService: BookService) {}
+
+  // Esta vista es solo para lo que espera una respuesta; lo ya respondido se consulta en el archivo.
+  get reservasPendientes(): Reservation[] { return this.reservas.filter(r => r.estado === 'activa'); }
+  get prestamosAbiertos(): Loan[] { return this.prestamos.filter(p => p.estado === 'vigente' || p.estado === 'vencido'); }
 
   ngOnInit() { this.cargar(); }
 

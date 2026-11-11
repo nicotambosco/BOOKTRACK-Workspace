@@ -1,13 +1,13 @@
 import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { Header } from '../../../shared/components/header/header';
 import { UserService } from '../../../core/services/user.service';
 import { User } from '../../../models/user.model';
 
 @Component({
   selector: 'app-user-management',
-  imports: [CommonModule, FormsModule, Header],
+  imports: [CommonModule, Header],
   templateUrl: './user-management.html',
   styleUrl: './user-management.scss',
 })
@@ -15,10 +15,8 @@ export class UserManagement implements OnInit {
   usuarios: User[] = [];
   cargando = false;
   error: string | null = null;
-  usuarioEnEdicion: string | null = null;
-  rolesDisponibles = ['usuario', 'bibliotecario'];
 
-  constructor(private userService: UserService) {}
+  constructor(private userService: UserService, private router: Router) {}
 
   ngOnInit() {
     this.cargarUsuarios();
@@ -39,42 +37,8 @@ export class UserManagement implements OnInit {
     });
   }
 
-  editarRol(usuarioId: string | undefined) {
-    if (usuarioId) {
-      this.usuarioEnEdicion = usuarioId;
-    }
-  }
-
-  guardarRol(usuario: User) {
-    if (usuario.id && usuario.categoria) {
-      this.userService.update(usuario.id, usuario).subscribe({
-        next: () => {
-          this.usuarioEnEdicion = null;
-          this.error = null;
-        },
-        error: (err) => {
-          this.error = 'Error al guardar rol: ' + err.message;
-        }
-      });
-    }
-  }
-
-  cancelarEdicion() {
-    this.usuarioEnEdicion = null;
-    this.cargarUsuarios();
-  }
-
-  eliminarUsuario(usuarioId: string | undefined) {
-    if (!usuarioId) return;
-    if (confirm('¿Está seguro que desea eliminar este usuario?')) {
-      this.userService.delete(usuarioId).subscribe({
-        next: () => {
-          this.cargarUsuarios();
-        },
-        error: (err) => {
-          this.error = 'Error al eliminar usuario: ' + err.message;
-        }
-      });
-    }
+  // Los usuarios solo se consultan: no se editan ni se eliminan desde acá.
+  verHistorial(usuario: User) {
+    if (usuario.id) this.router.navigate(['/user-loans', usuario.id]);
   }
 }

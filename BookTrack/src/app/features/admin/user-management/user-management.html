@@ -11,7 +11,7 @@
       </div>
       <div>
         <h2 class="section-title">Gestión de Usuarios</h2>
-        <p class="section-subtitle">Editá roles y permisos de los usuarios.</p>
+        <p class="section-subtitle">Listado de usuarios y acceso a su historial de préstamos.</p>
       </div>
     </div>
 
@@ -32,41 +32,27 @@
       <table class="users-table">
         <thead>
           <tr>
-            <th>ID</th>
+            <th>Legajo</th>
             <th>Nombre</th>
             <th>Email</th>
-            <th>Legajo</th>
-            <th>Rol Actual</th>
-            <th>Acciones</th>
+            <th>Rol</th>
+            <th>Historial</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let usuario of usuarios" [class.editing]="usuarioEnEdicion === usuario.id">
-            <td>{{ usuario.id }}</td>
+          <tr *ngFor="let usuario of usuarios">
+            <td>{{ usuario.legajo || usuario.id }}</td>
             <td>{{ usuario.nombreApellido }}</td>
-            <td>{{ usuario.email }}</td>
-            <td>{{ usuario.legajo || '-' }}</td>
+            <td>{{ usuario.email || '-' }}</td>
             <td>
-              <div *ngIf="usuarioEnEdicion === usuario.id" class="role-select">
-                <select [(ngModel)]="usuario.categoria" class="dropdown">
-                  <option *ngFor="let rol of rolesDisponibles" [value]="rol">
-                    {{ rol === 'usuario' ? '👤 Usuario' : '📚 Bibliotecario' }}
-                  </option>
-                </select>
-              </div>
-              <span *ngIf="usuarioEnEdicion !== usuario.id" class="role-badge" [class]="'role-' + usuario.categoria">
+              <span class="role-badge" [class]="'role-' + usuario.categoria">
                 {{ usuario.categoria === 'usuario' ? '👤 Usuario' : '📚 Bibliotecario' }}
               </span>
             </td>
             <td class="actions">
-              <div *ngIf="usuarioEnEdicion === usuario.id" class="action-buttons">
-                <button class="btn btn-save" (click)="guardarRol(usuario)">✓ Guardar</button>
-                <button class="btn btn-cancel" (click)="cancelarEdicion()">✕ Cancelar</button>
-              </div>
-              <div *ngIf="usuarioEnEdicion !== usuario.id" class="action-buttons">
-                <button class="btn btn-edit" (click)="editarRol(usuario.id)">✏️ Editar</button>
-                <button class="btn btn-delete" (click)="eliminarUsuario(usuario.id)">🗑️ Eliminar</button>
-              </div>
+              @if (usuario.categoria === 'usuario') {
+                <button class="btn btn-edit" (click)="verHistorial(usuario)">Ver historial</button>
+              } @else { - }
             </td>
           </tr>
         </tbody>

@@ -5,7 +5,25 @@ import { FormsModule } from '@angular/forms';
 import { Header } from '../../../shared/components/header/header';
 import { LoanService } from '../../../core/services/loan.service';
 import { BookService } from '../../../core/services/book.service';
+import { ReservationService } from '../../../core/services/reservation.service';
 import { Loan } from '../../../models/loan.model';
+import { Reservation } from '../../../models/reservation.model';
+
+const ESTADOS_PRESTAMO = ['vigente', 'vencido', 'devuelto'];
+
+interface FilaArchivo {
+  clave: string;
+  tipo: 'Préstamo' | 'Reserva';
+  legajo: string;
+  estudiante: string;
+  libro: string;
+  ejemplar: string;
+  periodo: string;
+  estado: string;       // clave del estado, también para el color
+  etiqueta: string;
+  devolucion: string;
+  fecha: string;        // para ordenar, más nuevo primero
+}
 
 @Component({
   selector: 'app-loan-archive',
@@ -25,18 +43,21 @@ import { Loan } from '../../../models/loan.model';
           </div>
           <div>
             <h2 class="section-title">Archivo de Préstamos</h2>
-            <p class="section-subtitle">Consultá y exportá el registro histórico completo.</p>
+            <p class="section-subtitle">Préstamos y reservas ya respondidas, en un solo registro. La exportación incluye los préstamos.</p>
           </div>
         </div>
 
         <div class="table-card">
           <div class="card-top">
             <div class="filtros">
-              <select [(ngModel)]="filtroEstado" (change)="filtrar()">
+              <select [(ngModel)]="filtroEstado" (change)="filtrar()" aria-label="Filtrar por estado">
                 <option value="">Todos los estados</option>
-                <option value="vigente">Vigentes</option>
-                <option value="devuelto">Devueltos</option>
-                <option value="vencido">Vencidos</option>
+                <option value="vigente">Préstamos vigentes</option>
+                <option value="devuelto">Préstamos devueltos</option>
+                <option value="vencido">Préstamos vencidos</option>
+                <option value="finalizada">Reservas aprobadas</option>
+                <option value="cancelada">Reservas rechazadas o canceladas</option>
+                <option value="vencida">Reservas vencidas</option>
               </select>
               <button class="btn-outline btn-sm" (click)="exportPDF()">IMP. PDF</button>
               <button class="btn-outline btn-sm" (click)="exportExcel()">IMP. EXCEL</button>
@@ -46,6 +67,7 @@ import { Loan } from '../../../models/loan.model';
           <table>
             <thead>
               <tr>
+                <th>TIPO</th>
                 <th>LEGAJO</th>
                 <th>ESTUDIANTE</th>
                 <th>LIBRO</th>
@@ -56,18 +78,19 @@ import { Loan } from '../../../models/loan.model';
               </tr>
             </thead>
             <tbody>
-              @for (p of filtrados; track p.id) {
+              @for (f of filtrados; track f.clave) {
                 <tr>
-                  <td>{{ obtenerlLegajo(p) }}</td>
-                  <td>{{ obtenerNombre(p) }}</td>
-                  <td>{{ tituloLibro(p.libroId) }}</td>
-                  <td>{{ p.ejemplarId }}</td>
-                  <td>{{ p.fechaInicio }} → {{ p.fechaVencimiento || '-' }}</td>
-                  <td><span class="badge" [class]="p.estado">{{ label(p.estado) }}</span></td><td>{{ p.fechaDevolucion || '-' }}</td>
+                  <td>{{ f.tipo }}</td>
+                  <td>{{ f.legajo }}</td>
+                  <td>{{ f.estudiante }}</td>
+                  <td>{{ f.libro }}</td>
+                  <td>{{ f.ejemplar }}</td>
+                  <td>{{ f.periodo }}</td>
+                  <td><span class="badge" [class]="f.estado">{{ f.etiqueta }}</span></td>
+                  <td>{{ f.devolucion }}</td>
                 </tr>
-              }
-              @if (filtrados.length === 0) {
-                <tr><td colspan="7" class="vacio">Sin registros.</td></tr>
+              } @empty {
+                <tr><td colspan="8" class="vacio">Sin registros.</td></tr>
               }
             </tbody>
           </table>
@@ -123,6 +146,11 @@ import { Loan } from '../../../models/loan.model';
     .badge { padding:0.25rem 0.6rem; border-radius:20px; font-size:0.7rem; }
     .badge.vigente { background:#16301f; color:#4ade80; }
     .badge.devuelto  { background:#12293a; color:#60a5fa; }
+    .badge.finalizada { background:#16301f; color:#4ade80; }
+    .badge.cancelada { background:#3a1a1a; color:#f87171; }
+    .badge.vencida, .badge.vencido { background:#3a2c12; color:#e8a020; }
+    .subtitulo { margin:0; font-family: Georgia, serif; font-size:1.05rem; color:#f5f5f5; }
+    .table-card + .table-card { margin-top:1.5rem; }
     .vacio { text-align:center; color:#8a8a8a; font-style:italic; padding:1rem; }
     .bottom { display:flex; justify-content:space-between; align-items:center; padding-top:0.5rem; }
     .total { font-size:0.8rem; color:#9a9a9a; }
@@ -132,27 +160,56 @@ import { Loan } from '../../../models/loan.model';
 })
 export class LoanArchive implements OnInit {
   prestamos: Loan[] = [];
-  filtrados: Loan[] = [];
+  reservas: Reservation[] = [];
+  filas: FilaArchivo[] = [];
+  filtrados: FilaArchivo[] = [];
   filtroEstado = '';
   private titulosPorLibro = new Map<string, string>();
 
-  constructor(public router: Router, private loanService: LoanService, private bookService: BookService) {}
+  constructor(public router: Router, private loanService: LoanService, private bookService: BookService, private reservationService: ReservationService) {}
 
   ngOnInit() {
-    this.loanService.getAll().subscribe(l => { this.prestamos = l; this.filtrar(); });
+    this.loanService.getAll().subscribe(l => { this.prestamos = l; this.armar(); });
+    this.reservationService.getAll().subscribe(r => { this.reservas = r; this.armar(); });
     this.bookService.getAll().subscribe(libros => {
       libros.forEach(l => { if (l.id) this.titulosPorLibro.set(l.id, l.titulo); });
+      this.armar();
     });
+  }
+
+  // Las reservas activas siguen esperando respuesta en la gestión; el resto se archiva acá.
+  get reservasRespondidas(): Reservation[] { return this.reservas.filter(r => r.estado !== 'activa'); }
+
+  respuesta(r: Reservation): string {
+    if (r.estado === 'finalizada') return 'Aprobada';
+    if (r.estado === 'cancelada') return r.bibliotecarioId ? 'Rechazada' : 'Cancelada por el usuario';
+    return 'Vencida';
   }
 
   tituloLibro(libroId: string): string {
     return this.titulosPorLibro.get(libroId) ?? `Libro #${libroId}`;
   }
 
+  private armar() {
+    const deLosPrestamos = this.prestamos.map((p): FilaArchivo => ({
+      clave: `prestamo-${p.id}`, tipo: 'Préstamo', legajo: this.obtenerlLegajo(p), estudiante: this.obtenerNombre(p),
+      libro: p.libroTitulo || this.tituloLibro(p.libroId), ejemplar: p.ejemplarId ?? '-',
+      periodo: `${p.fechaInicio} → ${p.fechaVencimiento || '-'}`, estado: p.estado, etiqueta: this.label(p.estado),
+      devolucion: p.fechaDevolucion || '-', fecha: p.fechaInicio,
+    }));
+    const deLasReservas = this.reservasRespondidas.map((r): FilaArchivo => ({
+      clave: `reserva-${r.id}`, tipo: 'Reserva', legajo: r.estudianteId, estudiante: r.estudianteNombre || `Usuario #${r.estudianteId}`,
+      libro: r.libroTitulo || this.tituloLibro(r.libroId),
+      ejemplar: this.prestamos.find(p => p.id === r.prestamoId)?.ejemplarId ?? '-',  // el de su préstamo, si se aprobó
+      periodo: `${r.fechaRetiro} → ${r.fechaVencimiento}`, estado: r.estado, etiqueta: this.respuesta(r),
+      devolucion: '-', fecha: r.fechaReserva,
+    }));
+    this.filas = [...deLosPrestamos, ...deLasReservas].sort((a, b) => b.fecha.localeCompare(a.fecha));
+    this.filtrar();
+  }
+
   filtrar() {
-    this.filtrados = this.filtroEstado
-      ? this.prestamos.filter(p => p.estado === this.filtroEstado)
-      : this.prestamos;
+    this.filtrados = this.filtroEstado ? this.filas.filter(f => f.estado === this.filtroEstado) : this.filas;
   }
 
   label(e: string) { return ({ vigente:'Vigente', vencido:'Vencido', devuelto:'Devuelto' } as any)[e] ?? e; }
@@ -168,8 +225,10 @@ export class LoanArchive implements OnInit {
   exportPDF() { this.descargar('pdf'); }
   exportExcel() { this.descargar('xlsx'); }
 
+  // La exportación del servidor es de préstamos: un filtro de reservas no se le envía.
   private descargar(tipo: 'pdf' | 'xlsx') {
-    const request = tipo === 'pdf' ? this.loanService.exportPDF(this.filtroEstado) : this.loanService.exportExcel(this.filtroEstado);
+    const estado = ESTADOS_PRESTAMO.includes(this.filtroEstado) ? this.filtroEstado : undefined;
+    const request = tipo === 'pdf' ? this.loanService.exportPDF(estado) : this.loanService.exportExcel(estado);
     request.subscribe({
       next: blob => {
         const url = URL.createObjectURL(blob);

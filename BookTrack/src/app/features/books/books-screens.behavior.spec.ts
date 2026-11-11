@@ -92,6 +92,76 @@ describe('BookEdit study year', () => {
   });
 });
 
+describe('BookEdit copies', () => {
+  const load = () => {
+    TestBed.configureTestingModule({ imports: [BookEdit], providers: testProviders });
+    const fixture = TestBed.createComponent(BookEdit);
+    const ctrl = TestBed.inject(HttpTestingController);
+    fixture.detectChanges();
+    ctrl.expectOne(`${API}/books//`).flush({
+      isbn: '9781', titulo: 'L', autor: 'A', categoria: 'Basicas', disponibles: 1,
+      ejemplares: [{ id: 'E-1', estado: 'disponible', observaciones: '', isbn: '9781' },
+                   { id: 'E-2', estado: 'prestado', observaciones: '', isbn: '9781' }] });
+    fixture.detectChanges(false);
+    fixture.detectChanges(false);  // la categoría se asigna al cargar; hace falta una segunda pasada
+    return { fixture, page: fixture.componentInstance, ctrl };
+  };
+  const chips = (f: { nativeElement: HTMLElement }) => Array.from(f.nativeElement.querySelectorAll<HTMLButtonElement>('button.ejemplar'));
+  const estadoSelect = (f: { nativeElement: HTMLElement }) => f.nativeElement.querySelector<HTMLSelectElement>('#estadoEjemplar')!;
+
+  it('selects a copy by clicking its name and only then enables the state selector', async () => {
+    const { fixture, page } = load();
+    await fixture.whenStable();
+    fixture.detectChanges(false);
+    expect(chips(fixture).map(c => c.textContent?.trim())).toEqual(['E-1 · Disponible', 'E-2 · Prestado']);
+    expect(estadoSelect(fixture).disabled).toBe(true);
+    chips(fixture)[0].click();
+    fixture.detectChanges(false);
+    await fixture.whenStable();
+    expect(page.ejemplarSeleccionado).toBe('E-1');
+    expect(chips(fixture)[0].classList).toContain('seleccionado');
+    expect(estadoSelect(fixture).disabled).toBe(false);
+  });
+
+  it('toggles the selected copy between available and not available and recounts the stock', () => {
+    const { page, ctrl } = load();
+    page.seleccionarEjemplar('E-1');
+    page.cambiarEstadoEjemplar('baja');
+    const off = ctrl.expectOne(`${API}/copies/E-1/`);
+    expect(off.request.method).toBe('PATCH');
+    expect(off.request.body).toEqual({ estado: 'baja' });
+    off.flush({ id: 'E-1', estado: 'baja', observaciones: '', isbn: '9781' });
+    expect(page.ejemplarActual?.estado).toBe('baja');
+    expect(page.etiquetaEstado('baja')).toBe('No disponible');
+    expect(page.libro.disponibles).toBe(0);
+    page.cambiarEstadoEjemplar('disponible');
+    ctrl.expectOne(`${API}/copies/E-1/`).flush({ id: 'E-1', estado: 'disponible', observaciones: '', isbn: '9781' });
+    expect(page.libro.disponibles).toBe(1);
+    ctrl.verify();
+  });
+
+  it('never changes a lent copy and sends nothing without a selection', () => {
+    const { page, ctrl } = load();
+    page.cambiarEstadoEjemplar('baja');
+    page.seleccionarEjemplar('E-2');
+    page.cambiarEstadoEjemplar('baja');
+    page.cambiarEstadoEjemplar('disponible');
+    ctrl.expectNone(r => r.url.includes('/copies/'));
+    expect(page.ejemplarActual?.estado).toBe('prestado');
+    ctrl.verify();
+  });
+
+  it('keeps the previous state and warns when the change is refused', () => {
+    const { page, ctrl } = load();
+    page.seleccionarEjemplar('E-1');
+    page.cambiarEstadoEjemplar('baja');
+    ctrl.expectOne(`${API}/copies/E-1/`).flush({}, { status: 403, statusText: 'Forbidden' });
+    expect(page.ejemplarActual?.estado).toBe('disponible');
+    expect(page.modal).toBe(true);
+    expect(page.guardandoEstado).toBe(false);
+  });
+});
+
 describe('BookManagement screen', () => {
   const create = () => {
     TestBed.configureTestingModule({ imports: [BookManagement], providers: testProviders });

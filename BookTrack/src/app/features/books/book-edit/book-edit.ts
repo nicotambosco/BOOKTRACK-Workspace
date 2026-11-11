@@ -71,12 +71,21 @@ import { CATEGORIAS } from '../../../models/categories';
             @if (libro.ejemplares.length) {
               <div class="campo"><label>EJEMPLARES</label>
                 <div class="ejemplares">
-                  @for (e of libro.ejemplares; track e.id) { <span class="ejemplar" [class]="e.estado">{{ e.id }} · {{ e.estado }}</span> }
+                  @for (e of libro.ejemplares; track e.id) {
+                    <button type="button" class="ejemplar" [class]="e.estado" [class.seleccionado]="e.id === ejemplarSeleccionado"
+                            (click)="seleccionarEjemplar(e.id)">{{ e.id }} · {{ etiquetaEstado(e.estado) }}</button>
+                  }
                 </div>
               </div>
             }
-            <div class="campo"><label for="estadoLibro">ESTADO</label>
-              <select id="estadoLibro" [(ngModel)]="libro.estado"><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select>
+            <div class="campo"><label for="estadoEjemplar">ESTADO DEL EJEMPLAR</label>
+              <select id="estadoEjemplar" [ngModel]="ejemplarActual?.estado ?? ''" (ngModelChange)="cambiarEstadoEjemplar($event)"
+                      [disabled]="!ejemplarActual || ejemplarActual.estado === 'prestado' || guardandoEstado">
+                @if (!ejemplarActual) { <option value="" disabled>Seleccioná un ejemplar</option> }
+                @if (ejemplarActual?.estado === 'prestado') { <option value="prestado">Prestado</option> }
+                <option value="disponible">Disponible</option>
+                <option value="baja">No disponible</option>
+              </select>
             </div>
             <div class="botones">
               <button class="btn-primary" (click)="guardar()">GUARDAR</button>
@@ -138,9 +147,11 @@ import { CATEGORIAS } from '../../../models/categories';
     }
     .campo input::placeholder, .campo textarea::placeholder { color:#6a6a6a; }
     .ejemplares { display:flex; flex-wrap:wrap; gap:0.4rem; }
-    .ejemplar { font-size:0.72rem; padding:0.25rem 0.6rem; border-radius:12px; background:#101010; border:1px solid #2a2a2a; color:#c8c8c8; }
+    .ejemplar { font:inherit; font-size:0.72rem; padding:0.25rem 0.6rem; border-radius:12px; background:#101010; border:1px solid #2a2a2a; color:#c8c8c8; cursor:pointer; }
     .ejemplar.prestado { border-color:#e8a020; }
     .ejemplar.baja { border-color:#e74c3c; color:#8a8a8a; }
+    .ejemplar.seleccionado { background:#1f2a22; color:#f5f5f5; box-shadow:0 0 0 2px #2ecc71; }
+    select:disabled { opacity:0.6; cursor:not-allowed; }
     .codigos-row { display:flex; gap:1rem; }
     .codigos-row .campo { flex:1; }
 
@@ -168,12 +179,41 @@ export class BookEdit implements OnInit {
   bookId = '';
   libro = { isbn:'', titulo:'', autor:'', anioCursada: 0, anioPublicacion: null as number | null, resumen:'', palabrasClave:'', imagen:'', disponibles:0, ejemplares: [] as Ejemplar[], estado: 'activo' as 'activo' | 'inactivo' };
 
+  ejemplarSeleccionado: string | null = null;
+  guardandoEstado = false;
+
   constructor(
     private router: Router,
     private route: ActivatedRoute,
     private bookService: BookService,
     private location: Location
   ) {}
+
+  get ejemplarActual(): Ejemplar | undefined {
+    return this.libro.ejemplares.find(e => e.id === this.ejemplarSeleccionado);
+  }
+
+  // La base guarda 'baja'; en pantalla es "No disponible".
+  etiquetaEstado(estado: Ejemplar['estado']): string {
+    return { disponible: 'Disponible', prestado: 'Prestado', baja: 'No disponible' }[estado];
+  }
+
+  seleccionarEjemplar(id: string) { this.ejemplarSeleccionado = id; }
+
+  // Alterna el ejemplar elegido entre disponible y no disponible; un ejemplar prestado solo cambia al devolverse.
+  cambiarEstadoEjemplar(estado: Ejemplar['estado']) {
+    const ejemplar = this.ejemplarActual;
+    if (!ejemplar || ejemplar.estado === 'prestado' || estado === 'prestado' || estado === ejemplar.estado || this.guardandoEstado) return;
+    this.guardandoEstado = true;
+    this.bookService.updateCopyState(ejemplar.id, estado).subscribe({
+      next: e => {
+        ejemplar.estado = e.estado;
+        this.libro.disponibles = this.libro.ejemplares.filter(x => x.estado === 'disponible').length;
+        this.guardandoEstado = false;
+      },
+      error: () => { this.guardandoEstado = false; this.modalMsg = 'No se pudo cambiar el estado del ejemplar.'; this.modal = true; }
+    });
+  }
 
   ngOnInit() {
     this.bookId = this.route.snapshot.paramMap.get('id') ?? '';
