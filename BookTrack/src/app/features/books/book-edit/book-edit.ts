@@ -5,7 +5,7 @@ import { CommonModule, Location } from '@angular/common';
 import { Header } from '../../../shared/components/header/header';
 import { BookService } from '../../../core/services/book.service';
 import { Ejemplar } from '../../../models/book.model';
-import { CategoryService } from '../../../core/services/category.service';
+import { CATEGORIAS } from '../../../models/categories';
 
 @Component({
   selector: 'app-book-edit',
@@ -152,7 +152,7 @@ import { CategoryService } from '../../../core/services/category.service';
 })
 export class BookEdit implements OnInit {
   modal=false; modalMsg=''; categoriaSeleccionada='';
-  categorias: string[] = [];
+  categorias = CATEGORIAS;
   bookId = '';
   libro = { isbn:'', titulo:'', autor:'', anioPublicacion: null as number | null, resumen:'', palabrasClave:'', imagen:'', disponibles:0, ejemplares: [] as Ejemplar[], estado: 'activo' as 'activo' | 'inactivo' };
 
@@ -160,16 +160,11 @@ export class BookEdit implements OnInit {
     private router: Router,
     private route: ActivatedRoute,
     private bookService: BookService,
-    private categoryService: CategoryService,
     private location: Location
   ) {}
 
   ngOnInit() {
     this.bookId = this.route.snapshot.paramMap.get('id') ?? '';
-    this.categoryService.getAll().subscribe({
-      next: cats => this.categorias = cats.map(c => c.nombre),
-      error: () => this.categorias = ['sistemas','química','electricia','mecánica','básicas']
-    });
     this.bookService.getById(this.bookId).subscribe({
       next: b => {
         this.libro = { ...this.libro, ...b, anioPublicacion: b.anioPublicacion ?? null, ejemplares: b.ejemplares ?? [] };

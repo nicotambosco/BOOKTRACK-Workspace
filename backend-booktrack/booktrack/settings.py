@@ -24,7 +24,6 @@ INSTALLED_APPS = [
     'books',
     'users',
     'loans',
-    'categories',
     'comments',
     'backups',
 ]

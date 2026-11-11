@@ -23,10 +23,6 @@ BOOKS = [
 
 def seed_catalog(apps, schema_editor):
     Book = apps.get_model('books', 'Book')
-    Category = apps.get_model('categories', 'Category')
-
-    for category in ('básicas', 'eléctrica', 'mecánica', 'química', 'sistemas'):
-        Category.objects.get_or_create(nombre=category)
 
     for title, author, publisher, year, description, isbn, inventory, category, course_year, available, book_type in BOOKS:
         cover = f'assets/covers/{isbn}.jpg'
@@ -53,7 +49,6 @@ def seed_catalog(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('categories', '0001_initial'),
         ('books', '0002_book_anio'),
     ]
 

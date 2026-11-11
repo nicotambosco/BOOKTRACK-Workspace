@@ -3,7 +3,6 @@ from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from categories.models import Category
 from comments.models import Comment
 from loans.models import Prestamo
 from users.testing import make_user
@@ -157,32 +156,6 @@ class CoverUploadTests(TestCase):
         student = APIClient(); student.force_authenticate(self.student)
         self.assertEqual(self.upload(client=student).status_code, 403)
         self.assertEqual(self.upload(client=APIClient()).status_code, 401)
-
-
-class CategoryApiTests(TestCase):
-    def setUp(self):
-        Category.objects.all().delete()  # las migraciones cargan las categorías iniciales
-        self.librarian = make_user('l', 'bibliotecario')
-        self.student = make_user('s')
-        self.c_lib = APIClient(); self.c_lib.force_authenticate(self.librarian)
-        self.c_student = APIClient(); self.c_student.force_authenticate(self.student)
-
-    def test_public_list_is_sorted_by_name(self):
-        Category.objects.create(nombre='Sistemas'); Category.objects.create(nombre='Basicas')
-        response = APIClient().get('/api/categories/')
-        self.assertEqual([c['nombre'] for c in response.data], ['Basicas', 'Sistemas'])
-
-    def test_only_librarians_create_and_rename(self):
-        self.assertEqual(self.c_student.post('/api/categories/', {'nombre': 'X'}, format='json').status_code, 403)
-        self.assertEqual(APIClient().post('/api/categories/', {'nombre': 'X'}, format='json').status_code, 401)
-        created = self.c_lib.post('/api/categories/', {'nombre': 'Civil'}, format='json')
-        self.assertEqual(created.status_code, 201)
-        renamed = self.c_lib.patch(f"/api/categories/{created.data['id']}/", {'nombre': 'Civiles'}, format='json')
-        self.assertEqual((renamed.status_code, renamed.data['nombre']), (200, 'Civiles'))
-
-    def test_names_are_unique(self):
-        Category.objects.create(nombre='Quimica')
-        self.assertEqual(self.c_lib.post('/api/categories/', {'nombre': 'Quimica'}, format='json').status_code, 400)
 
 
 class CommentApiTests(TestCase):

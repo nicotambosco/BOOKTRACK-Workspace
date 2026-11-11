@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Header } from '../../../shared/components/header/header';
 import { BookService } from '../../../core/services/book.service';
-import { CategoryService } from '../../../core/services/category.service';
+import { CATEGORIAS } from '../../../models/categories';
 
 @Component({
   selector: 'app-book-add',
@@ -140,16 +140,12 @@ import { CategoryService } from '../../../core/services/category.service';
 })
 export class BookAdd implements OnInit {
   modal=false; modalMsg=''; categoriaSeleccionada='';
-  categorias: string[] = [];
+  categorias = CATEGORIAS;
   libro = { isbn:'', titulo:'', autor:'', anioPublicacion: null as number | null, resumen:'', palabrasClave:'', disponibles: 1, imagen:'' };
 
-  constructor(private router: Router, private bookService: BookService, private categoryService: CategoryService) {}
+  constructor(private router: Router, private bookService: BookService) {}
 
   ngOnInit() {
-    this.categoryService.getAll().subscribe({
-      next: cats => this.categorias = cats.map(c => c.nombre),
-      error: () => this.categorias = ['sistemas','química','electricia','mecánica','básicas']
-    });
   }
 
   guardar() {

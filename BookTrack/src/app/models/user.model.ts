@@ -20,4 +20,3 @@ export interface User {
 
 export type { Book } from './book.model';
 export type { Loan } from './loan.model';
-export type { Category } from './category.model';

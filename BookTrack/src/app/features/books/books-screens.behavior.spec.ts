@@ -21,12 +21,11 @@ describe('BookAdd screen', () => {
     ctrl = TestBed.inject(HttpTestingController);
     navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     page.ngOnInit();
-    ctrl.expectOne(`${API}/categories/`).flush([{ id: 1, nombre: 'Basicas' }, { id: 2, nombre: 'Sistemas' }]);
   });
   afterEach(() => ctrl.verify());
 
-  it('loads the category names from the API', () => {
-    expect(page.categorias).toEqual(['Basicas', 'Sistemas']);
+  it('uses the fixed category names', () => {
+    expect(page.categorias).toEqual(['Basicas', 'Electrica', 'Mecanica', 'Quimica', 'Sistemas']);
   });
 
   it('requires ISBN, title and author', () => {
@@ -140,7 +139,6 @@ describe('HomeUser screen (catalog)', () => {
 
   it('opens the "Basicas" category first and groups its books by year', () => {
     page.ngOnInit();
-    ctrl.expectOne(`${API}/categories/`).flush([{ id: 2, nombre: 'Sistemas' }, { id: 1, nombre: 'Basicas' }]);
     ctrl.expectOne(`${API}/books/?categoria=Basicas`).flush([
       { id: '1', titulo: 'A', anioCursada: 2 }, { id: '2', titulo: 'B', anioCursada: 1 }, { id: '3', titulo: 'C', anioCursada: 2 }, { id: '4', titulo: 'D', anioCursada: 0 }]);
     expect(page.catActiva).toBe('Basicas');

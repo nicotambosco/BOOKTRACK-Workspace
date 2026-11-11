@@ -2,7 +2,6 @@ import { TestBed } from '@angular/core/testing';
 import { HttpTestingController } from '@angular/common/http/testing';
 import { BookService } from './book.service';
 import { UserService } from './user.service';
-import { CategoryService } from './category.service';
 import { CommentService } from './comment.service';
 import { environment } from '../../../environments/environment';
 import { testProviders } from '../../testing/test-providers';
@@ -56,18 +55,6 @@ describe('HTTP services (contract with the API)', () => {
       const reqs = ctrl.match(() => true);
       expect(reqs.map(line)).toEqual([
         `GET ${API}/users/`, `GET ${API}/users/me/`, `GET ${API}/users/13885/`, `PATCH ${API}/users/13885/`, `DELETE ${API}/users/13885/`]);
-      reqs.forEach(r => r.flush({}));
-    });
-  });
-
-  describe('CategoryService', () => {
-    it('lists, creates and renames categories', () => {
-      const s = TestBed.inject(CategoryService);
-      s.getAll().subscribe(); s.add('Nueva').subscribe(); s.edit(2, 'Otra').subscribe();
-      const reqs = ctrl.match(() => true);
-      expect(reqs.map(line)).toEqual([
-        `GET ${API}/categories/`, `POST ${API}/categories/`, `PATCH ${API}/categories/2/`]);
-      expect(reqs[1].request.body).toEqual({ nombre: 'Nueva' });
       reqs.forEach(r => r.flush({}));
     });
   });

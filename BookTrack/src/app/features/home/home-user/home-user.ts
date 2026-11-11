@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Header } from '../../../shared/components/header/header';
 import { BookService } from '../../../core/services/book.service';
-import { CategoryService } from '../../../core/services/category.service';
+import { CATEGORIAS } from '../../../models/categories';
 import { Book } from '../../../models/book.model';
 
 const CAT_ICONS: Record<string, string> = {
@@ -204,19 +204,16 @@ export class HomeUser implements OnInit {
   vistaActual = 'Materias Básicas';
   catActiva = '';
   sidebarColapsado = false;
-  categorias: string[] = [];
+  categorias = CATEGORIAS;
   libros: Book[] = [];
   gruposPorAnio: { anio: number; libros: Book[] }[] = [];
   colores = ['#8B4513','#2d5a8e','#1a6b3a','#e8a020','#7b3f7a','#2e7d5e'];
 
-  constructor(private router: Router, private bookService: BookService, private categoryService: CategoryService) {}
+  constructor(private router: Router, private bookService: BookService) {}
 
   ngOnInit() {
-    this.categoryService.getAll().subscribe(cats => {
-      this.categorias = cats.map(c => c.nombre);
-      const basicas = this.categorias.find(c => normalizar(c) === 'basicas') ?? this.categorias[0];
-      if (basicas) this.filtrar(basicas);
-    });
+    const basicas = this.categorias.find(c => normalizar(c) === 'basicas') ?? this.categorias[0];
+    if (basicas) this.filtrar(basicas);
   }
 
   verLibro(id: string) { this.router.navigate(['/book', id]); }

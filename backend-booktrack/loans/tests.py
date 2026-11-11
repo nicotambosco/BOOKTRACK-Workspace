@@ -242,7 +242,6 @@ class LifecycleTests(TestCase):
         self.assertEqual(self.admin.delete(f'/api/books/{self.book.pk}/').status_code, 400)
         self.assertEqual(self.admin.delete(f'/api/users/{self.student.pk}/').status_code, 400)
         self.assertEqual(self.admin.patch(f'/api/books/{self.book.pk}/', {'estado': 'unknown'}).status_code, 400)
-        self.assertEqual(self.client.post('/api/categories/', {'nombre': 'tampered'}).status_code, 403)
 
     def test_anonymous_users_cannot_create_reservations(self):
         self.assertEqual(self.reserve(APIClient()).status_code, 401)
