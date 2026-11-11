@@ -61,7 +61,7 @@ import { Loan } from '../../../models/loan.model';
                   <td>{{ obtenerlLegajo(p) }}</td>
                   <td>{{ obtenerNombre(p) }}</td>
                   <td>{{ tituloLibro(p.libroId) }}</td>
-                  <td>{{ p.ejemplarCodigo }}</td>
+                  <td>{{ p.ejemplarId }}</td>
                   <td>{{ p.fechaInicio }} → {{ p.fechaVencimiento || '-' }}</td>
                   <td><span class="badge" [class]="p.estado">{{ label(p.estado) }}</span></td><td>{{ p.fechaDevolucion || '-' }}</td>
                 </tr>

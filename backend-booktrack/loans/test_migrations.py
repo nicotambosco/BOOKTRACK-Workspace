@@ -65,7 +65,7 @@ assert Libro.objects.get(pk='SIN-ISBN-020001').titulo == 'Sin codigo'
 assert libro.ejemplares.count() == 4
 assert libro.ejemplares.filter(estado='disponible').count() == 3
 assert libro.ejemplares.filter(estado='prestado').count() == 1
-assert libro.ejemplares.filter(codigo='LEGACY-TEST-20000').exists()
+assert libro.ejemplares.filter(pk='LEGACY-TEST-20000').exists()
 # el libro que solo tuvo préstamos históricos recibe un ejemplar de baja al que apuntarlos
 assert list(Libro.objects.get(pk='SIN-ISBN-020002').ejemplares.values_list('estado', flat=True)) == ['baja']
 

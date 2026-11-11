@@ -1,5 +1,4 @@
 from django.db import models
-from django.utils import timezone
 
 
 class Libro(models.Model):
@@ -27,12 +26,9 @@ class Libro(models.Model):
 class Ejemplar(models.Model):
     ESTADO_CHOICES = [('disponible', 'Disponible'), ('prestado', 'Prestado'), ('baja', 'Baja')]
 
-    id = models.AutoField(primary_key=True, db_column='idEjemplar')
-    codigo = models.CharField(max_length=50, unique=True)
+    id = models.CharField(primary_key=True, db_column='idEjemplar', max_length=50)
     estado = models.CharField(max_length=12, choices=ESTADO_CHOICES, default='disponible')
-    ubicacion = models.CharField(max_length=100, blank=True)
     observaciones = models.TextField(blank=True)
-    fecha_alta = models.DateField(default=timezone.localdate, db_column='fechaAlta')
     libro = models.ForeignKey(Libro, on_delete=models.PROTECT, related_name='ejemplares', db_column='ISBN')
 
     class Meta:
@@ -40,4 +36,4 @@ class Ejemplar(models.Model):
         constraints = [models.CheckConstraint(condition=models.Q(estado__in=['disponible', 'prestado', 'baja']), name='ejemplar_valid_state')]
 
     def __str__(self):
-        return f'{self.codigo} ({self.estado})'
+        return f'{self.pk} ({self.estado})'

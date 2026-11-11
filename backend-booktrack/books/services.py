@@ -8,13 +8,13 @@ def available_count(libro):
 
 
 def add_copies(libro, amount):
-    taken = set(Ejemplar.objects.filter(codigo__startswith=f'{libro.isbn}-').values_list('codigo', flat=True))
+    taken = set(Ejemplar.objects.filter(id__startswith=f'{libro.isbn}-').values_list('id', flat=True))
     number = 0
     for _ in range(amount):
         number += 1
         while f'{libro.isbn}-{number:02d}' in taken:
             number += 1
-        Ejemplar.objects.create(libro=libro, codigo=f'{libro.isbn}-{number:02d}'[:50])
+        Ejemplar.objects.create(libro=libro, id=f'{libro.isbn}-{number:02d}'[:50])
 
 
 @transaction.atomic

@@ -1,10 +1,7 @@
 export interface Ejemplar {
-  id: number;
-  codigo: string;
+  id: string;
   estado: 'disponible' | 'prestado' | 'baja';
-  ubicacion: string;
   observaciones: string;
-  fechaAlta: string;
   isbn: string;
 }
 
@@ -19,7 +16,7 @@ export interface Book {
   resumen?: string;
   palabrasClave?: string;
   imagen?: string;         // portada
-  anioCursada?: number;    // año de cursada de la materia (0 = sin año / electivas)
+  anioCursada?: number;    // año de cursada de la materia (0 = general, 99 = electivas)
   disponibles?: number;    // ejemplares disponibles
   ejemplares?: Ejemplar[];
   sugerencias?: Book[];    // libros relacionados

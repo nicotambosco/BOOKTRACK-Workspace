@@ -55,7 +55,7 @@ class BookApiTests(TestCase):
         self.assertEqual(response.status_code, 201, response.data)
         self.assertEqual((response.data['id'], response.data['disponibles']), ('9780000000001', 3))
         book = Libro.objects.get(pk='9780000000001')
-        self.assertEqual(sorted(book.ejemplares.values_list('codigo', flat=True)),
+        self.assertEqual(sorted(book.ejemplares.values_list('id', flat=True)),
                          ['9780000000001-01', '9780000000001-02', '9780000000001-03'])
 
     def test_isbn_is_required_and_unique(self):
@@ -113,7 +113,7 @@ class CopyApiTests(TestCase):
         other = make_book('Otro')
         listed = self.c_student.get(f'/api/copies/?isbn={self.book.pk}')
         self.assertEqual([c['isbn'] for c in listed.data], [self.book.pk])
-        payload = {'codigo': 'EXTRA-1', 'isbn': self.book.pk, 'ubicacion': 'Estante 3', 'observaciones': 'Tapa dañada'}
+        payload = {'id': 'EXTRA-1', 'isbn': self.book.pk, 'observaciones': 'Tapa dañada'}
         self.assertEqual(self.c_student.post('/api/copies/', payload, format='json').status_code, 403)
         created = self.c_lib.post('/api/copies/', payload, format='json')
         self.assertEqual(created.status_code, 201, created.data)

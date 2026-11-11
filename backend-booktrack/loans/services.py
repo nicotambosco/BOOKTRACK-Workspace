@@ -137,7 +137,7 @@ def pick_up(reservation, actor):
     reservation.prestamo = loan
     reservation.bibliotecario = librarian
     reservation.save(update_fields=['estado', 'prestamo', 'bibliotecario'])
-    _log(actor, 'retiro_reserva', f'Entregó el ejemplar {copy.codigo} de la reserva {reservation.codigo_reserva}.',
+    _log(actor, 'retiro_reserva', f'Entregó el ejemplar {copy.pk} de la reserva {reservation.codigo_reserva}.',
          reserva=reservation, prestamo=loan, libro=book, ejemplar=copy)
     _notify(reservation.usuario, 'prestamo_iniciado',
             f'Retiraste "{book.titulo}". Devolvelo antes del {loan.fecha_vencimiento:%d/%m/%Y}.',
@@ -165,7 +165,7 @@ def return_loan(loan, actor=None):
     if copy.estado == 'prestado':
         copy.estado = 'disponible'
         copy.save(update_fields=['estado'])
-    _log(actor, 'devolucion', f'Registró la devolución del ejemplar {copy.codigo}.', prestamo=loan, libro=book, ejemplar=copy)
+    _log(actor, 'devolucion', f'Registró la devolución del ejemplar {copy.pk}.', prestamo=loan, libro=book, ejemplar=copy)
     _notify(loan.usuario, 'devolucion_registrada', f'Registramos la devolución de "{book.titulo}". ¡Gracias!', prestamo=loan).save()
     return loan
 

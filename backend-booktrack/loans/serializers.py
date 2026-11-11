@@ -11,8 +11,7 @@ class LoanSerializer(serializers.ModelSerializer):
     estudianteNombre = serializers.SerializerMethodField()
     libroId = serializers.CharField(source='ejemplar.libro_id', read_only=True)
     libroTitulo = serializers.CharField(source='ejemplar.libro.titulo', read_only=True)
-    ejemplarId = serializers.IntegerField(source='ejemplar_id', read_only=True)
-    ejemplarCodigo = serializers.CharField(source='ejemplar.codigo', read_only=True)
+    ejemplarId = serializers.CharField(source='ejemplar_id', read_only=True)
     bibliotecarioId = serializers.CharField(source='bibliotecario_id', read_only=True)
     fechaInicio = serializers.DateField(source='fecha_prestamo', read_only=True)
     fechaVencimiento = serializers.DateField(source='fecha_vencimiento', read_only=True)
@@ -23,7 +22,7 @@ class LoanSerializer(serializers.ModelSerializer):
     class Meta:
         model = Prestamo
         fields = ['id', 'estudianteId', 'estudianteLegajo', 'estudianteNombre', 'libroId', 'libroTitulo',
-                  'ejemplarId', 'ejemplarCodigo', 'bibliotecarioId', 'fechaInicio', 'fechaVencimiento',
+                  'ejemplarId', 'bibliotecarioId', 'fechaInicio', 'fechaVencimiento',
                   'fechaDevolucion', 'estado', 'extensionPendiente', 'extensionEstado']
         read_only_fields = fields
 
@@ -80,7 +79,7 @@ class AdminActionSerializer(serializers.ModelSerializer):
     reservaId = serializers.IntegerField(source='reserva_id', read_only=True)
     prestamoId = serializers.IntegerField(source='prestamo_id', read_only=True)
     libroId = serializers.CharField(source='libro_id', read_only=True)
-    ejemplarId = serializers.IntegerField(source='ejemplar_id', read_only=True)
+    ejemplarId = serializers.CharField(source='ejemplar_id', read_only=True)
 
     class Meta:
         model = AccionAdministrativa

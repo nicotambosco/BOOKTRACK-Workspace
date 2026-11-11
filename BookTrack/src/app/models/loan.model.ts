@@ -4,8 +4,7 @@ export interface Loan {
   estudianteLegajo?: string;
   estudianteNombre?: string;
   libroId: string;
-  ejemplarId?: number;
-  ejemplarCodigo?: string;
+  ejemplarId?: string;
   bibliotecarioId?: string | null;
   libroTitulo?: string;
   fechaInicio: string;

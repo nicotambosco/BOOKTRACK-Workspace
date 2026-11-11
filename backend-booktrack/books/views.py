@@ -50,7 +50,7 @@ class BookViewSet(viewsets.ModelViewSet):
 
 
 class EjemplarViewSet(viewsets.ModelViewSet):
-    queryset = Ejemplar.objects.select_related('libro').order_by('libro_id', 'codigo')
+    queryset = Ejemplar.objects.select_related('libro').order_by('libro_id', 'id')
     serializer_class = EjemplarSerializer
     permission_classes = [ReadOnlyOrLibrarian]
 

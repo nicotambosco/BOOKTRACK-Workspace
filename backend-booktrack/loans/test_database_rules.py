@@ -62,7 +62,7 @@ class DatabaseRulesTests(TestCase):
         with self.assertRaises(IntegrityError), transaction.atomic():
             Ejemplar.objects.filter(pk=self.copy.pk).update(estado='perdido')
         with self.assertRaises(IntegrityError), transaction.atomic():
-            Ejemplar.objects.create(libro=self.book, codigo=self.copy.codigo)
+            Ejemplar.objects.create(libro=self.book, id=self.copy.pk)
 
     def test_isbn_is_the_book_primary_key(self):
         self.assertEqual(self.book.pk, self.book.isbn)

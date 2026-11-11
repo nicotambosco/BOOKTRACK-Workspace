@@ -59,7 +59,7 @@ import { CategoryService } from '../../../core/services/category.service';
             @if (libro.ejemplares.length) {
               <div class="campo"><label>EJEMPLARES</label>
                 <div class="ejemplares">
-                  @for (e of libro.ejemplares; track e.id) { <span class="ejemplar" [class]="e.estado">{{ e.codigo }} · {{ e.estado }}</span> }
+                  @for (e of libro.ejemplares; track e.id) { <span class="ejemplar" [class]="e.estado">{{ e.id }} · {{ e.estado }}</span> }
                 </div>
               </div>
             }

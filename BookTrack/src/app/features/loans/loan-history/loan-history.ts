@@ -106,7 +106,7 @@ export class LoanHistory implements OnInit {
         id: p.id,
         estudiante: p.estudianteNombre || `Usuario #${p.estudianteId}`,
         codigo: p.libroTitulo || this.titulosPorLibro.get(p.libroId) || `Libro #${p.libroId}`,
-        tipo: p.ejemplarCodigo ?? '-',
+        tipo: p.ejemplarId ?? '-',
         estado: p.estado,
         devolucion: p.fechaDevolucion || '-',
         periodo: `${p.fechaInicio} → ${p.fechaVencimiento || '-'}`

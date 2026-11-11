@@ -5,12 +5,11 @@ from .models import Ejemplar, Libro
 
 
 class EjemplarSerializer(serializers.ModelSerializer):
-    fechaAlta = serializers.DateField(source='fecha_alta', required=False)
     isbn = serializers.PrimaryKeyRelatedField(source='libro', queryset=Libro.objects.all())
 
     class Meta:
         model = Ejemplar
-        fields = ['id', 'codigo', 'estado', 'ubicacion', 'observaciones', 'fechaAlta', 'isbn']
+        fields = ['id', 'estado', 'observaciones', 'isbn']
 
 
 class LibroSerializer(serializers.ModelSerializer):
