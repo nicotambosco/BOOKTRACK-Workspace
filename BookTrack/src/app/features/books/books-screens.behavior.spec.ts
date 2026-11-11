@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { HttpTestingController } from '@angular/common/http/testing';
 import { BookAdd } from './book-add/book-add';
+import { BookEdit } from './book-edit/book-edit';
 import { BookManagement } from './book-management/book-management';
 import { BookDetail } from './book-detail/book-detail';
 import { HomeUser } from '../home/home-user/home-user';
@@ -41,11 +42,11 @@ describe('BookAdd screen', () => {
   });
 
   it('creates the book with the chosen category and returns to the admin home on close', () => {
-    page.libro.isbn = ' 9780000000001 '; page.libro.titulo = 'Cálculo'; page.libro.autor = 'Stewart'; page.categoriaSeleccionada = 'Basicas';
+    page.libro.isbn = ' 9780000000001 '; page.libro.titulo = 'Cálculo'; page.libro.autor = 'Stewart'; page.categoriaSeleccionada = 'Basicas'; page.libro.anioCursada = 3;
     page.guardar();
     const req = ctrl.expectOne(`${API}/books/`);
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toMatchObject({ isbn: '9780000000001', titulo: 'Cálculo', autor: 'Stewart', categoria: 'Basicas', disponibles: 1 });
+    expect(req.request.body).toMatchObject({ isbn: '9780000000001', titulo: 'Cálculo', autor: 'Stewart', categoria: 'Basicas', disponibles: 1, anioCursada: 3 });
     req.flush({ id: '9780000000001' });
     expect(page.modalMsg).toBe('¡Libro añadido exitosamente!');
     page.cerrarModal();
@@ -65,6 +66,29 @@ describe('BookAdd screen', () => {
     page.onImagenSeleccionada({ target: { files: [new File(['x'], 'c.png', { type: 'image/png' })] } } as unknown as Event);
     ctrl.expectOne(`${API}/books/upload-image/`).flush({ url: 'data:image/png;base64,eA==' });
     expect(page.libro.imagen).toBe('data:image/png;base64,eA==');
+  });
+});
+
+describe('BookEdit study year', () => {
+  it('loads the saved year and sends the selected year on update', () => {
+    TestBed.configureTestingModule({ imports: [BookEdit], providers: testProviders });
+    const fixture = TestBed.createComponent(BookEdit);
+    const page = fixture.componentInstance;
+    const ctrl = TestBed.inject(HttpTestingController);
+    fixture.detectChanges();
+    ctrl.expectOne(`${API}/books//`).flush({ isbn: '9781', titulo: 'Libro', autor: 'Autor', categoria: 'Basicas', anioCursada: 2 });
+    expect(page.libro.anioCursada).toBe(2);
+    fixture.detectChanges(false);
+    const select: HTMLSelectElement = fixture.nativeElement.querySelector('select[aria-label="Año de cursada"]');
+    const option = Array.from(select.options).find(o => o.textContent?.includes('4.º'))!;
+    select.value = option.value;
+    select.dispatchEvent(new Event('change'));
+    expect(page.libro.anioCursada).toBe(4);
+    page.guardar();
+    const req = ctrl.expectOne(`${API}/books//`);
+    expect(req.request.body.anioCursada).toBe(4);
+    req.flush({});
+    ctrl.verify();
   });
 });
 

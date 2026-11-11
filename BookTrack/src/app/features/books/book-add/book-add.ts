@@ -46,9 +46,21 @@ import { CATEGORIAS } from '../../../models/categories';
                 {{ libro.imagen ? 'CAMBIAR IMAGEN' : 'AGREGAR IMÁGENES' }}
               </button>
             </div>
-            <select [(ngModel)]="categoriaSeleccionada">
-              <option value="">seleccionar categoría</option>
-              <option *ngFor="let c of categorias" [value]="c">{{ c }}</option>
+            <div class="campo">
+              <label for="categoriaLibro">CATEGORÍA</label>
+              <select id="categoriaLibro" [(ngModel)]="categoriaSeleccionada">
+                <option value="" disabled hidden>seleccionar categoría</option>
+                <option *ngFor="let c of categorias" [value]="c">{{ c }}</option>
+              </select>
+            </div>
+            <select [(ngModel)]="libro.anioCursada" aria-label="Año de cursada">
+              <option [ngValue]="0">General</option>
+              <option [ngValue]="1">1.er año</option>
+              <option [ngValue]="2">2.º año</option>
+              <option [ngValue]="3">3.er año</option>
+              <option [ngValue]="4">4.º año</option>
+              <option [ngValue]="5">5.º año</option>
+              <option [ngValue]="99">Electivas</option>
             </select>
           </div>
           <div class="right-panel">
@@ -141,7 +153,7 @@ import { CATEGORIAS } from '../../../models/categories';
 export class BookAdd implements OnInit {
   modal=false; modalMsg=''; categoriaSeleccionada='';
   categorias = CATEGORIAS;
-  libro = { isbn:'', titulo:'', autor:'', anioPublicacion: null as number | null, resumen:'', palabrasClave:'', disponibles: 1, imagen:'' };
+  libro = { isbn:'', titulo:'', autor:'', anioCursada: 0, anioPublicacion: null as number | null, resumen:'', palabrasClave:'', disponibles: 1, imagen:'' };
 
   constructor(private router: Router, private bookService: BookService) {}
 
