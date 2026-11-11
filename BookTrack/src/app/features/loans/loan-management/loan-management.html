@@ -7,25 +7,44 @@
     <button (click)="cargar()" [disabled]="ocupado">ACTUALIZAR</button>
     <section>
       <h2>Reservas</h2>
-      <p>Mayor prioridad se atiende primero; a igual prioridad se respeta el orden de creación.</p>
+      <p>Las reservas se atienden por fecha de reserva y, si coinciden, por orden de registro.</p>
       @for (r of reservas; track r.id) {
         <article>
           <div><strong>{{ r.libroTitulo }}</strong> · {{ r.estudianteNombre || 'Usuario #' + r.estudianteId }}
-            <p>{{ r.codigoReserva }} · {{ r.estado }}</p>
-            <p>Retirar hasta {{ r.fechaVencimiento }} · Devolver hasta {{ r.fechaDevolucionPrevista || 'fecha no registrada' }}</p>
+            <p>Reserva #{{ r.id }} · {{ r.estado }}</p>
+            <p>Fecha de retiro {{ r.fechaRetiro }}</p>
+            @if (r.estado === 'activa') { <p>Vencimiento del préstamo: {{ r.fechaVencimiento }}</p> }
             @if (r.prestamoId) { <p>Préstamo #{{ r.prestamoId }}</p> }
           </div>
           @if (r.estado === 'activa') {
             <div class="acciones">
-              <label [for]="'prioridad-' + r.id">Prioridad</label>
-              <input [id]="'prioridad-' + r.id" type="number" min="0" max="32767" [(ngModel)]="r.prioridad" [disabled]="ocupado" />
-              <button (click)="priorizar(r)" [disabled]="ocupado">GUARDAR PRIORIDAD</button>
-              <button class="primary" (click)="retirar(r.id)" [disabled]="ocupado">REGISTRAR RETIRO</button>
+              <div class="ejemplar-selector selector-ejemplar" #selector (focusout)="cerrarAlSalir($event, selector)" (keydown.escape)="selectorAbierto = null">
+                <label [id]="'ejemplar-label-' + r.id">Ejemplar a prestar</label>
+                <button type="button" class="selector-boton" [class.sin-ejemplares]="!disponibles(r).length"
+                  [disabled]="ocupado || !disponibles(r).length" (click)="alternarSelector(r)"
+                  [attr.aria-labelledby]="'ejemplar-label-' + r.id" [attr.aria-expanded]="selectorAbierto === r.id"
+                  [attr.aria-controls]="'ejemplares-' + r.id">
+                  <span>{{ disponibles(r).length ? (ejemplaresSeleccionados[r.id] || 'Seleccionar ejemplar') : 'Sin ejemplares disponibles' }}</span>
+                  @if (disponibles(r).length) { <span class="selector-flecha" aria-hidden="true">⌄</span> }
+                  @else { <span class="selector-cierre" aria-hidden="true">—</span> }
+                </button>
+                @if (selectorAbierto === r.id) {
+                  <div class="selector-menu" [id]="'ejemplares-' + r.id">
+                    <input type="search" [(ngModel)]="busquedaEjemplar[r.id]" placeholder="Buscar por código" aria-label="Buscar ejemplar por código" autocomplete="off" />
+                    <div class="selector-opciones">
+                      @for (id of ejemplaresFiltrados(r); track id) {
+                        <button type="button" class="selector-opcion" [class.seleccionado]="ejemplaresSeleccionados[r.id] === id" (click)="seleccionarEjemplar(r, id)">{{ id }}</button>
+                      } @empty { <p class="selector-vacio">No se encontraron ejemplares.</p> }
+                    </div>
+                  </div>
+                }
+              </div>
+              <button class="primary" (click)="retirar(r)" [disabled]="ocupado || !disponibles(r).includes(ejemplaresSeleccionados[r.id])">CREAR PRÉSTAMO</button>
               <button (click)="cancelar(r.id)" [disabled]="ocupado">CANCELAR RESERVA</button>
             </div>
           }
         </article>
-      } @empty { <p>No hay reservas.</p> }
+      } @empty { <p class="sin-reservas">No hay reservas para mostrar.</p> }
     </section>
     <section>
       <h2>Préstamos</h2>
@@ -36,11 +55,6 @@
             @if (p.fechaDevolucion) { <p>Devuelto el {{ p.fechaDevolucion }}</p> }
           </div>
           <div class="acciones">
-            @if (p.estado === 'vigente' && p.extensionPendiente) {
-              <span>Renovación solicitada</span>
-              <button (click)="aprobarExtension(p.id!)" [disabled]="ocupado">APROBAR RENOVACIÓN</button>
-              <button (click)="denegarExtension(p.id!)" [disabled]="ocupado">DENEGAR RENOVACIÓN</button>
-            }
             @if (p.estado === 'vigente' || p.estado === 'vencido') {
               <button class="primary" (click)="devolver(p.id!)" [disabled]="ocupado">REGISTRAR DEVOLUCIÓN</button>
             }

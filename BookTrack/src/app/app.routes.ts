@@ -21,7 +21,6 @@ import { Reports } from './features/admin/reports/reports';
 import { ModalSuccess } from './shared/components/modal-success/modal-success';
 import { ModalError } from './shared/components/modal-error/modal-error';
 import { BookSearch } from './features/books/book-search/book-search';
-import { LoanExtension } from './features/loans/loan-extension/loan-extension';
 import { UserHistory } from './features/loans/user-history/user-history';
 import { LoanArchive } from './features/loans/loan-archive/loan-archive';
 
@@ -112,7 +111,6 @@ export const routes: Routes = [
   { path: 'modal-success', component: ModalSuccess },
   { path: 'modal-error', component: ModalError },
   { path: 'book-search', component: BookSearch },
-  { path: 'loan-extension', component: LoanExtension, canActivate: [authGuard], data: { roles: ['usuario'] } },
   { path: 'user-history', component: UserHistory, canActivate: [authGuard], data: { roles: ['usuario'] } },
   { path: 'loan-archive', component: LoanArchive, canActivate: [authGuard], data: { roles: ['bibliotecario'] } },
   { path: '**', redirectTo: '' }

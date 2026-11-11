@@ -11,8 +11,6 @@ export interface Loan {
   fechaVencimiento: string | null;
   fechaDevolucion: string | null;
   estado: 'vigente' | 'vencido' | 'devuelto';
-  extensionPendiente?: boolean;
-  extensionEstado?: '' | 'aprobada' | 'denegada';
 }
 
 export interface LoanTableRow {

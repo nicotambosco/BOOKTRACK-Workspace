@@ -67,7 +67,7 @@ import { User } from '../../../models/user.model';
           @for (r of reservas; track r.id) {
             <div>
               <strong>{{ r.libroTitulo }}</strong> · {{ r.estado }}
-              <p>Retirar hasta {{ r.fechaVencimiento }} · Devolver hasta {{ r.fechaDevolucionPrevista || 'fecha no registrada' }}</p>
+              <p>Fecha de retiro {{ r.fechaRetiro }} · Vencimiento {{ r.fechaVencimiento }}</p>
               @if (r.prestamoId) { <p>Préstamo #{{ r.prestamoId }}</p> }
               @if (r.estado === 'activa') { <button class="btn-outline" (click)="cancelarReserva(r.id)" [disabled]="cancelando">CANCELAR RESERVA</button> }
             </div>
@@ -83,7 +83,6 @@ import { User } from '../../../models/user.model';
                 <span>Inicio</span>
                 <span>Vencimiento / devolución</span>
                 <span>Estado</span>
-                <span></span>
               </div>
               @for (p of prestamos; track p.id) {
                 <div class="tabla-row">
@@ -91,11 +90,6 @@ import { User } from '../../../models/user.model';
                   <span>{{ p.fechaInicio }}</span>
                   <span>{{ p.fechaVencimiento || '-' }}<br />Devuelto: {{ p.fechaDevolucion || '-' }}</span>
                   <span class="badge" [class]="esVencido(p) ? 'vencido' : p.estado">{{ esVencido(p) ? 'Vencido' : label(p.estado) }}</span>
-                  <span>
-                    @if (p.estado === 'vigente') {
-                      <button class="btn-ext" (click)="router.navigate(['/loan-extension'])">Extender</button>
-                    }
-                  </span>
                 </div>
               }
             </div>
@@ -154,15 +148,13 @@ import { User } from '../../../models/user.model';
       display:flex; flex-direction:column; gap:1rem;
     }
     .tabla { display:flex; flex-direction:column; gap:0.5rem; }
-    .tabla-header { display:grid; grid-template-columns:2fr 1fr 1fr 1fr 1fr; padding:0.4rem 1rem; font-size:0.72rem; font-weight:bold; color:#9a9a9a; letter-spacing:0.03rem; }
-    .tabla-row { display:grid; grid-template-columns:2fr 1fr 1fr 1fr 1fr; align-items:center; background:#101010; border:1px solid #232323; padding:0.7rem 1rem; border-radius:8px; font-size:0.8rem; color:#e8e8e8; }
+    .tabla-header { display:grid; grid-template-columns:2fr 1fr 1fr 1fr; padding:0.4rem 1rem; font-size:0.72rem; font-weight:bold; color:#9a9a9a; letter-spacing:0.03rem; }
+    .tabla-row { display:grid; grid-template-columns:2fr 1fr 1fr 1fr; align-items:center; background:#101010; border:1px solid #232323; padding:0.7rem 1rem; border-radius:8px; font-size:0.8rem; color:#e8e8e8; }
     .libro-id { font-weight:bold; }
     .badge { padding:0.25rem 0.6rem; border-radius:20px; font-size:0.7rem; text-align:center; width:fit-content; }
     .badge.vigente { background:#16301f; color:#4ade80; }
     .badge.devuelto  { background:#12293a; color:#60a5fa; }
     .badge.vencido   { background:#3a1414; color:#f87171; font-weight:600; }
-    .btn-ext { font-size:0.7rem; background:transparent; border:1px solid #2ecc71; color:#2ecc71; padding:0.25rem 0.6rem; border-radius:20px; cursor:pointer; }
-    .btn-ext:hover { background:rgba(46,204,113,0.1); }
     .vacio { text-align:center; color:#9a9a9a; font-style:italic; padding:1rem; }
     .bottom { display:flex; justify-content:flex-end; padding-top:0.5rem; }
     .btn-outline { background:transparent; border:1px solid #3a3a3a; color:#e8e8e8; padding:0.6rem 1.6rem; border-radius:24px; cursor:pointer; font-size:0.85rem; }

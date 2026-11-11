@@ -27,8 +27,8 @@ describe('Header notifications (served by the API)', () => {
   };
 
   it('shows the notifications sent by the server and flags the unread ones', () => {
-    load([aviso(), aviso({ id: 2, tipo: 'renovacion_aprobada', mensaje: 'La biblioteca aprobó la renovación.' })]);
-    expect(header.notificaciones.map(n => n.tipo)).toEqual(['prestamo_vencido', 'renovacion_aprobada']);
+    load([aviso(), aviso({ id: 2, tipo: 'devolucion_registrada', mensaje: 'Se registró la devolución.' })]);
+    expect(header.notificaciones.map(n => n.tipo)).toEqual(['prestamo_vencido', 'devolucion_registrada']);
     expect(header.tieneNotificaciones).toBe(true);
   });
 

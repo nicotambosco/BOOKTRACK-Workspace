@@ -13,19 +13,17 @@ export class ReservationService {
     return this.http.get<Reservation[]>(`${this.api}/`, { params: estado ? { estado } : {} });
   }
 
-  request(libroId: string, fechaVencimiento: string, fechaDevolucionPrevista: string): Observable<Reservation> {
-    return this.http.post<Reservation>(`${this.api}/`, { libroId, fechaVencimiento, fechaDevolucionPrevista });
+  request(libroId: string, fechaRetiro: string, fechaVencimiento: string): Observable<Reservation> {
+    return this.http.post<Reservation>(`${this.api}/`, { libroId, fechaRetiro, fechaVencimiento });
   }
 
   cancel(id: number): Observable<Reservation> {
     return this.http.patch<Reservation>(`${this.api}/${id}/cancelar/`, {});
   }
 
-  pickUp(id: number): Observable<Reservation> {
-    return this.http.patch<Reservation>(`${this.api}/${id}/retirar/`, {});
+  pickUp(id: number, ejemplarId: string): Observable<Reservation> {
+    return this.http.patch<Reservation>(`${this.api}/${id}/retirar/`, { ejemplarId });
   }
 
-  prioritize(id: number, prioridad: number): Observable<Reservation> {
-    return this.http.patch<Reservation>(`${this.api}/${id}/priorizar/`, { prioridad });
-  }
+
 }

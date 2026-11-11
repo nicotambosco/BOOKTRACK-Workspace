@@ -1,7 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpTestingController } from '@angular/common/http/testing';
 import { LoanManagement } from './loan-management';
-import { LoanExtension } from '../loan-extension/loan-extension';
 import { UserHistory } from '../user-history/user-history';
 import { Loan } from '../../../models/loan.model';
 import { Reservation } from '../../../models/reservation.model';
@@ -10,10 +9,10 @@ import { testProviders } from '../../../testing/test-providers';
 
 const API = environment.apiUrl;
 const loan = (o: Partial<Loan> = {}): Loan => ({ id: 1, estudianteId: '13885', libroId: '9', fechaInicio: '2026-11-01',
-  fechaVencimiento: '2026-11-08', fechaDevolucion: null, estado: 'vigente', extensionPendiente: false, ...o });
-const reservation = (o: Partial<Reservation> = {}): Reservation => ({ id: 10, codigoReserva: 'abc', estudianteId: '13885', estudianteNombre: 'Pedro',
-  libroId: '9', libroTitulo: 'Álgebra', fechaReserva: '2026-11-01', fechaVencimiento: '2026-11-10', fechaDevolucionPrevista: '2026-11-17',
-  prioridad: 0, estado: 'activa', prestamoId: null, bibliotecarioId: null, ...o });
+  fechaVencimiento: '2026-11-08', fechaDevolucion: null, estado: 'vigente', ...o });
+const reservation = (o: Partial<Reservation> = {}): Reservation => ({ id: 10, estudianteId: '13885', estudianteNombre: 'Pedro',
+  libroId: '9', libroTitulo: 'Álgebra', fechaReserva: '2026-11-01', fechaRetiro: '2026-11-10', fechaVencimiento: '2026-11-17',
+  estado: 'activa', prestamoId: null, bibliotecarioId: null, ...o });
 
 describe('LoanManagement screen (librarian)', () => {
   let page: LoanManagement;
@@ -21,6 +20,7 @@ describe('LoanManagement screen (librarian)', () => {
 
   const flushLists = (loans: Loan[], reservations: Reservation[]) => {
     ctrl.expectOne(`${API}/loans/`).flush(loans);
+    ctrl.expectOne(`${API}/books/`).flush([{ id: '9', isbn: '9', ejemplares: [{ id: 'E-1', estado: 'disponible' }, { id: 'E-2', estado: 'prestado' }, { id: 'E-3', estado: 'baja' }] }]);
     ctrl.expectOne(r => r.url === `${API}/reservations/`).flush(reservations);
   };
 
@@ -39,17 +39,44 @@ describe('LoanManagement screen (librarian)', () => {
     expect(page.ocupado).toBe(false);
   });
 
+  it('offers only available copies and does not submit an invalid selection', () => {
+    flushLists([], [reservation()]);
+    expect(page.disponibles(reservation())).toEqual(['E-1']);
+    page.ejemplaresSeleccionados[10] = 'E-2';
+    page.retirar(reservation());
+    ctrl.expectNone(`${API}/reservations/10/retirar/`);
+    expect(page.disponibles(reservation({ libroId: 'missing' }))).toEqual([]);
+  });
+
+  it('searches and selects an available copy', () => {
+    flushLists([], [reservation()]);
+    page.alternarSelector(reservation());
+    expect(page.selectorAbierto).toBe(10);
+    page.busquedaEjemplar[10] = 'e-1';
+    expect(page.ejemplaresFiltrados(reservation())).toEqual(['E-1']);
+    page.busquedaEjemplar[10] = 'sin resultados';
+    expect(page.ejemplaresFiltrados(reservation())).toEqual([]);
+    page.seleccionarEjemplar(reservation(), 'E-1');
+    expect(page.ejemplaresSeleccionados[10]).toBe('E-1');
+    expect(page.selectorAbierto).toBeNull();
+    page.alternarSelector(reservation({ libroId: 'missing' }));
+    expect(page.selectorAbierto).toBeNull();
+  });
+
   it('reports a load failure', () => {
     ctrl.expectOne(r => r.url === `${API}/reservations/`).flush([]);
+    ctrl.expectOne(`${API}/books/`).flush([]);
     ctrl.expectOne(`${API}/loans/`).flush('x', { status: 500, statusText: 'err' });
     expect(page.mensaje).toBe('No se pudieron cargar las reservas y préstamos.');
   });
 
   it('registers a pickup, shows the message and reloads', () => {
     flushLists([], [reservation()]);
-    page.retirar(10);
+    page.ejemplaresSeleccionados[10] = 'E-1';
+    page.retirar(reservation());
     const req = ctrl.expectOne(`${API}/reservations/10/retirar/`);
     expect(req.request.method).toBe('PATCH');
+    expect(req.request.body).toEqual({ ejemplarId: 'E-1' });
     req.flush(reservation({ estado: 'finalizada', prestamoId: 5 }));
     expect(page.mensaje).toContain('Retiro registrado');
     flushLists([loan({ id: 5 })], [reservation({ estado: 'finalizada', prestamoId: 5 })]);
@@ -58,20 +85,18 @@ describe('LoanManagement screen (librarian)', () => {
 
   it('shows the API business error (e.g. no copies) instead of a generic one', () => {
     flushLists([], [reservation()]);
-    page.retirar(10);
+    page.ejemplaresSeleccionados[10] = 'E-1';
+    page.retirar(reservation());
     ctrl.expectOne(`${API}/reservations/10/retirar/`).flush({ detail: 'No hay ejemplares disponibles.' }, { status: 400, statusText: 'Bad Request' });
     expect(page.mensaje).toBe('No hay ejemplares disponibles.');
     flushLists([], [reservation()]);
   });
 
-  it('cancels a reservation, sets priority, returns a book and resolves renewals via their own actions', () => {
+  it('cancels a reservation and returns a book via their own actions', () => {
     flushLists([], []);
     const calls: [() => void, string][] = [
       [() => page.cancelar(10), `${API}/reservations/10/cancelar/`],
-      [() => page.priorizar(reservation({ prioridad: 4 })), `${API}/reservations/10/priorizar/`],
       [() => page.devolver(5), `${API}/loans/5/devolver/`],
-      [() => page.aprobarExtension(5), `${API}/loans/5/aprobar-extension/`],
-      [() => page.denegarExtension(5), `${API}/loans/5/denegar-extension/`],
     ];
     for (const [act, url] of calls) {
       act();
@@ -82,49 +107,11 @@ describe('LoanManagement screen (librarian)', () => {
     }
   });
 
-  it('sends the new priority in the body', () => {
-    flushLists([], []);
-    page.priorizar(reservation({ prioridad: 4 }));
-    const req = ctrl.expectOne(`${API}/reservations/10/priorizar/`);
-    expect(req.request.body).toEqual({ prioridad: 4 });
-    req.flush({});
-    flushLists([], []);
-  });
-
   it('ignores a second action while another is in progress', () => {
     flushLists([], []);
     page.devolver(5); page.devolver(5);
     ctrl.expectOne(`${API}/loans/5/devolver/`).flush({});
     flushLists([], []);
-  });
-});
-
-describe('LoanExtension screen (user asks for a renewal)', () => {
-  it('only lists current loans and sends the renewal request', () => {
-    TestBed.configureTestingModule({ imports: [LoanExtension], providers: testProviders });
-    const ctrl = TestBed.inject(HttpTestingController);
-    const page = TestBed.createComponent(LoanExtension).componentInstance;
-    page.ngOnInit();
-    ctrl.expectOne(`${API}/loans/`).flush([loan({ id: 1 }), loan({ id: 2, estado: 'devuelto' }), loan({ id: 3, estado: 'vencido' })]);
-    ctrl.expectOne(`${API}/books/`).flush([]);
-    expect(page.prestamos.map(p => p.id)).toEqual([1]);
-
-    page.confirmar();
-    ctrl.expectNone(`${API}/loans/1/solicitar-extension/`);
-    page.seleccionar(1); page.confirmar();
-    ctrl.expectOne(`${API}/loans/1/solicitar-extension/`).flush(loan({ id: 1, extensionPendiente: true }));
-    expect(page.modal).toBe(true);
-    expect(page.prestamos[0].extensionPendiente).toBe(true);
-    ctrl.verify();
-  });
-
-  it('informs the user when the API refuses the renewal', () => {
-    TestBed.configureTestingModule({ imports: [LoanExtension], providers: testProviders });
-    const ctrl = TestBed.inject(HttpTestingController);
-    const page = TestBed.createComponent(LoanExtension).componentInstance;
-    page.seleccionar(1); page.confirmar();
-    ctrl.expectOne(`${API}/loans/1/solicitar-extension/`).flush({}, { status: 400, statusText: 'Bad Request' });
-    expect(page.modalMsg).toBe('No se pudo enviar la solicitud de extensión.');
   });
 });
 

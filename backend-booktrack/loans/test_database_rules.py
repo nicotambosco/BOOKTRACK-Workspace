@@ -3,7 +3,7 @@ from datetime import timedelta
 from io import StringIO
 
 from django.core.management import call_command
-from django.db import DataError, IntegrityError, transaction
+from django.db import IntegrityError, transaction
 from django.db.models.deletion import ProtectedError
 from django.test import TestCase
 from django.utils import timezone
@@ -23,7 +23,7 @@ class DatabaseRulesTests(TestCase):
         self.loan = Prestamo.objects.create(usuario=self.student, ejemplar=self.copy, fecha_vencimiento=self.today)
 
     def reservation(self, **over):
-        data = dict(usuario=self.student, libro=self.book, fecha_vencimiento=self.today, **over)
+        data = dict(usuario=self.student, libro=self.book, fecha_retiro=self.today, fecha_vencimiento=self.today, **over)
         return Reserva.objects.create(**data)
 
     def test_loan_state_is_restricted_by_a_check_constraint(self):
@@ -46,12 +46,6 @@ class DatabaseRulesTests(TestCase):
         with self.assertRaises(IntegrityError), transaction.atomic():
             self.reservation(estado='finalizada', prestamo=self.loan)
 
-    def test_reservation_code_is_unique_and_generated(self):
-        first = self.reservation()
-        self.assertTrue(first.codigo_reserva)
-        with self.assertRaises(IntegrityError), transaction.atomic():
-            self.reservation(codigo_reserva=first.codigo_reserva)
-
     def test_history_protects_users_and_books(self):
         with self.assertRaises(ProtectedError):
             self.student.delete()
@@ -73,9 +67,6 @@ class DatabaseRulesTests(TestCase):
         self.assertEqual(Notificacion.objects.count(), 1)
         self.assertEqual(self.loan.notificaciones.count(), 1)
 
-    def test_priority_cannot_be_negative(self):
-        with self.assertRaises((IntegrityError, DataError)), transaction.atomic():
-            self.reservation(prioridad=-1)
 
 
 class UpdateStatesCommandTests(TestCase):
@@ -84,9 +75,9 @@ class UpdateStatesCommandTests(TestCase):
         student = make_user('s')
         book = make_book('L')
         copy = book.ejemplares.get()
-        late = Reserva.objects.create(usuario=student, libro=book, fecha_vencimiento=today - timedelta(days=1))
-        on_time = Reserva.objects.create(usuario=student, libro=book, fecha_vencimiento=today)
-        overdue = Prestamo.objects.create(usuario=student, ejemplar=copy, fecha_vencimiento=today - timedelta(days=1), extension_pendiente=True)
+        late = Reserva.objects.create(usuario=student, libro=book, fecha_retiro=today - timedelta(days=1), fecha_vencimiento=today)
+        on_time = Reserva.objects.create(usuario=student, libro=book, fecha_retiro=today, fecha_vencimiento=today)
+        overdue = Prestamo.objects.create(usuario=student, ejemplar=copy, fecha_vencimiento=today - timedelta(days=1))
         current = Prestamo.objects.create(usuario=student, ejemplar=copy, fecha_vencimiento=today)
         historical = Prestamo.objects.create(usuario=student, ejemplar=copy, fecha_vencimiento=None)
         out = StringIO()
@@ -97,5 +88,4 @@ class UpdateStatesCommandTests(TestCase):
             obj.refresh_from_db()
         self.assertEqual((late.estado, on_time.estado), ('vencida', 'activa'))
         self.assertEqual((overdue.estado, current.estado, historical.estado), ('vencido', 'vigente', 'vigente'))
-        self.assertFalse(overdue.extension_pendiente)
         self.assertIn('Reservas vencidas: 1; préstamos vencidos: 1', out.getvalue())

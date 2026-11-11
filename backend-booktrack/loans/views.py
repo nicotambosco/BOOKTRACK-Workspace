@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from openpyxl import Workbook
 from fpdf import FPDF
 from .models import AccionAdministrativa, Notificacion, Prestamo, Reserva
-from .serializers import (AdminActionSerializer, LoanSerializer, NotificationSerializer, PrioritySerializer,
+from .serializers import (AdminActionSerializer, LoanSerializer, NotificationSerializer, PickupSerializer,
                           ReservationSerializer)
 from .permissions import IsLibrarian
 from . import services
@@ -31,18 +31,6 @@ class LoanViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=True, methods=['patch'], permission_classes=[IsLibrarian])
     def devolver(self, request, pk=None):
         return Response(self.get_serializer(services.return_loan(self.get_object(), request.user)).data)
-
-    @action(detail=True, methods=['patch'], url_path='solicitar-extension')
-    def solicitar_extension(self, request, pk=None):
-        return Response(self.get_serializer(services.request_extension(self.get_object())).data)
-
-    @action(detail=True, methods=['patch'], url_path='aprobar-extension', permission_classes=[IsLibrarian])
-    def aprobar_extension(self, request, pk=None):
-        return Response(self.get_serializer(services.resolve_extension(self.get_object(), True, request.user)).data)
-
-    @action(detail=True, methods=['patch'], url_path='denegar-extension', permission_classes=[IsLibrarian])
-    def denegar_extension(self, request, pk=None):
-        return Response(self.get_serializer(services.resolve_extension(self.get_object(), False, request.user)).data)
 
     @action(detail=False, methods=['get'], url_path='export/pdf')
     def export_pdf(self, request):
@@ -114,14 +102,11 @@ class ReservationViewSet(mixins.CreateModelMixin, viewsets.ReadOnlyModelViewSet)
 
     @action(detail=True, methods=['patch'], permission_classes=[IsLibrarian])
     def retirar(self, request, pk=None):
-        return Response(self.get_serializer(services.pick_up(self.get_object(), request.user)).data)
-
-    @action(detail=True, methods=['patch'], permission_classes=[IsLibrarian])
-    def priorizar(self, request, pk=None):
-        data = PrioritySerializer(data=request.data)
+        data = PickupSerializer(data=request.data)
         data.is_valid(raise_exception=True)
-        reservation = services.prioritize_reservation(self.get_object(), data.validated_data['prioridad'], request.user)
+        reservation = services.pick_up(self.get_object(), request.user, data.validated_data.get('ejemplarId'))
         return Response(self.get_serializer(reservation).data)
+
 
 
 class NotificationViewSet(viewsets.ReadOnlyModelViewSet):

@@ -72,12 +72,11 @@ assert list(Libro.objects.get(pk='SIN-ISBN-020002').ejemplares.values_list('esta
 # Préstamos y reservas: ids, estados y fechas se conservan.
 assert Prestamo.objects.count() == 2
 assert Reserva.objects.count() == 3
-r = Reserva.objects.get(codigo_reserva=f'LEGACY-{pending.pk}')
+r = Reserva.objects.get(estado='activa', fecha_reserva=today+timedelta(days=2))
 assert r.estado == 'activa'
-assert r.fecha_devolucion_prevista == today+timedelta(days=9)
 assert r.libro_id == '9780000020000' and r.usuario_id == ana.pk
-assert Reserva.objects.get(codigo_reserva=f'LEGACY-{denied.pk}').estado == 'cancelada'
-assert Reserva.objects.get(codigo_reserva=f'LEGACY-{unknown_date.pk}').fecha_devolucion_prevista is None
+assert Reserva.objects.get(estado='cancelada').estado == 'cancelada'
+assert Reserva.objects.get(estado='activa', fecha_reserva=today+timedelta(days=3)).fecha_vencimiento == today+timedelta(days=3)
 late = Prestamo.objects.get(pk=overdue.pk)
 assert (late.estado, late.fecha_vencimiento, late.fecha_prestamo) == ('vencido', today-timedelta(days=2), today-timedelta(days=9))
 assert late.ejemplar.estado == 'prestado' and late.ejemplar.libro_id == '9780000020000'

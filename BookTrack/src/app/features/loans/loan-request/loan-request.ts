@@ -25,7 +25,7 @@ import { Book } from '../../../models/book.model';
           </div>
           <div>
             <h2 class="section-title">Reserva de libro</h2>
-            <p class="section-subtitle">Indicá hasta cuándo podés retirarlo y cuándo lo devolverías.</p>
+            <p class="section-subtitle">Elegí la fecha de retiro y el vencimiento del préstamo.</p>
           </div>
         </div>
 
@@ -44,12 +44,12 @@ import { Book } from '../../../models/book.model';
           <div class="form-area">
             <div class="campo-fila">
               <div class="campo">
-                <label for="retiro">RETIRAR HASTA</label>
+                <label for="retiro">FECHA DE RETIRO</label>
                 <input id="retiro" type="date" [(ngModel)]="desde" [min]="hoy"/>
               </div>
               <div class="campo">
-                <label for="devolucion">DEVOLVER HASTA</label>
-                <input id="devolucion" type="date" [(ngModel)]="hasta" [min]="desde || hoy"/>
+                <label for="vencimiento">FECHA DE VENCIMIENTO</label>
+                <input id="vencimiento" type="date" [(ngModel)]="hasta" [min]="desde || hoy"/>
               </div>
             </div>
             @if (error) { <p class="error-msg">{{ error }}</p> }
@@ -79,7 +79,7 @@ import { Book } from '../../../models/book.model';
     .section-title { font-family: Georgia, serif; font-size: 1.6rem; margin: 0 0 0.2rem; color:#f5f5f5; }
     .section-subtitle { margin:0; color:#9a9a9a; font-size:0.9rem; }
 
-    .request-card { background:#161616; border-radius:12px; padding:2.5rem; display:flex; gap:2.5rem; max-width: 700px; }
+    .request-card { background:#161616; border-radius:12px; padding:2.5rem; display:flex; gap:2.5rem; width:100%; max-width:700px; box-sizing:border-box; }
     .left-panel { display:flex; flex-direction:column; gap:0.9rem; align-items:center; width: 140px; flex-shrink:0; }
     .book-cover { width:120px; height:170px; border-radius:4px; overflow:hidden; box-shadow:3px 3px 10px rgba(0,0,0,0.4); }
     .book-cover img { width:100%; height:100%; object-fit:cover; }
@@ -87,14 +87,24 @@ import { Book } from '../../../models/book.model';
 
     .divider-v { width:1px; background:#2a2a2a; align-self: stretch; }
 
-    .form-area { flex:1; display:flex; flex-direction:column; gap:1.2rem; justify-content:center; }
-    .campo-fila { display:flex; gap:1rem; }
-    .campo { display:flex; flex-direction:column; gap:0.4rem; flex:1; }
+    .form-area { flex:1; min-width:0; display:flex; flex-direction:column; gap:1.2rem; justify-content:center; }
+    .campo-fila { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); align-items:end; gap:1rem; }
+    .campo { display:flex; flex-direction:column; gap:0.4rem; min-width:0; }
     .campo label { font-size:0.72rem; font-weight:bold; color:#9a9a9a; letter-spacing:0.03rem; }
     .campo input {
+      width:100%; min-width:0; height:44px; box-sizing:border-box;
       padding:0.7rem 0.9rem; border:1px solid #2a2a2a; border-radius:8px;
       background:#101010; color:#e8e8e8; font-size:0.85rem;
       color-scheme: dark;
+    }
+    @media (max-width:600px) {
+      .request-card { flex-direction:column; gap:1.5rem; padding:1.5rem; }
+      .left-panel { align-self:center; }
+      .divider-v { width:100%; height:1px; }
+      .botones { flex-wrap:wrap; }
+    }
+    @media (max-width:380px) {
+      .campo-fila { grid-template-columns:1fr; }
     }
     .campo input::placeholder { color:#6a6a6a; }
 
@@ -133,7 +143,7 @@ export class LoanRequest implements OnInit {
 
   enviar() {
     if (!this.desde || !this.hasta || this.enviando) return;
-    if (this.desde < this.hoy || this.hasta < this.desde) { this.error = 'Revisá las fechas de retiro y devolución.'; return; }
+    if (this.desde < this.hoy || this.hasta < this.desde) { this.error = 'Revisá las fechas de retiro y vencimiento.'; return; }
     this.enviando = true;
     this.reservationService.request(this.bookId, this.desde, this.hasta).subscribe({
       next: () => { this.exito = true; this.enviando = false; },

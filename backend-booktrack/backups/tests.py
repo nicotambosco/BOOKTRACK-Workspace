@@ -48,7 +48,7 @@ class SnapshotTests(TransactionTestCase):
         self.loan = Prestamo.objects.create(usuario=self.user, ejemplar=self.book.ejemplares.get(),
             fecha_vencimiento=timezone.localdate()+timedelta(days=7))
         self.reservation = Reserva.objects.create(usuario=self.user, libro=self.book, estado='finalizada',
-            fecha_vencimiento=timezone.localdate(), fecha_devolucion_prevista=self.loan.fecha_vencimiento, prestamo=self.loan)
+            fecha_retiro=timezone.localdate(), fecha_vencimiento=timezone.localdate(), prestamo=self.loan)
         Session.objects.create(session_key='backup-test-session', session_data='test-session-data',
                                expire_date=timezone.now()+timedelta(days=1))
 

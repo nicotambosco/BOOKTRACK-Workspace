@@ -18,18 +18,6 @@ export class LoanService {
     return this.http.patch<Loan>(`${this.api}/${id}/devolver/`, {});
   }
 
-  requestExtension(id: number): Observable<Loan> {
-    return this.http.patch<Loan>(`${this.api}/${id}/solicitar-extension/`, {});
-  }
-
-  approveExtension(id: number): Observable<Loan> {
-    return this.http.patch<Loan>(`${this.api}/${id}/aprobar-extension/`, {});
-  }
-
-  denyExtension(id: number): Observable<Loan> {
-    return this.http.patch<Loan>(`${this.api}/${id}/denegar-extension/`, {});
-  }
-
   getHistory(): Observable<Loan[]> {
     return this.http.get<Loan[]>(`${this.api}/`);
   }

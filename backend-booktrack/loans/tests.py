@@ -15,6 +15,7 @@ from .models import AccionAdministrativa, Notificacion, Prestamo, Reserva
 from . import services
 
 
+
 class LifecycleTests(TestCase):
     def setUp(self):
         self.today = timezone.localdate()
@@ -32,8 +33,8 @@ class LifecycleTests(TestCase):
     def reserve(self, client=None, **overrides):
         return (client or self.client).post('/api/reservations/', {
             'libroId': self.book.pk,
-            'fechaVencimiento': str(self.today + timedelta(days=2)),
-            'fechaDevolucionPrevista': str(self.today + timedelta(days=9)),
+            'fechaRetiro': str(self.today + timedelta(days=2)),
+            'fechaVencimiento': str(self.today + timedelta(days=9)),
             **overrides,
         }, format='json')
 
@@ -45,10 +46,9 @@ class LifecycleTests(TestCase):
         return response.data['prestamoId']
 
     def test_new_reservation_is_active_and_does_not_change_stock(self):
-        response = self.reserve(prioridad=500, estado='finalizada', estudianteId=self.other.id)
+        response = self.reserve(estado='finalizada', estudianteId=self.other.id)
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.data['estado'], 'activa')
-        self.assertEqual(response.data['prioridad'], 0)
         self.assertEqual(response.data['estudianteId'], self.student.pk)
         self.assertIsNone(response.data['prestamoId'])
         self.assertEqual(stock(self.book), 1)
@@ -71,9 +71,9 @@ class LifecycleTests(TestCase):
     def test_dates_and_book_references_are_validated(self):
         for overrides in [
             {'libroId': 987654},
-            {'fechaVencimiento': str(self.today - timedelta(days=1))},
-            {'fechaDevolucionPrevista': str(self.today)},
-            {'fechaVencimiento': 'invalid'},
+            {'fechaRetiro': str(self.today - timedelta(days=1))},
+            {'fechaRetiro': 'invalid'},
+            {'fechaVencimiento': str(self.today)},
         ]:
             with self.subTest(overrides=overrides):
                 self.assertEqual(self.reserve(**overrides).status_code, 400)
@@ -81,6 +81,14 @@ class LifecycleTests(TestCase):
     def test_cannot_create_duplicate_active_reservations(self):
         self.assertEqual(self.reserve().status_code, 201)
         self.assertEqual(self.reserve().status_code, 400)
+
+    def test_pickup_uses_reservation_due_date_even_if_request_supplies_another(self):
+        reservation_id = self.reserve().data['id']
+        response = self.admin.patch(f'/api/reservations/{reservation_id}/retirar/',
+                                    {'fechaVencimiento': str(self.today + timedelta(days=30))}, format='json')
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(Prestamo.objects.get(pk=response.data['prestamoId']).fecha_vencimiento,
+                         self.today + timedelta(days=9))
 
     def test_pickup_creates_one_loan_and_retry_is_idempotent(self):
         reservation_id = self.reserve().data['id']
@@ -126,7 +134,7 @@ class LifecycleTests(TestCase):
 
     def test_expiration_is_applied_before_state_filters(self):
         reservation_id = self.reserve().data['id']
-        Reserva.objects.filter(pk=reservation_id).update(fecha_vencimiento=self.today-timedelta(days=1))
+        Reserva.objects.filter(pk=reservation_id).update(fecha_retiro=self.today-timedelta(days=1))
         self.assertEqual(self.client.get('/api/reservations/?estado=activa').data, [])
         response = self.client.get('/api/reservations/?estado=vencida')
         self.assertEqual(response.data[0]['id'], reservation_id)
@@ -134,7 +142,7 @@ class LifecycleTests(TestCase):
         self.assertEqual(self.client.patch(f'/api/reservations/{reservation_id}/cancelar/').status_code, 400)
 
     def test_deadline_is_inclusive_in_argentina_local_date(self):
-        response = self.reserve(fechaVencimiento=str(self.today))
+        response = self.reserve(fechaRetiro=str(self.today))
         self.assertEqual(self.admin.patch(f"/api/reservations/{response.data['id']}/retirar/").status_code, 200)
         loan = Prestamo.objects.get()
         loan.fecha_vencimiento = self.today
@@ -143,47 +151,34 @@ class LifecycleTests(TestCase):
         loan.refresh_from_db()
         self.assertEqual(loan.estado, 'vigente')
 
-    def test_overdue_loan_can_be_returned_but_not_renewed(self):
+    def test_overdue_loan_can_be_returned(self):
         loan_id = self.pickup()
         Prestamo.objects.filter(pk=loan_id).update(fecha_vencimiento=self.today-timedelta(days=1))
         response = self.client.get('/api/loans/?estado=vencido')
         self.assertEqual(response.data[0]['id'], loan_id)
-        self.assertEqual(self.client.patch(f'/api/loans/{loan_id}/solicitar-extension/').status_code, 400)
         self.assertEqual(self.admin.patch(f'/api/loans/{loan_id}/devolver/').status_code, 200)
 
-    def test_renewal_requires_a_pending_request_and_only_changes_deadline(self):
-        loan_id = self.pickup()
-        approve = f'/api/loans/{loan_id}/aprobar-extension/'
-        self.assertEqual(self.admin.patch(approve).status_code, 400)
-        self.assertEqual(self.other_client.patch(f'/api/loans/{loan_id}/solicitar-extension/').status_code, 404)
-        self.assertEqual(self.client.patch(f'/api/loans/{loan_id}/solicitar-extension/').status_code, 200)
-        self.assertEqual(self.client.patch(approve).status_code, 403)
-        response = self.admin.patch(approve)
-        self.assertEqual(response.data['estado'], 'vigente')
-        self.assertEqual(response.data['fechaVencimiento'], str(self.today+timedelta(days=16)))
-        self.assertEqual(response.data['fechaInicio'], str(self.today))
-        self.assertIsNone(response.data['fechaDevolucion'])
-        self.assertEqual(self.admin.patch(approve).status_code, 400)
-        self.assertEqual(stock(self.book), 0)
-
-    def test_denied_extension_does_not_change_deadline(self):
-        loan_id = self.pickup()
-        self.client.patch(f'/api/loans/{loan_id}/solicitar-extension/')
-        response = self.admin.patch(f'/api/loans/{loan_id}/denegar-extension/')
-        self.assertEqual(response.data['extensionEstado'], 'denegada')
-        self.assertEqual(response.data['fechaVencimiento'], str(self.today+timedelta(days=9)))
-
-    def test_priority_requires_librarian_and_controls_delivery_queue(self):
+    def test_first_reservation_is_served_first_when_one_copy_is_available(self):
         first = self.reserve().data['id']
         second = self.reserve(self.other_client).data['id']
-        url = f'/api/reservations/{second}/priorizar/'
-        self.assertEqual(self.client.patch(url, {'prioridad': 9}, format='json').status_code, 403)
-        for value in [-1, 32768, 'bad']:
-            self.assertEqual(self.admin.patch(url, {'prioridad': value}, format='json').status_code, 400)
-        self.assertEqual(self.admin.patch(url, {'prioridad': 9}, format='json').status_code, 200)
-        self.assertEqual(self.admin.patch(f'/api/reservations/{first}/retirar/').status_code, 400)
-        self.assertEqual(self.admin.patch(f'/api/reservations/{second}/retirar/').status_code, 200)
+        self.assertEqual(self.admin.patch(f'/api/reservations/{second}/retirar/').status_code, 400)
+        self.assertEqual(self.admin.patch(f'/api/reservations/{first}/retirar/').status_code, 200)
         self.assertEqual(Prestamo.objects.count(), 1)
+
+    def test_pickup_uses_selected_copy_and_rejects_invalid_or_unavailable_copies(self):
+        set_stock(self.book, 2)
+        copies = list(self.book.ejemplares.order_by('id'))
+        reservation_id = self.reserve().data['id']
+        url = f'/api/reservations/{reservation_id}/retirar/'
+        other_book = make_book('Otro', disponibles=1)
+        invalid = other_book.ejemplares.get().pk
+        self.assertEqual(self.admin.patch(url, {'ejemplarId': invalid}, format='json').status_code, 400)
+        copies[0].estado = 'baja'
+        copies[0].save(update_fields=['estado'])
+        self.assertEqual(self.admin.patch(url, {'ejemplarId': copies[0].pk}, format='json').status_code, 400)
+        response = self.admin.patch(url, {'ejemplarId': copies[1].pk}, format='json')
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(Prestamo.objects.get(pk=response.data['prestamoId']).ejemplar_id, copies[1].pk)
 
     def test_fifo_and_multiple_copies(self):
         first = self.reserve().data['id']
@@ -270,7 +265,7 @@ class LifecycleTests(TestCase):
 
     def test_notifications_are_private_and_include_expirations(self):
         reservation_id = self.reserve().data['id']
-        Reserva.objects.filter(pk=reservation_id).update(fecha_vencimiento=self.today-timedelta(days=1))
+        Reserva.objects.filter(pk=reservation_id).update(fecha_retiro=self.today-timedelta(days=1))
         types = [n['tipo'] for n in self.client.get('/api/notifications/').data]
         self.assertEqual(sorted(types), ['reserva_creada', 'reserva_vencida'])
         self.assertEqual(self.other_client.get('/api/notifications/').data, [])
@@ -309,7 +304,7 @@ class ConcurrentPickupTests(TransactionTestCase):
         librarian = make_user('concurrent-librarian', 'bibliotecario')
         book = make_book('Concurrent', categoria='sistemas', disponibles=1)
         reservation = Reserva.objects.create(usuario=student, libro=book,
-            fecha_vencimiento=today, fecha_devolucion_prevista=today+timedelta(days=7))
+            fecha_retiro=today, fecha_vencimiento=today+timedelta(days=7))
         barrier = Barrier(2)
 
         def deliver():

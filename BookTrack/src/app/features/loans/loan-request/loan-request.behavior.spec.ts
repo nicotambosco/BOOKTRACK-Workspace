@@ -30,14 +30,14 @@ describe('LoanRequest screen (create reservation)', () => {
   it('rejects a pickup date in the past', () => {
     page.desde = iso(-1); page.hasta = iso(3);
     page.enviar();
-    expect(page.error).toBe('Revisá las fechas de retiro y devolución.');
+    expect(page.error).toBe('Revisá las fechas de retiro y vencimiento.');
     ctrl.expectNone(URL);
   });
 
-  it('rejects a return date before the pickup date', () => {
+  it('rejects a due date before pickup', () => {
     page.desde = iso(5); page.hasta = iso(2);
     page.enviar();
-    expect(page.error).toBe('Revisá las fechas de retiro y devolución.');
+    expect(page.error).toBe('Revisá las fechas de retiro y vencimiento.');
     ctrl.expectNone(URL);
   });
 
@@ -46,7 +46,7 @@ describe('LoanRequest screen (create reservation)', () => {
     page.enviar();
     const req = ctrl.expectOne(URL);
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({ libroId: '9780000000007', fechaVencimiento: iso(1), fechaDevolucionPrevista: iso(8) });
+    expect(req.request.body).toEqual({ libroId: '9780000000007', fechaRetiro: iso(1), fechaVencimiento: iso(8) });
     req.flush({ id: 1, estado: 'activa' });
     expect(page.exito).toBe(true);
     expect(page.enviando).toBe(false);

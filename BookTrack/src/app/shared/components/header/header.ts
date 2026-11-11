@@ -122,10 +122,10 @@ import { AuthService } from '../../../core/services/auth.service';
     .notif-vacio { margin: 0; color: #8a8a8a; font-size: 0.8rem; font-style: italic; }
     .notif-item { padding: 0.6rem 0.7rem; border-radius: 8px; background: #101010; margin-bottom: 0.5rem; }
     .notif-item:last-child { margin-bottom: 0; }
-    .notif-item.prestamo_iniciado, .notif-item.renovacion_aprobada, .notif-item.devolucion_registrada { border-left: 3px solid #2ecc71; }
+    .notif-item.prestamo_iniciado, .notif-item.devolucion_registrada { border-left: 3px solid #2ecc71; }
     .notif-item.prestamo_por_vencer, .notif-item.reserva_vencida { border-left: 3px solid #e8a020; }
     .notif-item.prestamo_vencido { border-left: 3px solid #e74c3c; background: rgba(231,76,60,0.08); }
-    .notif-item.renovacion_denegada, .notif-item.reserva_cancelada { border-left: 3px solid #e74c3c; }
+    .notif-item.reserva_cancelada { border-left: 3px solid #e74c3c; }
     .notif-item.reserva_creada { border-left: 3px solid #3a8fd6; }
     .notif-msg { font-size: 0.8rem; color: #d8d8d8; line-height: 1.4; }
     .profile-icon {
@@ -150,7 +150,7 @@ export class Header implements OnInit {
     // El rol real manda: las vistas compartidas (búsqueda, detalle, préstamo) no saben quién las ve.
     const rol = this.authService.getUserRole();
     if (rol) this.esAdmin = rol === 'bibliotecario';
-    // Los avisos los genera el servidor (reservas, retiros, vencimientos, renovaciones); el bibliotecario no recibe.
+    // Los avisos los genera el servidor (reservas, retiros, vencimientos); el bibliotecario no recibe.
     if (!this.esAdmin) {
       this.notificationService.getAll().subscribe({
         next: items => {
