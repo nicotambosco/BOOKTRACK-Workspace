@@ -186,7 +186,7 @@ export class Header implements OnInit {
     this.tieneNotificaciones = false;
   }
 
-  irAHome() { this.router.navigate([this.esAdmin ? '/home-admin' : '/home']); }
+  irAHome() { this.router.navigate([this.esAdmin ? '/home-bibliotecario' : '/home']); }
   irAPerfil() { this.router.navigate([this.esAdmin ? '/profile-admin' : '/profile']); }
   irAHistorial() { this.router.navigate(['/user-history']); }
   buscar() { if (this.busqueda.trim()) this.router.navigate(['/book-search'], { queryParams: { q: this.busqueda } }); }

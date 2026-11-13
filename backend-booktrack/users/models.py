@@ -2,6 +2,10 @@ from django.contrib.auth.base_user import AbstractBaseUser
 from django.db import models
 
 
+NIVEL_USUARIO, NIVEL_BIBLIOTECARIO, NIVEL_ADMIN = 0, 1, 2
+CATEGORIA_POR_NIVEL = {NIVEL_USUARIO: 'usuario', NIVEL_BIBLIOTECARIO: 'bibliotecario', NIVEL_ADMIN: 'admin'}
+
+
 class Persona(AbstractBaseUser):
     """Quien inicia sesión. La clave primaria es el legajo; cada rol vive en su propia tabla."""
     nombre = models.CharField(max_length=100, blank=True)
@@ -9,12 +13,17 @@ class Persona(AbstractBaseUser):
     email = models.EmailField(blank=True)
     imagen = models.TextField(blank=True)  # foto de perfil (data URI); fuera del diagrama
     is_active = models.BooleanField(default=True)
+    nivel = models.PositiveSmallIntegerField(default=NIVEL_USUARIO)  # privilegios: 0 usuario, 1 bibliotecario, 2 admin
 
     USERNAME_FIELD = 'id'
     REQUIRED_FIELDS = []
 
     class Meta:
         abstract = True
+
+    @property
+    def categoria(self):
+        return CATEGORIA_POR_NIVEL[self.nivel]
 
     @property
     def legajo(self):
@@ -30,7 +39,6 @@ class Persona(AbstractBaseUser):
 
 class Usuario(Persona):
     TIPO_CHOICES = [('alumno', 'Alumno'), ('docente', 'Docente')]
-    categoria = 'usuario'
 
     id = models.CharField(max_length=50, primary_key=True, db_column='idUsuario')  # el legajo
     email_alternativo = models.EmailField(blank=True, db_column='emailAlternativo')
@@ -40,17 +48,35 @@ class Usuario(Persona):
 
     class Meta:
         db_table = 'Usuario'
+        constraints = [models.CheckConstraint(condition=models.Q(nivel=NIVEL_USUARIO), name='usuario_nivel_0')]
 
 
 class Bibliotecario(Persona):
-    categoria = 'bibliotecario'
-
     id = models.CharField(max_length=50, primary_key=True, db_column='idBibliotecario')  # el legajo
+    nivel = models.PositiveSmallIntegerField(default=NIVEL_BIBLIOTECARIO)
 
     class Meta:
         db_table = 'Bibliotecario'
+        constraints = [models.CheckConstraint(condition=models.Q(nivel=NIVEL_BIBLIOTECARIO), name='bibliotecario_nivel_1')]
+
+
+class Administrador(Persona):
+    """Cuenta propia, distinta de la del bibliotecario: gestiona a los bibliotecarios."""
+    id = models.CharField(max_length=50, primary_key=True, db_column='idAdministrador')  # el legajo
+    nivel = models.PositiveSmallIntegerField(default=NIVEL_ADMIN)
+
+    class Meta:
+        db_table = 'Administrador'
+        constraints = [models.CheckConstraint(condition=models.Q(nivel=NIVEL_ADMIN), name='administrador_nivel_2')]
+
+
+MODELO_POR_CATEGORIA = {'usuario': Usuario, 'bibliotecario': Bibliotecario, 'admin': Administrador}
 
 
 def find_persona(legajo):
-    """El legajo es único entre las dos tablas: devuelve al bibliotecario o usuario que lo tiene, o None."""
-    return Bibliotecario.objects.filter(pk=legajo).first() or Usuario.objects.filter(pk=legajo).first()
+    """El legajo es único entre las tres tablas: devuelve a quien lo tiene, o None."""
+    for model in (Administrador, Bibliotecario, Usuario):
+        person = model.objects.filter(pk=legajo).first()
+        if person:
+            return person
+    return None

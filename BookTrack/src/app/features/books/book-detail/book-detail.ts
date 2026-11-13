@@ -145,5 +145,5 @@ export class BookDetail implements OnInit {
 
   solicitarPrestamo() { if (!this.esBibliotecario && this.libro?.id) this.router.navigate(['/loan-request', this.libro.id]); }
   verLibro(id: string) { this.router.navigate(['/book', id]); }
-  volver() { this.router.navigate([this.authService.getUserRole() === 'bibliotecario' ? '/home-admin' : '/home']); }
+  volver() { this.router.navigate([this.authService.getUserRole() === 'bibliotecario' ? '/home-bibliotecario' : '/home']); }
 }

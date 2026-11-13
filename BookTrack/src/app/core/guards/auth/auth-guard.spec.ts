@@ -35,7 +35,7 @@ describe('authGuard', () => {
 
   it('sends a librarian who opens a user-only route back to the librarian panel', () => {
     localStorage.setItem('auth_token', fakeJwt({ categoria: 'bibliotecario' }));
-    expect(url(run(['usuario']))).toBe('/home-admin');
+    expect(url(run(['usuario']))).toBe('/home-bibliotecario');
   });
 
   it('lets a regular user into a user-only route', () => {

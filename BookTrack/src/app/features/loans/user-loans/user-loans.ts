@@ -120,5 +120,5 @@ export class UserLoans implements OnInit {
 
   label(e: string) { return ({ vigente: 'Vigente', vencido: 'Vencido', devuelto: 'Devuelto' } as Record<string, string>)[e] ?? e; }
 
-  volver() { this.router.navigate([this.perfil ? '/home-admin' : '/user-management']); }
+  volver() { this.router.navigate([this.perfil ? '/home-bibliotecario' : '/user-management']); }
 }

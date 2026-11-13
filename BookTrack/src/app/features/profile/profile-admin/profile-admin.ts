@@ -239,6 +239,6 @@ export class ProfileAdmin implements OnInit {
   }
 
   irAHistorial() { this.router.navigate(['/loan-history']); }
-  cancelar() { this.router.navigate(['/home-admin']); }
+  cancelar() { this.router.navigate(['/home-bibliotecario']); }
   cerrarSesion() { this.authService.logout(); this.router.navigate(['/login']); }
 }

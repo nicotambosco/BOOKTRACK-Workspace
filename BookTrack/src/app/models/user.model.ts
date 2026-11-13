@@ -13,7 +13,7 @@ export interface User {
   legajo?: string;
   contrasena?: string;
   codigo?: string;         // código de invitación (opcional)
-  categoria: 'usuario' | 'bibliotecario';
+  categoria: 'usuario' | 'bibliotecario' | 'admin';
   imagen?: string;         // URL de imagen de perfil
   historialPrestamos?: Loan[];
 }

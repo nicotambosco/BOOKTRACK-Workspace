@@ -54,7 +54,7 @@ export class AuthService {
     return sessionStorage.getItem(this.tokenKey) ?? localStorage.getItem(this.tokenKey);
   }
 
-  getUserRole(): 'usuario' | 'bibliotecario' | null {
+  getUserRole(): 'usuario' | 'bibliotecario' | 'admin' | null {
     const token = this.getToken();
     if (!token) return null;
     try {

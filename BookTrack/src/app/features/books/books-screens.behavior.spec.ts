@@ -50,7 +50,7 @@ describe('BookAdd screen', () => {
     req.flush({ id: '9780000000001' });
     expect(page.modalMsg).toBe('¡Libro añadido exitosamente!');
     page.cerrarModal();
-    expect(navigate).toHaveBeenCalledWith(['/home-admin']);
+    expect(navigate).toHaveBeenCalledWith(['/home-bibliotecario']);
   });
 
   it('stays on the form and reports an error when saving fails', () => {

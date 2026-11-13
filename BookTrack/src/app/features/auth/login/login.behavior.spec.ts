@@ -33,11 +33,11 @@ describe('Login screen', () => {
     expect(navigate).toHaveBeenCalledWith(['/home']);
   });
 
-  it('sends a librarian to /home-admin', () => {
+  it('sends a librarian to /home-bibliotecario', () => {
     login.legajo = '12473'; login.password = 'x';
     login.login();
     ctrl.expectOne(URL).flush({ token: fakeJwt({ categoria: 'bibliotecario' }), user: { categoria: 'bibliotecario' } });
-    expect(navigate).toHaveBeenCalledWith(['/home-admin']);
+    expect(navigate).toHaveBeenCalledWith(['/home-bibliotecario']);
   });
 
   it('remembers the session in localStorage only when "Recordarme" is checked', () => {

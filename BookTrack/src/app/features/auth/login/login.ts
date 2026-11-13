@@ -1,3 +1,4 @@
+import { homeDeRol } from '../../../core/guards/auth/auth-guard';
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -159,7 +160,7 @@ export class Login {
     this.authService.login(this.legajo, this.password, this.recordarme).subscribe({
       next: res => {
         this.cargando = false;
-        this.router.navigate([res.user.categoria === 'bibliotecario' ? '/home-admin' : '/home']);
+        this.router.navigate([homeDeRol(res.user.categoria)]);
       },
       error: err => {
         this.cargando = false;

@@ -1,0 +1,92 @@
+<div class="page">
+  <header class="top">
+    <div class="title-icon">📚</div>
+    <div class="title">
+      <h1>Gestión de Bibliotecarios</h1>
+      <p>Seleccioná un bibliotecario para ver y editar su ficha.</p>
+    </div>
+    <div class="top-actions">
+      <button class="btn-logout" (click)="cerrarSesion()">Cerrar sesión</button>
+      <button class="btn-primary" (click)="abrirNuevo()">+ Nuevo bibliotecario</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="panel list">
+      <input class="search" type="search" placeholder="Buscar..." aria-label="Buscar bibliotecario" [(ngModel)]="busqueda"/>
+      @if (cargando) { <p class="muted">Cargando…</p> }
+      @for (b of filtrados; track b.id) {
+        <button class="item" [class.active]="b.id === seleccionado?.id" (click)="seleccionar(b)">
+          <span class="avatar sm">{{ iniciales(b.nombreApellido) }}</span>
+          <span class="item-text">
+            <strong>{{ b.nombreApellido }}</strong>
+            <small>{{ b.legajo }} · {{ b.activo ? 'Activo' : 'Inactivo' }}</small>
+          </span>
+        </button>
+      } @empty {
+        @if (!cargando) { <p class="muted">No hay bibliotecarios.</p> }
+      }
+    </aside>
+
+    <section class="panel detail">
+      @if (seleccionado; as s) {
+        <div class="detail-head">
+          <span class="avatar lg">{{ iniciales(s.nombreApellido) }}</span>
+          <div class="who">
+            <h2>{{ s.nombreApellido }}</h2>
+            <div class="meta">
+              <span class="badge" [class.off]="!s.activo">● {{ s.activo ? 'Activo' : 'Inactivo' }}</span>
+              <span class="muted">Legajo {{ s.legajo }}</span>
+            </div>
+          </div>
+          <div class="head-actions">
+            <button class="btn-danger" [class.btn-ok]="!s.activo" (click)="alternarActivo()" [disabled]="guardando">{{ s.activo ? 'Desactivar' : 'Activar' }}</button>
+            <button class="btn-primary" (click)="guardar()" [disabled]="guardando">{{ guardando ? 'Guardando…' : 'Guardar cambios' }}</button>
+          </div>
+        </div>
+
+        @if (error) { <p class="msg err" role="alert">{{ error }}</p> }
+        @if (aviso) { <p class="msg ok" role="status">{{ aviso }}</p> }
+
+        <div class="stats">
+          <div><span>Préstamos gestionados</span><b>{{ s.prestamosGestionados }}</b></div>
+          <div><span>Devoluciones</span><b class="green">{{ s.devoluciones }}</b></div>
+          <div><span>Pendientes</span><b class="amber">{{ s.pendientes }}</b></div>
+        </div>
+
+        <div class="fields">
+          <label>Nombre y apellido<input [(ngModel)]="form.nombreApellido" name="nombre"/></label>
+          <label>Email<input type="email" [(ngModel)]="form.email" name="email"/></label>
+          <label>Legajo<input [value]="s.legajo" readonly/></label>
+        </div>
+
+        <h3>Actividad reciente</h3>
+        <ul class="activity">
+          @for (a of actividad; track $index) {
+            <li><span>{{ a.descripcion }}</span><time>{{ a.fecha | date:'dd/MM HH:mm' }}</time></li>
+          } @empty { <li class="muted">Sin actividad registrada.</li> }
+        </ul>
+      } @else {
+        @if (error) { <p class="msg err" role="alert">{{ error }}</p> }
+        @else if (!cargando) { <p class="muted">Seleccioná un bibliotecario de la lista.</p> }
+      }
+    </section>
+  </div>
+
+  @if (creando) {
+    <div class="overlay">
+      <form class="modal" (ngSubmit)="crear()">
+        <h3>Nuevo bibliotecario</h3>
+        <label>Legajo<input autocomplete="off" [(ngModel)]="nuevo.legajo" name="legajo"/></label>
+        <label>Nombre y apellido<input [(ngModel)]="nuevo.nombreApellido" name="nombreApellido"/></label>
+        <label>Email<input type="email" autocomplete="off" [(ngModel)]="nuevo.email" name="email"/></label>
+        <label>Contraseña inicial<input type="password" autocomplete="new-password" [(ngModel)]="nuevo.contrasena" name="contrasena"/></label>
+        @if (errorNuevo) { <p class="msg err" role="alert">{{ errorNuevo }}</p> }
+        <div class="modal-actions">
+          <button type="button" class="btn-outline" (click)="creando=false" [disabled]="guardando">Cancelar</button>
+          <button type="submit" class="btn-primary" [disabled]="guardando">Crear</button>
+        </div>
+      </form>
+    </div>
+  }
+</div>

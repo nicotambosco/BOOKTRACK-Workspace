@@ -6,7 +6,7 @@ import { Register } from './features/auth/register/register';
 import { ForgotPassword } from './features/auth/forgot-password/forgot-password';
 import { ResetPasswordSent } from './features/auth/reset-password-sent/reset-password-sent';
 import { HomeUser } from './features/home/home-user/home-user';
-import { HomeAdmin } from './features/home/home-admin/home-admin';
+import { HomeBibliotecario } from './features/home/home-bibliotecario/home-bibliotecario';
 import { BookDetail } from './features/books/book-detail/book-detail';
 import { BookAdd } from './features/books/book-add/book-add';
 import { BookEdit } from './features/books/book-edit/book-edit';
@@ -24,6 +24,7 @@ import { BookSearch } from './features/books/book-search/book-search';
 import { UserHistory } from './features/loans/user-history/user-history';
 import { UserLoans } from './features/loans/user-loans/user-loans';
 import { LoanArchive } from './features/loans/loan-archive/loan-archive';
+import { LibrarianManagement } from './features/admin/librarian-management/librarian-management';
 import { AdminActivity } from './features/admin/admin-activity/admin-activity';
 
 export const routes: Routes = [
@@ -40,8 +41,8 @@ export const routes: Routes = [
     data: { roles: ['usuario'] }
   },
   {
-    path: 'home-admin', //falta
-    component: HomeAdmin,
+    path: 'home-bibliotecario', //falta
+    component: HomeBibliotecario,
     canActivate: [authGuard],
     data: { roles: ['bibliotecario'] }
   },
@@ -123,5 +124,6 @@ export const routes: Routes = [
   { path: 'user-history', component: UserHistory, canActivate: [authGuard], data: { roles: ['usuario'] } },
   { path: 'loan-archive', component: LoanArchive, canActivate: [authGuard], data: { roles: ['bibliotecario'] } },
   { path: 'admin-activity', component: AdminActivity, canActivate: [authGuard], data: { roles: ['bibliotecario'] } },
+  { path: 'admin-bibliotecarios', component: LibrarianManagement, canActivate: [authGuard], data: { roles: ['admin'] } },
   { path: '**', redirectTo: '' }
 ];

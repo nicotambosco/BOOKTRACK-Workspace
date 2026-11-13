@@ -63,7 +63,7 @@ describe('Header notifications (served by the API)', () => {
     header.irAHome(); header.irAPerfil();
     header.esAdmin = true;
     header.irAHome(); header.irAPerfil();
-    expect(navigate.mock.calls.map(c => (c[0] as string[])[0])).toEqual(['/home', '/profile', '/home-admin', '/profile-admin']);
+    expect(navigate.mock.calls.map(c => (c[0] as string[])[0])).toEqual(['/home', '/profile', '/home-bibliotecario', '/profile-admin']);
   });
 
   it('searches only with non-blank text', () => {

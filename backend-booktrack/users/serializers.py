@@ -2,7 +2,7 @@ from django.db import transaction
 from django.db.models import Q
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import Bibliotecario, Usuario, find_persona
+from .models import Administrador, Bibliotecario, Usuario, find_persona
 
 
 def split_name(full_name):
@@ -23,6 +23,7 @@ class UserSerializer(serializers.Serializer):
     tipoUsuario = serializers.CharField(source='tipo_usuario', read_only=True)
     codigo = serializers.CharField(required=False, allow_blank=True, max_length=50)
     categoria = serializers.CharField(read_only=True)
+    nivel = serializers.IntegerField(read_only=True)
     imagen = serializers.CharField(required=False, allow_blank=True)
 
     def get_fields(self):
@@ -83,9 +84,9 @@ class LoginSerializer(serializers.Serializer):
         legajo_o_email = data['legajoOEmail'].strip()
         # por legajo (la clave primaria) primero, luego por email; los bibliotecarios se buscan antes que los usuarios
         existente = None
-        for model in (Bibliotecario, Usuario):
+        for model in (Administrador, Bibliotecario, Usuario):
             existente = existente or model.objects.filter(pk=legajo_o_email).first()
-        for model in (Bibliotecario, Usuario):
+        for model in (Administrador, Bibliotecario, Usuario):
             existente = existente or (model.objects.filter(~Q(email=''), email=legajo_o_email).first())
 
         if not existente or not existente.is_active or not existente.check_password(data['contrasena']):
