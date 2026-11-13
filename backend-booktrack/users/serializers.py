@@ -85,11 +85,11 @@ class LoginSerializer(serializers.Serializer):
         # por legajo (la clave primaria) primero, luego por email; los bibliotecarios se buscan antes que los usuarios
         existente = None
         for model in (Administrador, Bibliotecario, Usuario):
-            existente = existente or model.objects.filter(pk=legajo_o_email).first()
+            existente = existente or model.objects.filter(pk=legajo_o_email, is_active=True).first()
         for model in (Administrador, Bibliotecario, Usuario):
-            existente = existente or (model.objects.filter(~Q(email=''), email=legajo_o_email).first())
+            existente = existente or (model.objects.filter(~Q(email=''), email=legajo_o_email, is_active=True).first())
 
-        if not existente or not existente.is_active or not existente.check_password(data['contrasena']):
+        if not existente or not existente.check_password(data['contrasena']):
             raise serializers.ValidationError({
                 'detail': 'Usuario no existente o contraseña incorrecta.',
                 'campos': ['contrasena'] if existente else ['legajoOEmail', 'contrasena'],

@@ -7,6 +7,7 @@ urlpatterns = [
     # ── Auth ──────────────────────────────────────────────────────
     path('api/users/', include('users.urls')),
     path('api/librarians/', include('users.librarian_urls')),
+    path('api/roles/', include('users.role_urls')),
     path('api/token/refresh/', TokenRefreshView.as_view()),
     # ── Recursos ──────────────────────────────────────────────────
     path('api/books/', include('books.urls')),

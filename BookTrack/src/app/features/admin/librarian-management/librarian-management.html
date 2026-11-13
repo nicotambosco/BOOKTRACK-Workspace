@@ -11,7 +11,47 @@
     </div>
   </header>
 
-  <div class="layout">
+  <nav class="tabs">
+    <button [class.on]="vista === 'bibliotecarios'" (click)="vista = 'bibliotecarios'">Bibliotecarios</button>
+    <button [class.on]="vista === 'roles'" (click)="abrirRoles()">Usuarios y roles</button>
+  </nav>
+
+  @if (vista === 'roles') {
+    <section class="panel roles">
+      <input class="search" type="search" placeholder="Buscar por nombre, legajo o email..." aria-label="Buscar persona" [(ngModel)]="busquedaRoles"/>
+      @if (errorRol) { <p class="msg err" role="alert">{{ errorRol }}</p> }
+      <table>
+        <thead><tr><th>Legajo</th><th>Nombre y apellido</th><th>Email</th><th>Rol</th></tr></thead>
+        <tbody>
+          @for (p of personasFiltradas; track p.id) {
+            <tr>
+              <td>{{ p.legajo }}</td><td>{{ p.nombreApellido }}</td><td>{{ p.email }}</td>
+              <td>
+                <select [value]="p.nivel" [disabled]="p.id === miLegajo || guardando" (change)="pedirCambio(p, $any($event.target).value)" [attr.aria-label]="'Rol de ' + p.nombreApellido">
+                  @for (r of roles; track r.nivel) { <option [value]="r.nivel" [selected]="r.nivel === p.nivel">{{ r.nombre }}</option> }
+                </select>
+              </td>
+            </tr>
+          } @empty { <tr><td colspan="4" class="muted">Sin resultados.</td></tr> }
+        </tbody>
+      </table>
+    </section>
+  }
+
+  @if (cambio; as c) {
+    <div class="overlay">
+      <div class="modal">
+        <h3>Cambiar rol</h3>
+        <p>¿Pasar a <b>{{ c.persona.nombreApellido }}</b> de {{ nombreRol(c.persona.nivel) }} a <b>{{ nombreRol(c.nivel) }}</b>? Su sesión actual se cerrará y su historial se conserva.</p>
+        <div class="modal-actions">
+          <button class="btn-outline" (click)="cambio = null; abrirRoles()" [disabled]="guardando">Cancelar</button>
+          <button class="btn-primary" (click)="confirmarCambio()" [disabled]="guardando">Confirmar</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <div class="layout" [hidden]="vista !== 'bibliotecarios'">
     <aside class="panel list">
       <input class="search" type="search" placeholder="Buscar..." aria-label="Buscar bibliotecario" [(ngModel)]="busqueda"/>
       @if (cargando) { <p class="muted">Cargando…</p> }

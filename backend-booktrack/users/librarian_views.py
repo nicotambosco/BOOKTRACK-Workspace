@@ -5,12 +5,15 @@ from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from loans.permissions import IsAdmin
-from .models import Bibliotecario, find_persona
+from .models import Administrador, Bibliotecario, Usuario, find_persona
 from .serializers import split_name
 
 
 def con_estadisticas():
-    return Bibliotecario.objects.annotate(
+    # una fila inactiva de quien hoy es usuario o admin es historial de un rol anterior, no un bibliotecario desactivado
+    otros = [*Usuario.objects.filter(is_active=True).values_list('pk', flat=True),
+             *Administrador.objects.filter(is_active=True).values_list('pk', flat=True)]
+    return Bibliotecario.objects.exclude(pk__in=otros).annotate(
         total=Count('prestamos', distinct=True),
         devueltos=Count('prestamos', filter=Q(prestamos__estado='devuelto'), distinct=True),
         abiertos=Count('prestamos', filter=Q(prestamos__estado__in=['vigente', 'vencido']), distinct=True),

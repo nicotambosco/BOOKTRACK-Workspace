@@ -38,7 +38,7 @@ class UserListView(generics.ListAPIView):
     permission_classes = [IsLibrarian]
 
     def get_queryset(self):
-        return [*Bibliotecario.objects.order_by('pk'), *Usuario.objects.order_by('pk')]
+        return [*Bibliotecario.objects.filter(is_active=True).order_by('pk'), *Usuario.objects.filter(is_active=True).order_by('pk')]
 
 
 class UserDetailView(generics.RetrieveUpdateDestroyAPIView):

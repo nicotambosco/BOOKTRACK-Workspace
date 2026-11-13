@@ -44,3 +44,6 @@ button { font:inherit; font-size:.85rem; cursor:pointer; border-radius:8px; padd
 .modal-actions { display:flex; justify-content:flex-end; gap:.6rem; }
 
 @media (max-width: 900px) { .layout { grid-template-columns:1fr; } .fields, .stats { grid-template-columns:1fr; } .detail-head { flex-wrap:wrap; } }
+
+.tabs { display:flex; gap:.5rem; button { background:transparent; color:$muted; border:1px solid $line; &.on { color:$text; border-color:$green; background:#123524; } } }
+.roles { .search { width:100%; box-sizing:border-box; margin-bottom:1rem; } table { width:100%; border-collapse:collapse; font-size:.88rem; } th { text-align:left; color:$muted; font-weight:600; font-size:.75rem; padding:.5rem; } td { padding:.65rem .5rem; border-top:1px solid $line; } select { background:$field; color:$text; border:1px solid $line; border-radius:8px; padding:.4rem .6rem; &:disabled { opacity:.5; } } }
