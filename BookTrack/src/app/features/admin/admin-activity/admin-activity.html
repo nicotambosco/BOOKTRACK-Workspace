@@ -1,7 +1,6 @@
 <div class="page">
   <app-header [esAdmin]="true"></app-header>
   <main>
-    <a routerLink="/home-admin" class="back">← Volver al inicio</a>
     <header class="heading">
       <div><p class="eyebrow">ADMINISTRACIÓN</p><h1>Actividad administrativa</h1><p>Consultá quién registró cada préstamo, devolución o cancelación.</p></div>
       <button (click)="cargar()" [disabled]="cargando()">{{ cargando() ? 'Actualizando…' : 'Actualizar' }}</button>
