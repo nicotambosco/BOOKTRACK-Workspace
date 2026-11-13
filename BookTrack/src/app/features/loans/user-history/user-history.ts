@@ -5,7 +5,7 @@ import { Header } from '../../../shared/components/header/header';
 import { LoanService } from '../../../core/services/loan.service';
 import { UserService } from '../../../core/services/user.service';
 import { BookService } from '../../../core/services/book.service';
-import { Loan } from '../../../models/loan.model';
+import { Loan, etiquetaPrestamo, esDevolucionTardia } from '../../../models/loan.model';
 import { ReservationService } from '../../../core/services/reservation.service';
 import { Reservation } from '../../../models/reservation.model';
 import { User } from '../../../models/user.model';
@@ -89,7 +89,7 @@ import { User } from '../../../models/user.model';
                   <span class="libro-id">{{ tituloLibro(p.libroId) }}</span>
                   <span>{{ p.fechaInicio }}</span>
                   <span>{{ p.fechaVencimiento || '-' }}<br />Devuelto: {{ p.fechaDevolucion || '-' }}</span>
-                  <span class="badge" [class]="esVencido(p) ? 'vencido' : p.estado">{{ esVencido(p) ? 'Vencido' : label(p.estado) }}</span>
+                  <span class="badge" [class]="p.estado" [class.devolucion-tardia]="esDevolucionTardia(p)">{{ etiquetaPrestamo(p) }}</span>
                 </div>
               }
             </div>
@@ -155,6 +155,7 @@ import { User } from '../../../models/user.model';
     .badge.vigente { background:#16301f; color:#4ade80; }
     .badge.devuelto  { background:#12293a; color:#60a5fa; }
     .badge.vencido   { background:#3a1414; color:#f87171; font-weight:600; }
+    .badge.devolucion-tardia { background:#3a1414; color:#ffbaba; font-weight:600; }
     .vacio { text-align:center; color:#9a9a9a; font-style:italic; padding:1rem; }
     .bottom { display:flex; justify-content:flex-end; padding-top:0.5rem; }
     .btn-outline { background:transparent; border:1px solid #3a3a3a; color:#e8e8e8; padding:0.6rem 1.6rem; border-radius:24px; cursor:pointer; font-size:0.85rem; }
@@ -162,6 +163,8 @@ import { User } from '../../../models/user.model';
   `]
 })
 export class UserHistory implements OnInit {
+  readonly etiquetaPrestamo = etiquetaPrestamo;
+  readonly esDevolucionTardia = esDevolucionTardia;
   usuario: User | null = null;
   prestamos: Loan[] = [];
   reservas: Reservation[] = [];

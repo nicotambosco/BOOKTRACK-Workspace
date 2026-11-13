@@ -3,7 +3,7 @@ from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from loans.models import Prestamo
+from loans.models import Prestamo, Reserva, AccionAdministrativa
 from users.testing import make_user
 from .models import Ejemplar, Libro
 from .testing import make_book, stock
@@ -65,15 +65,15 @@ class BookApiTests(TestCase):
         self.assertEqual(self.c_lib.post('/api/books/', {'autor': 'x'}, format='json').status_code, 400)
         self.assertEqual(self.c_lib.post('/api/books/', book_payload(estado='roto'), format='json').status_code, 400)
 
-    def test_update_deactivate_and_adjust_stock_without_deleting_copies(self):
+    def test_update_deactivate_does_not_allow_overwriting_available_count(self):
         book = make_book('T', disponibles=1)
         response = self.c_lib.put(f'/api/books/{book.pk}/', book_payload(estado='inactivo', disponibles=7), format='json')
         self.assertEqual(response.status_code, 200, response.data)
         book.refresh_from_db()
-        self.assertEqual((book.estado, stock(book)), ('inactivo', 7))
+        self.assertEqual((book.estado, stock(book)), ('inactivo', 1))
         self.assertEqual(book.pk, book.isbn)  # el ISBN de la URL no se pisa con el del cuerpo
         self.c_lib.patch(f'/api/books/{book.pk}/', {'disponibles': 2}, format='json')
-        self.assertEqual((stock(book), book.ejemplares.count(), book.ejemplares.filter(estado='baja').count()), (2, 7, 5))
+        self.assertEqual((stock(book), book.ejemplares.count(), book.ejemplares.filter(estado='baja').count()), (1, 1, 0))
         self.assertEqual(self.c_student.put(f'/api/books/{book.pk}/', book_payload(), format='json').status_code, 403)
 
     def test_lowering_stock_never_touches_lent_copies(self):
@@ -82,7 +82,7 @@ class BookApiTests(TestCase):
         Ejemplar.objects.filter(pk=lent.pk).update(estado='prestado')
         self.c_lib.patch(f'/api/books/{book.pk}/', {'disponibles': 0}, format='json')
         lent.refresh_from_db()
-        self.assertEqual((lent.estado, stock(book)), ('prestado', 0))
+        self.assertEqual((lent.estado, stock(book)), ('prestado', 1))
 
     def test_negative_stock_is_rejected(self):
         self.assertEqual(self.c_lib.post('/api/books/', book_payload(disponibles=-1), format='json').status_code, 400)
@@ -124,10 +124,84 @@ class CopyApiTests(TestCase):
         self.assertEqual((response.status_code, stock(self.book)), (200, 0))
         self.assertEqual(self.c_lib.patch(f'/api/copies/{copy.pk}/', {'estado': 'perdido'}, format='json').status_code, 400)
 
+    def test_copy_observations_are_saved_without_changing_stock_and_appear_in_catalog(self):
+        copy = self.book.ejemplares.get()
+        url = f'/api/copies/{copy.pk}/'
+        self.assertEqual(self.c_student.patch(url, {'observaciones': 'Cambio'}).status_code, 403)
+        response = self.c_lib.patch(url, {'observaciones': 'Tapa dañada. Páginas subrayadas.'}, format='json')
+        self.assertEqual(response.status_code, 200, response.data)
+        copy.refresh_from_db()
+        self.assertEqual(copy.estado, 'disponible')
+        self.assertEqual(stock(self.book), 1)
+        book = self.c_lib.get(f'/api/books/{self.book.pk}/').data
+        self.assertEqual(book['ejemplares'][0]['observaciones'], 'Tapa dañada. Páginas subrayadas.')
+        self.assertEqual(self.c_lib.patch(url, {'observaciones': ''}).data['observaciones'], '')
+
+    def test_add_copy_generates_unique_codes_and_updates_count(self):
+        url = f'/api/books/{self.book.pk}/ejemplares/'
+        self.assertEqual(self.c_student.post(url).status_code, 403)
+        first = self.c_lib.post(url)
+        second = self.c_lib.post(url)
+        self.assertEqual(first.status_code, 201, first.data)
+        self.assertEqual(second.status_code, 201, second.data)
+        self.assertNotEqual(first.data['id'], second.data['id'])
+        self.assertEqual(stock(self.book), 3)
+        self.assertEqual(AccionAdministrativa.objects.filter(tipo_accion='alta_ejemplar').count(), 2)
+
+    def test_rename_lent_copy_preserves_history_notes_and_return(self):
+        copy = self.book.ejemplares.get()
+        copy.estado = 'prestado'
+        copy.observaciones = 'Tapa dañada'
+        copy.save()
+        old = copy.pk
+        loan = Prestamo.objects.create(usuario=self.student, ejemplar=copy)
+        reservation = Reserva.objects.create(usuario=self.student, libro=self.book, fecha_retiro=timezone.localdate(),
+            fecha_vencimiento=timezone.localdate(), estado='finalizada', prestamo=loan)
+        log = AccionAdministrativa.objects.create(tipo_accion='retiro_reserva', ejemplar=copy, prestamo=loan, reserva=reservation)
+        response = self.c_lib.patch(f'/api/copies/{old}/codigo/', {'nuevoCodigo': 'EJ-CUSTOM-001'}, format='json')
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertFalse(Ejemplar.objects.filter(pk=old).exists())
+        self.assertEqual(response.data['observaciones'], 'Tapa dañada')
+        self.assertEqual(response.data['estado'], 'prestado')
+        loan.refresh_from_db(); log.refresh_from_db(); reservation.refresh_from_db()
+        self.assertEqual((loan.ejemplar_id, log.ejemplar_id), ('EJ-CUSTOM-001', 'EJ-CUSTOM-001'))
+        self.assertEqual(reservation.prestamo_id, loan.pk)
+        self.assertEqual(stock(self.book), 0)
+        self.assertEqual(self.c_lib.patch(f'/api/loans/{loan.pk}/devolver/').status_code, 200)
+        self.assertEqual(stock(self.book), 1)
+        self.assertEqual(self.c_lib.get(f'/api/books/{self.book.pk}/').data['ejemplares'][0]['id'], 'EJ-CUSTOM-001')
+
+    def test_rename_rejects_duplicates_invalid_codes_and_direct_pk_update(self):
+        copy = self.book.ejemplares.get()
+        other = make_book('Otro').ejemplares.get()
+        initial_count = Ejemplar.objects.count()
+        url = f'/api/copies/{copy.pk}/codigo/'
+        self.assertEqual(self.c_student.patch(url, {'nuevoCodigo': 'NO'}).status_code, 403)
+        for code in [other.pk, '', 'bad/code', 'x'*51]:
+            response = self.c_lib.patch(url, {'nuevoCodigo': code}, format='json')
+            self.assertEqual(response.status_code, 400, response.data)
+            self.assertTrue(Ejemplar.objects.filter(pk=copy.pk).exists())
+        self.assertEqual(self.c_lib.patch(f'/api/copies/{copy.pk}/', {'id': 'DIRECT'}).status_code, 400)
+        self.assertEqual(Ejemplar.objects.count(), initial_count)
+
+    def test_deleting_clean_copy_preserves_book_and_logs_the_operation(self):
+        copy = self.book.ejemplares.get()
+        code = copy.pk
+        self.assertEqual(self.c_student.delete(f'/api/copies/{code}/').status_code, 403)
+        self.assertEqual(self.c_lib.delete(f'/api/copies/{code}/').status_code, 204)
+        self.assertTrue(Libro.objects.filter(pk=self.book.pk).exists())
+        self.assertEqual(stock(self.book), 0)
+        action = AccionAdministrativa.objects.get(tipo_accion='eliminacion_ejemplar')
+        self.assertEqual(action.bibliotecario_id, self.librarian.pk)
+        self.assertEqual(action.libro_id, self.book.pk)
+        self.assertIn(code, action.descripcion)
+
     def test_a_copy_with_loans_cannot_be_deleted(self):
         copy = self.book.ejemplares.get()
         Prestamo.objects.create(usuario=self.student, ejemplar=copy)
-        self.assertEqual(self.c_lib.delete(f'/api/copies/{copy.pk}/').status_code, 400)
+        response = self.c_lib.delete(f'/api/copies/{copy.pk}/')
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('tiene préstamos registrados', str(response.data))
 
 
 class CoverUploadTests(TestCase):

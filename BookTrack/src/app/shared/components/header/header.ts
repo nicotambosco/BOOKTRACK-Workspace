@@ -21,7 +21,7 @@ import { AuthService } from '../../../core/services/auth.service';
           <span class="brand-name">BookTrack</span>
         </div>
       </div>
-      <div class="header-center">
+      @if (!esAdmin) { <div class="header-center">
         <div class="search-box">
           <input type="text" placeholder="Ingresar nombre del libro" [(ngModel)]="busqueda" (keyup.enter)="buscar()"/>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="cursor:pointer" (click)="buscar()">
@@ -30,6 +30,7 @@ import { AuthService } from '../../../core/services/auth.service';
           </svg>
         </div>
       </div>
+      }
       <div class="header-right">
         @if (!esAdmin) {
           <div class="notif-wrap">
@@ -77,7 +78,7 @@ import { AuthService } from '../../../core/services/auth.service';
     .brand { display:flex; align-items:center; gap:0.5rem; cursor:pointer; }
     .brand-name { color:#f5f5f5; font-weight:700; font-size:1.05rem; }
     .icon-btn { cursor:pointer; }
-    .header-center { flex: 1; display:flex; justify-content:center; padding: 0 1.5rem; }
+    .header-center { flex: 1; min-width:0; display:flex; justify-content:center; padding: 0 1.5rem; }
     .search-box {
       display: flex;
       align-items: center;
@@ -87,6 +88,7 @@ import { AuthService } from '../../../core/services/auth.service';
       border-radius: 20px;
       padding: 0.5rem 1rem;
       width: 100%;
+      box-sizing: border-box;
       max-width: 560px;
     }
     .search-box input {
@@ -96,6 +98,7 @@ import { AuthService } from '../../../core/services/auth.service';
       color: white;
       font-size: 0.85rem;
       flex: 1;
+      min-width: 0;
     }
     .search-box input::placeholder { color: #8a8a8a; }
     .header-right { display:flex; align-items:center; gap:1.2rem; }

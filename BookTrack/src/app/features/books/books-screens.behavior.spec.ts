@@ -114,13 +114,27 @@ describe('BookEdit copies', () => {
     await fixture.whenStable();
     fixture.detectChanges(false);
     expect(chips(fixture).map(c => c.textContent?.trim())).toEqual(['E-1 · Disponible', 'E-2 · Prestado']);
-    expect(estadoSelect(fixture).disabled).toBe(true);
+    expect(estadoSelect(fixture)).toBeNull();
     chips(fixture)[0].click();
     fixture.detectChanges(false);
     await fixture.whenStable();
     expect(page.ejemplarSeleccionado).toBe('E-1');
     expect(chips(fixture)[0].classList).toContain('seleccionado');
     expect(estadoSelect(fixture).disabled).toBe(false);
+    page.codigoEjemplar = 'NEW-1';
+    page.editarObservaciones('Revisar tapa');
+    chips(fixture)[0].click();
+    fixture.detectChanges(false);
+    await fixture.whenStable();
+    fixture.detectChanges(false);
+    expect(page.ejemplarSeleccionado).toBeNull();
+    expect(chips(fixture)[0].getAttribute('aria-pressed')).toBe('false');
+    expect(estadoSelect(fixture)).toBeNull();
+    expect(fixture.nativeElement.querySelector('#codigoEjemplar')).toBeNull();
+    chips(fixture)[0].click();
+    fixture.detectChanges(false);
+    expect(page.codigoEjemplar).toBe('NEW-1');
+    expect(page.borradorObservaciones).toBe('Revisar tapa');
   });
 
   it('toggles the selected copy between available and not available and recounts the stock', () => {
@@ -148,6 +162,179 @@ describe('BookEdit copies', () => {
     page.cambiarEstadoEjemplar('disponible');
     ctrl.expectNone(r => r.url.includes('/copies/'));
     expect(page.ejemplarActual?.estado).toBe('prestado');
+    ctrl.verify();
+  });
+
+  it('saves observations per copy without changing its state, including a lent copy', () => {
+    const { page, ctrl } = load();
+    page.seleccionarEjemplar('E-1');
+    page.editarObservaciones('Tapa dañada');
+    page.seleccionarEjemplar('E-2');
+    expect(page.borradorObservaciones).toBe('');
+    page.editarObservaciones('Páginas subrayadas');
+    page.guardarObservaciones();
+    const req = ctrl.expectOne(`${API}/copies/E-2/`);
+    expect(req.request.body).toEqual({observaciones:'Páginas subrayadas'});
+    req.flush({id:'E-2',estado:'prestado',observaciones:'Páginas subrayadas',isbn:'9781'});
+    expect(page.ejemplarActual?.estado).toBe('prestado');
+    expect(page.ejemplarActual?.observaciones).toBe('Páginas subrayadas');
+    page.seleccionarEjemplar('E-1');
+    expect(page.borradorObservaciones).toBe('Tapa dañada');
+    ctrl.verify();
+  });
+
+  it('keeps the draft after a failure and permits clearing saved observations', () => {
+    const { page, ctrl } = load();
+    page.seleccionarEjemplar('E-1');
+    page.editarObservaciones('Tapa dañada');
+    page.guardarObservaciones();
+    ctrl.expectOne(`${API}/copies/E-1/`).flush({}, {status:500,statusText:'Error'});
+    expect(page.borradorObservaciones).toBe('Tapa dañada');
+    expect(page.errorObservaciones).toBe(true);
+    expect(page.ejemplarActual?.observaciones).toBe('');
+    page.guardarObservaciones();
+    ctrl.expectOne(`${API}/copies/E-1/`).flush({id:'E-1',estado:'disponible',observaciones:'Tapa dañada',isbn:'9781'});
+    page.editarObservaciones('');
+    page.guardarObservaciones();
+    const req = ctrl.expectOne(`${API}/copies/E-1/`);
+    expect(req.request.body).toEqual({observaciones:''});
+    req.flush({id:'E-1',estado:'disponible',observaciones:'',isbn:'9781'});
+    expect(page.ejemplarActual?.observaciones).toBe('');
+    ctrl.verify();
+  });
+
+  it('adds and selects a copy and updates the read-only count', () => {
+    const { page, fixture, ctrl } = load();
+    page.agregarEjemplar(); page.agregarEjemplar();
+    const req = ctrl.expectOne(`${API}/books/9781/ejemplares/`);
+    expect(req.request.method).toBe('POST');
+    req.flush({id:'9781-03',estado:'disponible',observaciones:'',isbn:'9781'});
+    expect(page.ejemplarSeleccionado).toBe('9781-03');
+    expect(page.cantidadDisponibles).toBe(2);
+    fixture.detectChanges(false);
+    const count: HTMLInputElement = fixture.nativeElement.querySelector('#disponiblesLibro');
+    expect(count.readOnly).toBe(true);
+    expect(count.value).toBe('2');
+    page.guardar();
+    const book = ctrl.expectOne(`${API}/books//`);
+    expect(book.request.body.disponibles).toBeUndefined();
+    expect(book.request.body.ejemplares).toBeUndefined();
+    book.flush({});
+    ctrl.verify();
+  });
+
+  it('renames a selected copy and preserves its draft observations', () => {
+    const { page, ctrl } = load();
+    page.seleccionarEjemplar('E-2');
+    page.editarObservaciones('Revisar tapa');
+    page.codigoEjemplar = 'NEW-2';
+    page.guardarCodigo();
+    const req = ctrl.expectOne(`${API}/copies/E-2/codigo/`);
+    expect(req.request.body).toEqual({nuevoCodigo:'NEW-2'});
+    req.flush({id:'NEW-2',estado:'prestado',observaciones:'',isbn:'9781'});
+    expect(page.ejemplarSeleccionado).toBe('NEW-2');
+    expect(page.ejemplarActual?.estado).toBe('prestado');
+    expect(page.borradorObservaciones).toBe('Revisar tapa');
+    expect(page.cantidadDisponibles).toBe(1);
+    ctrl.verify();
+  });
+
+  it('reports a duplicate code without changing the selected copy', () => {
+    const { page, ctrl } = load();
+    page.seleccionarEjemplar('E-1'); page.codigoEjemplar='E-2'; page.guardarCodigo();
+    ctrl.expectOne(`${API}/copies/E-1/codigo/`).flush({nuevoCodigo:['Ya existe un ejemplar con ese código.']}, {status:400,statusText:'Error'});
+    expect(page.ejemplarSeleccionado).toBe('E-1');
+    expect(page.errorEjemplar).toBe(true);
+    expect(page.mensajeEjemplar).toContain('Ya existe');
+    expect(page.guardandoEjemplar).toBe(false);
+    ctrl.verify();
+  });
+
+  it('saves all pending copy codes and observations before reporting global success', () => {
+    const { page, ctrl } = load();
+    page.seleccionarEjemplar('E-1'); page.codigoEjemplar='NEW-1'; page.editarObservaciones('Tapa dañada');
+    page.seleccionarEjemplar('E-2'); page.codigoEjemplar='NEW-2'; page.editarObservaciones('Subrayado');
+    page.seleccionarEjemplar('E-1');
+    expect(page.codigoEjemplar).toBe('NEW-1');
+    page.guardar(); page.guardar();
+    ctrl.expectOne(`${API}/copies/E-1/codigo/`).flush({id:'NEW-1',estado:'disponible',observaciones:'',isbn:'9781'});
+    const firstNotes = ctrl.expectOne(`${API}/copies/NEW-1/`);
+    expect(firstNotes.request.body).toEqual({observaciones:'Tapa dañada'});
+    firstNotes.flush({id:'NEW-1',estado:'disponible',observaciones:'Tapa dañada',isbn:'9781'});
+    ctrl.expectOne(`${API}/copies/E-2/codigo/`).flush({id:'NEW-2',estado:'prestado',observaciones:'',isbn:'9781'});
+    ctrl.expectOne(`${API}/copies/NEW-2/`).flush({id:'NEW-2',estado:'prestado',observaciones:'Subrayado',isbn:'9781'});
+    expect(page.modal).toBe(false);
+    ctrl.expectOne(`${API}/books//`).flush({});
+    expect(page.modalMsg).toContain('exitosamente');
+    expect(page.guardandoTodo).toBe(false);
+    expect(page.libro.ejemplares.map(e=>e.id)).toEqual(['NEW-1','NEW-2']);
+    expect(page.borradoresObservaciones).toEqual({});
+    ctrl.verify();
+  });
+
+  it('keeps pending notes and retries using the new code when a partial save fails', () => {
+    const { page, ctrl } = load();
+    page.seleccionarEjemplar('E-1'); page.codigoEjemplar='NEW-1'; page.editarObservaciones('Tapa dañada');
+    page.guardar();
+    ctrl.expectOne(`${API}/copies/E-1/codigo/`).flush({id:'NEW-1',estado:'disponible',observaciones:'',isbn:'9781'});
+    ctrl.expectOne(`${API}/copies/NEW-1/`).flush({}, {status:500,statusText:'Error'});
+    ctrl.expectNone(`${API}/books//`);
+    expect(page.guardandoTodo).toBe(false);
+    expect(page.modalMsg).toContain('observaciones');
+    expect(page.modalMsg).not.toContain('exitosamente');
+    expect(page.ejemplarSeleccionado).toBe('NEW-1');
+    expect(page.borradorObservaciones).toBe('Tapa dañada');
+    page.cerrarModal(); page.guardar();
+    ctrl.expectNone(r => r.url.endsWith('/codigo/'));
+    ctrl.expectOne(`${API}/copies/NEW-1/`).flush({id:'NEW-1',estado:'disponible',observaciones:'Tapa dañada',isbn:'9781'});
+    ctrl.expectOne(`${API}/books//`).flush({});
+    expect(page.modalMsg).toContain('exitosamente');
+    ctrl.verify();
+  });
+
+  it('validates pending codes before submitting a global save', () => {
+    const { page, ctrl } = load();
+    page.seleccionarEjemplar('E-1'); page.codigoEjemplar=''; page.editarObservaciones('Tapa dañada');
+    page.guardar();
+    ctrl.expectNone(r => r.method !== 'GET');
+    expect(page.modalMsg).toContain('Revisá los códigos');
+    ctrl.verify();
+  });
+
+  it('deletes only a confirmed selected copy and updates availability', () => {
+    const { page, ctrl } = load();
+    page.seleccionarEjemplar('E-1');
+    page.eliminarEjemplar(); ctrl.expectNone(`${API}/copies/E-1/`);
+    expect(page.confirmacionEliminar).toEqual({tipo:'ejemplar',codigo:'E-1'});
+    page.confirmacionEliminar = null;
+    page.confirmarEliminacion(); ctrl.expectNone(`${API}/copies/E-1/`);
+    page.eliminarEjemplar(); page.confirmarEliminacion();
+    const req = ctrl.expectOne(`${API}/copies/E-1/`);
+    expect(req.request.method).toBe('DELETE'); req.flush(null);
+    expect(page.libro.ejemplares.map(e=>e.id)).toEqual(['E-2']);
+    expect(page.cantidadDisponibles).toBe(0);
+    expect(page.ejemplarSeleccionado).toBeNull();
+    ctrl.expectNone(`${API}/books//`); ctrl.verify();
+  });
+
+  it('keeps the copy when deletion is refused because of its history', () => {
+    const { page, ctrl } = load();
+    page.seleccionarEjemplar('E-2'); page.eliminarEjemplar(); page.confirmarEliminacion();
+    ctrl.expectOne(`${API}/copies/E-2/`).flush(['No se puede eliminar este ejemplar porque tiene préstamos registrados. Su historial debe conservarse.'],{status:400,statusText:'Error'});
+    expect(page.ejemplarActual?.id).toBe('E-2');
+    expect(page.errorEjemplar).toBe(true);
+    expect(page.mensajeEjemplar).toContain('historial');
+    ctrl.verify();
+  });
+
+  it('shows the server reason when deleting a book is refused', () => {
+    const { page, ctrl } = load();
+    page.eliminar(); page.confirmarEliminacion();
+    const reason = 'No se puede eliminar este libro porque tiene reservas o préstamos registrados.';
+    ctrl.expectOne(`${API}/books//`).flush([reason],{status:400,statusText:'Error'});
+    expect(page.modal).toBe(true);
+    expect(page.modalMsg).toBe(reason);
+    expect(page.guardandoEjemplar).toBe(false);
     ctrl.verify();
   });
 
@@ -188,15 +375,17 @@ describe('BookManagement screen', () => {
   it('does not delete without confirmation and warns when the API refuses', () => {
     const page = create();
     const ctrl = TestBed.inject(HttpTestingController);
-    const confirm = vi.spyOn(window, 'confirm');
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => undefined);
-    confirm.mockReturnValueOnce(false);
+    const nativeConfirm = vi.spyOn(window, 'confirm');
     page.eliminarLibro('9781');
     ctrl.expectNone(`${API}/books/9781/`);
-    confirm.mockReturnValueOnce(true);
+    page.libroEliminar = null;
+    page.confirmarEliminacionLibro();
+    ctrl.expectNone(`${API}/books/9781/`);
     page.eliminarLibro('9781');
+    page.confirmarEliminacionLibro();
     ctrl.expectOne(`${API}/books/9781/`).flush(['historial'], { status: 400, statusText: 'Bad Request' });
-    expect(alertSpy).toHaveBeenCalledWith('Error al eliminar el libro');
+    expect(page.errorEliminacion).toBe('historial');
+    expect(nativeConfirm).not.toHaveBeenCalled();
   });
 
   it('opens the edit screen', () => {

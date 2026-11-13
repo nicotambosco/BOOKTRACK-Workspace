@@ -16,6 +16,11 @@ def _notify(usuario, tipo, mensaje, reserva=None, prestamo=None):
     return Notificacion(usuario=usuario, tipo=tipo, mensaje=mensaje, reserva=reserva, prestamo=prestamo)
 
 
+def returned_late(loan):
+    return bool(loan.estado == 'devuelto' and loan.fecha_devolucion and loan.fecha_vencimiento
+                and loan.fecha_devolucion > loan.fecha_vencimiento)
+
+
 def _librarian(actor):
     return actor if isinstance(actor, Bibliotecario) else None
 
@@ -36,12 +41,8 @@ def _previous_business_day(day):
 
 def refresh_states():
     today = timezone.localdate()
-    late_reservations = list(Reserva.objects.filter(estado='activa', fecha_retiro__lt=today).select_related('libro', 'usuario'))
-    changed = Reserva.objects.filter(pk__in=[r.pk for r in late_reservations], estado='activa').update(estado='vencida')
-    if changed == len(late_reservations):  # si otro pedido ganó la carrera, él ya notificó
-        Notificacion.objects.bulk_create([
-            _notify(r.usuario, 'reserva_vencida', f'Tu reserva de "{r.libro.titulo}" venció sin retirarse.', reserva=r)
-            for r in late_reservations])
+    # Las reservas pendientes se resuelven por decisión del bibliotecario, sin vencer por fecha.
+    changed = 0
     late_loans = list(Prestamo.objects.filter(estado='vigente', fecha_vencimiento__lt=today).select_related('ejemplar__libro', 'usuario'))
     overdue = Prestamo.objects.filter(pk__in=[p.pk for p in late_loans], estado='vigente').update(estado='vencido')
     if overdue == len(late_loans):
@@ -64,11 +65,10 @@ def create_reservation(*, usuario, libro, fecha_retiro, fecha_vencimiento):
     today = timezone.localdate()
     if fecha_retiro < today or fecha_vencimiento < fecha_retiro:
         raise ValidationError('Revisá las fechas de retiro y vencimiento.')
-    Reserva.objects.filter(libro=book, estado='activa', fecha_retiro__lt=today).update(estado='vencida')
-    if Reserva.objects.filter(libro=book, usuario=usuario, estado='activa').exists():
+    if Reserva.objects.filter(libro=book, usuario=usuario, estado__in=['activa', 'vencida']).exists():
         raise ValidationError('Ya tenés una reserva activa para este libro.')
     reservation = Reserva.objects.create(usuario=usuario, libro=book, fecha_retiro=fecha_retiro, fecha_vencimiento=fecha_vencimiento)
-    _notify(usuario, 'reserva_creada', f'Reservaste "{book.titulo}". Retiralo hasta el {fecha_retiro:%d/%m/%Y}.',
+    _notify(usuario, 'reserva_creada', f'Reservaste "{book.titulo}". Retiralo el {fecha_retiro:%d/%m/%Y}.',
             reserva=reservation).save()
     return reservation
 
@@ -84,8 +84,8 @@ def cancel_reservation(reservation, actor):
     book, reservation = _locked_reservation(reservation)
     if reservation.estado == 'cancelada':
         return reservation
-    if reservation.estado != 'activa' or reservation.fecha_retiro < timezone.localdate():
-        raise ValidationError('Solo se puede cancelar una reserva activa dentro del plazo de retiro.')
+    if reservation.estado not in ['activa', 'vencida']:
+        raise ValidationError('Solo se puede cancelar una reserva pendiente.')
     reservation.estado = 'cancelada'
     librarian = _librarian(actor)
     if librarian is not None:
@@ -103,15 +103,11 @@ def pick_up(reservation, actor, ejemplar_id=None):
     if reservation.estado == 'finalizada':
         return reservation
     today = timezone.localdate()
-    if reservation.estado != 'activa' or reservation.fecha_retiro < today:
-        raise ValidationError('La reserva no está activa o venció el plazo de retiro.')
+    if reservation.estado not in ['activa', 'vencida']:
+        raise ValidationError('La reserva no está activa.')
     copies = list(Ejemplar.objects.select_for_update().filter(libro=book, estado='disponible').order_by('pk'))
     if book.estado != 'activo' or not copies:
         raise ValidationError('No hay ejemplares disponibles de este libro activo.')
-    queue = Reserva.objects.filter(libro=book, estado='activa', fecha_retiro__gte=today).order_by('fecha_reserva', 'id')
-    # Each available copy can serve one of the people at the head of the queue.
-    if reservation.pk not in list(queue.values_list('pk', flat=True)[:len(copies)]):
-        raise ValidationError('Hay reservas anteriores esperando un ejemplar.')
     if ejemplar_id is not None and not isinstance(ejemplar_id, str):
         raise ValidationError('El identificador del ejemplar debe ser texto.')
     copy = next((item for item in copies if item.pk == ejemplar_id), None) if ejemplar_id is not None else copies[0]

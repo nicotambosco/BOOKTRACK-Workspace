@@ -44,7 +44,7 @@ describe('LoanManagement screen (librarian)', () => {
       [loan({ id: 1, estado: 'vigente' }), loan({ id: 2, estado: 'vencido' }), loan({ id: 3, estado: 'devuelto' })],
       [reservation({ id: 10 }), reservation({ id: 11, estado: 'finalizada', prestamoId: 1 }),
        reservation({ id: 12, estado: 'cancelada' }), reservation({ id: 13, estado: 'vencida' })]);
-    expect(page.reservasPendientes.map(r => r.id)).toEqual([10]);
+    expect(page.reservasPendientes.map(r => r.id)).toEqual([10, 13]);
     expect(page.prestamosAbiertos.map(p => p.id)).toEqual([1, 2]);
   });
 

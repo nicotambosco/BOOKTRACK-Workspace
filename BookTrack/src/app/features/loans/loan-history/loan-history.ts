@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { Header } from '../../../shared/components/header/header';
 import { LoanService } from '../../../core/services/loan.service';
+import { etiquetaPrestamo } from '../../../models/loan.model';
 import { BookService } from '../../../core/services/book.service';
 
 @Component({
@@ -107,7 +108,7 @@ export class LoanHistory implements OnInit {
         estudiante: p.estudianteNombre || `Usuario #${p.estudianteId}`,
         codigo: p.libroTitulo || this.titulosPorLibro.get(p.libroId) || `Libro #${p.libroId}`,
         tipo: p.ejemplarId ?? '-',
-        estado: p.estado,
+        estado: etiquetaPrestamo(p),
         devolucion: p.fechaDevolucion || '-',
         periodo: `${p.fechaInicio} → ${p.fechaVencimiento || '-'}`
       }));

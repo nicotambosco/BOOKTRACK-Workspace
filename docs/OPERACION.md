@@ -46,7 +46,7 @@ Con la aplicación detenida, copiá `backend-booktrack/db.local.sqlite3`. Si con
 python manage.py actualizar_estados
 ```
 
-En Compose: `docker compose exec backend python manage.py actualizar_estados`. El comando marca vencidas las reservas cuyo límite de retiro pasó y vencidos los préstamos cuyo vencimiento pasó. No cambia stock. Las lecturas de la API también realizan esa actualización. El proyecto no instala automáticamente un cron ni una tarea programada.
+En Compose: `docker compose exec backend python manage.py actualizar_estados`. El comando marca vencidos los préstamos cuyo vencimiento pasó. Las reservas permanecen pendientes hasta que se resuelvan. No cambia stock. Las lecturas de la API también realizan esa actualización. El proyecto no instala automáticamente un cron ni una tarea programada.
 
 ## Diagnóstico
 
@@ -61,7 +61,7 @@ En Compose: `docker compose exec backend python manage.py actualizar_estados`. E
 | API 403 | Comprobar `categoria` de la cuenta; ser superusuario Django no reemplaza ese campo para la aplicación |
 | Frontend local no conecta | Backend en 8000, `environment.ts` y origen CORS permitido |
 | Compilación con Nginx no conecta | Usar ambos servicios del Compose; `/api` necesita el proxy hacia `backend:8000` |
-| Reserva no permite retiro | Activa, plazo vigente, libro activo, vencimiento de la reserva vigente, stock y posición de la cola |
+| Reserva no permite retiro | Reserva pendiente (activa o vencida histórica), libro activo y ejemplar disponible. La fecha y la prioridad no bloquean al bibliotecario. |
 | Reserva histórica sin plazo de devolución | Cancelarla y crear una nueva con ambas fechas |
 | Libro/usuario no se puede borrar | Tiene historial protegido; para libros, inactivar |
 

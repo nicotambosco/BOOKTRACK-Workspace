@@ -1,5 +1,7 @@
 """Stock de un libro = cantidad de sus ejemplares disponibles."""
 from django.db import transaction
+from django.db import IntegrityError
+from rest_framework.exceptions import ValidationError
 from .models import Ejemplar, Libro
 
 
@@ -10,11 +12,31 @@ def available_count(libro):
 def add_copies(libro, amount):
     taken = set(Ejemplar.objects.filter(id__startswith=f'{libro.isbn}-').values_list('id', flat=True))
     number = 0
+    created = []
     for _ in range(amount):
         number += 1
         while f'{libro.isbn}-{number:02d}' in taken:
             number += 1
-        Ejemplar.objects.create(libro=libro, id=f'{libro.isbn}-{number:02d}'[:50])
+        created.append(Ejemplar.objects.create(libro=libro, id=f'{libro.isbn}-{number:02d}'[:50]))
+    return created
+
+
+@transaction.atomic
+def rename_copy(copy, code):
+    from loans.models import Prestamo, AccionAdministrativa
+    Libro.objects.select_for_update().get(pk=copy.libro_id)
+    copy = Ejemplar.objects.select_for_update().get(pk=copy.pk)
+    if code == copy.pk:
+        return copy
+    try:
+        with transaction.atomic():
+            renamed = Ejemplar.objects.create(id=code, libro_id=copy.libro_id, estado=copy.estado, observaciones=copy.observaciones)
+    except IntegrityError:
+        raise ValidationError({'nuevoCodigo': 'Ya existe un ejemplar con ese código.'})
+    Prestamo.objects.filter(ejemplar=copy).update(ejemplar=renamed)
+    AccionAdministrativa.objects.filter(ejemplar=copy).update(ejemplar=renamed)
+    copy.delete()
+    return renamed
 
 
 @transaction.atomic

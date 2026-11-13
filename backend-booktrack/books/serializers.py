@@ -11,6 +11,16 @@ class EjemplarSerializer(serializers.ModelSerializer):
         model = Ejemplar
         fields = ['id', 'estado', 'observaciones', 'isbn']
 
+    def update(self, instance, validated_data):
+        if 'id' in validated_data and validated_data['id'] != instance.pk:
+            raise serializers.ValidationError({'id': 'Usá la operación de cambio de código del ejemplar.'})
+        return super().update(instance, validated_data)
+
+
+class CopyCodeSerializer(serializers.Serializer):
+    nuevoCodigo = serializers.RegexField(r'^[a-zA-Z0-9_-]+$', max_length=50,
+        error_messages={'invalid': 'Usá letras, números, guiones o guiones bajos.'})
+
 
 class LibroSerializer(serializers.ModelSerializer):
     """`id` repite el ISBN para que el front identifique libros igual que antes."""
@@ -44,8 +54,6 @@ class LibroSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def update(self, libro, validated_data):
         validated_data.pop('isbn', None)  # el ISBN identifica al libro y no se cambia
-        stock = validated_data.pop('disponibles', None)
+        validated_data.pop('disponibles', None)  # el stock cambia administrando ejemplares
         libro = super().update(libro, validated_data)
-        if stock is not None:
-            services.set_available(libro, stock)
         return libro

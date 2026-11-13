@@ -1,10 +1,12 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Header } from '../../../shared/components/header/header';
 import { UserService } from '../../../core/services/user.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { apiErrorMessage } from '../../../core/utils/api-error-message';
+import { finalize } from 'rxjs';
 
 @Component({
   selector: 'app-profile-user',
@@ -23,7 +25,7 @@ import { AuthService } from '../../../core/services/auth.service';
           </div>
           <div>
             <h2 class="section-title">Mi Perfil</h2>
-            <p class="section-subtitle">Consultá y editá tu información personal.</p>
+            <p class="section-subtitle">Consultá tus datos y actualizá tu email.</p>
           </div>
         </div>
 
@@ -40,8 +42,6 @@ import { AuthService } from '../../../core/services/auth.service';
                   </svg>
                 }
               </div>
-              <input #fileInput type="file" accept="image/*" hidden (change)="onFotoSeleccionada($event)"/>
-              <div class="avatar-plus" (click)="fileInput.click()">+</div>
             </div>
 
             <button class="pill-rol" [class]="'rol-' + (usuario.categoria || 'usuario')">
@@ -72,34 +72,25 @@ import { AuthService } from '../../../core/services/auth.service';
 
           <div class="form-area">
             <div class="campo">
-              <label>NOMBRE Y APELLIDO</label>
-              <input [disabled]="!editando" [(ngModel)]="usuario.nombreApellido" [placeholder]="editando ? 'Ingrese nombre y apellido' : ''"/>
+              <label for="nombrePerfil">NOMBRE Y APELLIDO</label>
+              <input id="nombrePerfil" [value]="usuario.nombreApellido" readonly/>
             </div>
             <div class="campo">
-              <label>LEGAJO</label>
-              <input [disabled]="!editando" [(ngModel)]="usuario.legajo" [placeholder]="editando ? 'Ingrese Legajo' : ''"/>
+              <label for="legajoPerfil">LEGAJO</label>
+              <input id="legajoPerfil" [value]="usuario.legajo" readonly/>
             </div>
             <div class="campo">
-              <label>EMAIL</label>
-              <input [disabled]="!editando" [(ngModel)]="usuario.email" [placeholder]="editando ? 'Ingrese Email' : ''"/>
+              <label for="emailPerfil">EMAIL</label>
+              <input id="emailPerfil" type="email" [disabled]="!editando || guardando" [(ngModel)]="usuario.email" [placeholder]="editando ? 'Ingrese Email' : ''"/>
             </div>
-            <div class="campo">
-              <label>CONTRASEÑA</label>
-              <div class="pass-field">
-                <input [type]="verPassword ? 'text' : 'password'" [disabled]="!editando" [(ngModel)]="usuario.password"/>
-                <svg class="eye-toggle" width="18" height="18" viewBox="0 0 24 24" fill="none" (click)="verPassword = !verPassword">
-                  <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" stroke="#9a9a9a" stroke-width="2" fill="none"/>
-                  <circle cx="12" cy="12" r="3" stroke="#9a9a9a" stroke-width="2"/>
-                </svg>
-              </div>
-            </div>
+            @if (errorPerfil) { <p class="error-perfil" role="alert">{{ errorPerfil }}</p> }
             <div class="botones">
               @if (!editando) {
                 <button class="btn-primary" (click)="editando=true">EDITAR</button>
                 <button class="btn-outline" (click)="cancelar()">CANCELAR</button>
               } @else {
-                <button class="btn-primary" (click)="guardar()">GUARDAR</button>
-                <button class="btn-outline" (click)="editando=false">SALIR</button>
+                <button class="btn-primary" (click)="guardar()" [disabled]="guardando">{{ guardando ? 'GUARDANDO…' : 'GUARDAR' }}</button>
+                <button class="btn-outline" (click)="cancelarEdicion()" [disabled]="guardando">SALIR</button>
               }
             </div>
           </div>
@@ -148,12 +139,6 @@ import { AuthService } from '../../../core/services/auth.service';
     .avatar { position:relative; width:100px; height:100px; }
     .avatar-photo { width:100%; height:100%; border-radius:50%; display:flex; align-items:center; justify-content:center; background:#232323; overflow:hidden; }
     .avatar-img { width:100%; height:100%; object-fit:cover; }
-    .avatar-plus {
-      position:absolute; bottom:2px; right:2px; width:24px; height:24px;
-      background:#2ecc71; color:#0a0a0a; border: 2px solid #161616;
-      border-radius:50%; display:flex; align-items:center; justify-content:center;
-      font-size:1rem; font-weight:bold; cursor:pointer;
-    }
 
     .pill-rol {
       display:flex; align-items:center; justify-content:center; gap:0.5rem;
@@ -192,10 +177,9 @@ import { AuthService } from '../../../core/services/auth.service';
       background:#101010; color:#e8e8e8; font-size:0.85rem;
     }
     .campo input::placeholder { color:#6a6a6a; }
+    .error-perfil { color:#ffbaba; font-size:.85rem; }
+    .campo input[readonly] { color:#aaa; background:#0d0d0d; }
     .campo input:disabled { background:#0d0d0d; color:#7a7a7a; }
-    .pass-field { position: relative; display:flex; align-items:center; }
-    .pass-field input { padding-right: 2.4rem; }
-    .eye-toggle { position:absolute; right:0.8rem; cursor:pointer; }
 
     .botones { display:flex; gap:0.9rem; margin-top:0.5rem; }
     .btn-primary {
@@ -213,36 +197,45 @@ import { AuthService } from '../../../core/services/auth.service';
   `]
 })
 export class ProfileUser implements OnInit {
-  editando = false; exito = false; mostrarHistorial = false; verPassword = false;
+  editando = false; exito = false; mostrarHistorial = false;
   usuarioId: string | null = null;
-  usuario = { nombreApellido:'', legajo:'', email:'', password:'', categoria:'', imagen:'' };
+  guardando = false;
+  errorPerfil = '';
+  private emailGuardado = '';
+  usuario = { nombreApellido:'', legajo:'', email:'', categoria:'', imagen:'' };
 
-  constructor(private router: Router, private userService: UserService, private authService: AuthService) {}
+  constructor(private router: Router, private userService: UserService, private authService: AuthService, private changeDetector: ChangeDetectorRef) {}
 
   ngOnInit() {
     this.userService.getProfile().subscribe({
       next: u => {
         this.usuarioId = u.id ?? null;
-        this.usuario = { nombreApellido: u.nombreApellido, legajo: u.legajo ?? '', email: u.email, password:'', categoria: u.categoria, imagen: u.imagen ?? '' };
+        this.emailGuardado = u.email;
+        this.usuario = { nombreApellido: u.nombreApellido, legajo: u.legajo ?? '', email: u.email, categoria: u.categoria, imagen: u.imagen ?? '' };
       },
       error: () => {}
     });
   }
 
-  onFotoSeleccionada(event: Event) {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => this.usuario.imagen = reader.result as string;
-    reader.readAsDataURL(file);
+  guardar() {
+    if (this.guardando) return;
+    if (!this.usuarioId) { this.errorPerfil = 'No se pudo identificar al usuario. Actualizá la página.'; return; }
+    this.guardando = true;
+    this.exito = false;
+    this.errorPerfil = '';
+    this.userService.update(this.usuarioId, { email: this.usuario.email.trim() }).pipe(finalize(() => {
+      this.guardando = false;
+      this.changeDetector.markForCheck();
+    })).subscribe({
+      next: u => { this.emailGuardado = this.usuario.email = u.email; this.editando=false; this.exito=true; },
+      error: err => this.errorPerfil = apiErrorMessage(err, 'No se pudo guardar el email. Podés reintentar.')
+    });
   }
 
-  guardar() {
-    if (!this.usuarioId) { this.editando=false; this.exito=true; return; }
-    this.userService.update(this.usuarioId, { nombreApellido: this.usuario.nombreApellido, email: this.usuario.email, imagen: this.usuario.imagen }).subscribe({
-      next: () => { this.editando=false; this.exito=true; },
-      error: () => { this.editando=false; this.exito=true; }
-    });
+  cancelarEdicion() {
+    this.usuario.email = this.emailGuardado;
+    this.editando = false;
+    this.errorPerfil = '';
   }
 
   irAHistorial() { this.router.navigate(['/user-history']); }

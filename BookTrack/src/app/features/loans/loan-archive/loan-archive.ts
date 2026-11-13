@@ -5,11 +5,8 @@ import { FormsModule } from '@angular/forms';
 import { Header } from '../../../shared/components/header/header';
 import { LoanService } from '../../../core/services/loan.service';
 import { BookService } from '../../../core/services/book.service';
-import { ReservationService } from '../../../core/services/reservation.service';
-import { Loan } from '../../../models/loan.model';
-import { Reservation } from '../../../models/reservation.model';
+import { Loan, etiquetaPrestamo, esDevolucionTardia } from '../../../models/loan.model';
 
-const ESTADOS_PRESTAMO = ['vigente', 'vencido', 'devuelto'];
 
 interface FilaArchivo {
   clave: string;
@@ -20,6 +17,7 @@ interface FilaArchivo {
   ejemplar: string;
   periodo: string;
   estado: string;       // clave del estado, también para el color
+  devolucionTardia: boolean;
   etiqueta: string;
   devolucion: string;
   fecha: string;        // para ordenar, más nuevo primero
@@ -43,22 +41,13 @@ interface FilaArchivo {
           </div>
           <div>
             <h2 class="section-title">Archivo de Préstamos</h2>
-            <p class="section-subtitle">Préstamos y reservas ya respondidas, en un solo registro. La exportación incluye los préstamos.</p>
+            <p class="section-subtitle">Préstamos finalizados mediante su devolución.</p>
           </div>
         </div>
 
         <div class="table-card">
           <div class="card-top">
             <div class="filtros">
-              <select [(ngModel)]="filtroEstado" (change)="filtrar()" aria-label="Filtrar por estado">
-                <option value="">Todos los estados</option>
-                <option value="vigente">Préstamos vigentes</option>
-                <option value="devuelto">Préstamos devueltos</option>
-                <option value="vencido">Préstamos vencidos</option>
-                <option value="finalizada">Reservas aprobadas</option>
-                <option value="cancelada">Reservas rechazadas o canceladas</option>
-                <option value="vencida">Reservas vencidas</option>
-              </select>
               <button class="btn-outline btn-sm" (click)="exportPDF()">IMP. PDF</button>
               <button class="btn-outline btn-sm" (click)="exportExcel()">IMP. EXCEL</button>
             </div>
@@ -86,7 +75,7 @@ interface FilaArchivo {
                   <td>{{ f.libro }}</td>
                   <td>{{ f.ejemplar }}</td>
                   <td>{{ f.periodo }}</td>
-                  <td><span class="badge" [class]="f.estado">{{ f.etiqueta }}</span></td>
+                  <td><span class="badge" [class]="f.estado" [class.devolucion-tardia]="f.devolucionTardia">{{ f.etiqueta }}</span></td>
                   <td>{{ f.devolucion }}</td>
                 </tr>
               } @empty {
@@ -151,6 +140,7 @@ interface FilaArchivo {
     .badge.vencida, .badge.vencido { background:#3a2c12; color:#e8a020; }
     .subtitulo { margin:0; font-family: Georgia, serif; font-size:1.05rem; color:#f5f5f5; }
     .table-card + .table-card { margin-top:1.5rem; }
+    .badge.devolucion-tardia { background:#3a1414; color:#ffbaba; font-weight:600; }
     .vacio { text-align:center; color:#8a8a8a; font-style:italic; padding:1rem; }
     .bottom { display:flex; justify-content:space-between; align-items:center; padding-top:0.5rem; }
     .total { font-size:0.8rem; color:#9a9a9a; }
@@ -160,30 +150,18 @@ interface FilaArchivo {
 })
 export class LoanArchive implements OnInit {
   prestamos: Loan[] = [];
-  reservas: Reservation[] = [];
   filas: FilaArchivo[] = [];
   filtrados: FilaArchivo[] = [];
-  filtroEstado = '';
   private titulosPorLibro = new Map<string, string>();
 
-  constructor(public router: Router, private loanService: LoanService, private bookService: BookService, private reservationService: ReservationService) {}
+  constructor(public router: Router, private loanService: LoanService, private bookService: BookService) {}
 
   ngOnInit() {
     this.loanService.getAll().subscribe(l => { this.prestamos = l; this.armar(); });
-    this.reservationService.getAll().subscribe(r => { this.reservas = r; this.armar(); });
     this.bookService.getAll().subscribe(libros => {
       libros.forEach(l => { if (l.id) this.titulosPorLibro.set(l.id, l.titulo); });
       this.armar();
     });
-  }
-
-  // Las reservas activas siguen esperando respuesta en la gestión; el resto se archiva acá.
-  get reservasRespondidas(): Reservation[] { return this.reservas.filter(r => r.estado !== 'activa'); }
-
-  respuesta(r: Reservation): string {
-    if (r.estado === 'finalizada') return 'Aprobada';
-    if (r.estado === 'cancelada') return r.bibliotecarioId ? 'Rechazada' : 'Cancelada por el usuario';
-    return 'Vencida';
   }
 
   tituloLibro(libroId: string): string {
@@ -191,25 +169,14 @@ export class LoanArchive implements OnInit {
   }
 
   private armar() {
-    const deLosPrestamos = this.prestamos.map((p): FilaArchivo => ({
+    const deLosPrestamos = this.prestamos.filter(p => p.estado === 'devuelto').map((p): FilaArchivo => ({
       clave: `prestamo-${p.id}`, tipo: 'Préstamo', legajo: this.obtenerlLegajo(p), estudiante: this.obtenerNombre(p),
       libro: p.libroTitulo || this.tituloLibro(p.libroId), ejemplar: p.ejemplarId ?? '-',
-      periodo: `${p.fechaInicio} → ${p.fechaVencimiento || '-'}`, estado: p.estado, etiqueta: this.label(p.estado),
+      periodo: `${p.fechaInicio} → ${p.fechaVencimiento || '-'}`, estado: p.estado, etiqueta: etiquetaPrestamo(p), devolucionTardia: esDevolucionTardia(p),
       devolucion: p.fechaDevolucion || '-', fecha: p.fechaInicio,
     }));
-    const deLasReservas = this.reservasRespondidas.map((r): FilaArchivo => ({
-      clave: `reserva-${r.id}`, tipo: 'Reserva', legajo: r.estudianteId, estudiante: r.estudianteNombre || `Usuario #${r.estudianteId}`,
-      libro: r.libroTitulo || this.tituloLibro(r.libroId),
-      ejemplar: this.prestamos.find(p => p.id === r.prestamoId)?.ejemplarId ?? '-',  // el de su préstamo, si se aprobó
-      periodo: `${r.fechaRetiro} → ${r.fechaVencimiento}`, estado: r.estado, etiqueta: this.respuesta(r),
-      devolucion: '-', fecha: r.fechaReserva,
-    }));
-    this.filas = [...deLosPrestamos, ...deLasReservas].sort((a, b) => b.fecha.localeCompare(a.fecha));
-    this.filtrar();
-  }
-
-  filtrar() {
-    this.filtrados = this.filtroEstado ? this.filas.filter(f => f.estado === this.filtroEstado) : this.filas;
+    this.filas = deLosPrestamos.sort((a, b) => b.fecha.localeCompare(a.fecha));
+    this.filtrados = this.filas;
   }
 
   label(e: string) { return ({ vigente:'Vigente', vencido:'Vencido', devuelto:'Devuelto' } as any)[e] ?? e; }
@@ -225,9 +192,9 @@ export class LoanArchive implements OnInit {
   exportPDF() { this.descargar('pdf'); }
   exportExcel() { this.descargar('xlsx'); }
 
-  // La exportación del servidor es de préstamos: un filtro de reservas no se le envía.
+  // Las exportaciones reflejan los préstamos devueltos del archivo.
   private descargar(tipo: 'pdf' | 'xlsx') {
-    const estado = ESTADOS_PRESTAMO.includes(this.filtroEstado) ? this.filtroEstado : undefined;
+    const estado = 'devuelto';
     const request = tipo === 'pdf' ? this.loanService.exportPDF(estado) : this.loanService.exportExcel(estado);
     request.subscribe({
       next: blob => {

@@ -1,0 +1,43 @@
+<div class="page">
+  <app-header [esAdmin]="true"></app-header>
+  <main>
+    <a routerLink="/home-admin" class="back">← Volver al inicio</a>
+    <header class="heading">
+      <div><p class="eyebrow">ADMINISTRACIÓN</p><h1>Actividad administrativa</h1><p>Consultá quién registró cada préstamo, devolución o cancelación.</p></div>
+      <button (click)="cargar()" [disabled]="cargando()">{{ cargando() ? 'Actualizando…' : 'Actualizar' }}</button>
+    </header>
+    <section class="filters" aria-label="Filtros de actividad">
+      <label class="search">Buscar<input type="search" [(ngModel)]="busqueda" (ngModelChange)="filtrar()" placeholder="Libro, lector, legajo o número…" /></label>
+      <label>Operación<select aria-label="Operación" [(ngModel)]="tipo" (ngModelChange)="filtrar()"><option value="">Todas</option>@for (t of tipos | keyvalue; track t.key) { <option [value]="t.key">{{ t.value }}</option> }</select></label>
+      <label>Bibliotecario<select aria-label="Bibliotecario" [(ngModel)]="responsable" (ngModelChange)="filtrar()"><option value="">Todos</option>@for (r of responsables; track r[0]) { <option [value]="r[0]">{{ r[1] }} · {{ r[0] }}</option> }</select></label>
+      <label>Desde<input type="date" [(ngModel)]="desde" (ngModelChange)="filtrar()" /></label>
+      <label>Hasta<input type="date" [(ngModel)]="hasta" (ngModelChange)="filtrar()" /></label>
+      <button class="clear" (click)="limpiar()">Limpiar filtros</button>
+    </section>
+    @if (fechasInvalidas) { <p role="alert" class="error">La fecha inicial debe ser anterior o igual a la fecha final.</p> }
+    @if (error()) {
+      <div class="empty error" role="alert"><p>{{ error() }}</p><button (click)="cargar()">Reintentar</button></div>
+    } @else if (cargando()) {
+      <p class="empty" role="status">Cargando actividad…</p>
+    } @else {
+      <section class="records" aria-label="Registro de operaciones">
+        <div class="list-heading"><h2>Operaciones registradas</h2><span>{{ filtradas.length }} resultado/s</span></div>
+        @for (a of visibles; track a.id) {
+          <article>
+            <div class="record-top"><span class="operation" [class]="a.tipoAccion">{{ etiqueta(a.tipoAccion) }}</span><time [attr.datetime]="a.fecha">{{ a.fecha | date:'dd/MM/yyyy · HH:mm':'-0300' }}</time></div>
+            <h3>{{ a.libroTitulo || (a.libroId ? 'Libro ' + a.libroId : 'Libro no disponible') }}</h3>
+            <p class="description">{{ a.descripcion }}</p>
+            <dl>
+              <div><dt>Registrado por</dt><dd>{{ a.bibliotecarioNombre || 'Bibliotecario no disponible' }}@if (a.bibliotecarioId) { <small> · Legajo {{ a.bibliotecarioId }}</small> }</dd></div>
+              @if (a.estudianteId) { <div><dt>Lector</dt><dd><a [routerLink]="['/user-profile', a.estudianteId]">{{ a.estudianteNombre || a.estudianteId }}</a><small> · {{ a.estudianteId }}</small></dd></div> }
+            </dl>
+            <div class="references"><span>Acción #{{ a.id }}</span>@if (a.reservaId) { <span>Reserva #{{ a.reservaId }}</span> }@if (a.prestamoId) { <span>Préstamo #{{ a.prestamoId }}</span> }@if (a.ejemplarId) { <span>Ejemplar {{ a.ejemplarId }}</span> }</div>
+          </article>
+        } @empty {
+          <div class="empty"><h3>{{ acciones().length ? 'No hay coincidencias' : 'Todavía no hay actividad' }}</h3><p>{{ acciones().length ? 'Probá cambiando los filtros.' : 'Las nuevas operaciones del bibliotecario aparecerán acá automáticamente.' }}</p></div>
+        }
+        <footer><span>Solo consulta · Horario de Argentina</span><nav aria-label="Páginas de actividad"><button [disabled]="pagina === 1" (click)="pagina = pagina - 1">Anterior</button><span>Página {{ pagina }} de {{ paginas }}</span><button [disabled]="pagina >= paginas" (click)="pagina = pagina + 1">Siguiente</button></nav></footer>
+      </section>
+    }
+  </main>
+</div>

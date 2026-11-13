@@ -2,6 +2,7 @@ from django.utils import timezone
 from rest_framework import serializers
 from books.models import Libro
 from .models import AccionAdministrativa, Notificacion, Prestamo, Reserva
+from .services import returned_late
 
 
 class LoanSerializer(serializers.ModelSerializer):
@@ -16,16 +17,20 @@ class LoanSerializer(serializers.ModelSerializer):
     fechaInicio = serializers.DateField(source='fecha_prestamo', read_only=True)
     fechaVencimiento = serializers.DateField(source='fecha_vencimiento', read_only=True)
     fechaDevolucion = serializers.DateField(source='fecha_devolucion', read_only=True)
+    devolucionTardia = serializers.SerializerMethodField()
 
     class Meta:
         model = Prestamo
         fields = ['id', 'estudianteId', 'estudianteLegajo', 'estudianteNombre', 'libroId', 'libroTitulo',
                   'ejemplarId', 'bibliotecarioId', 'fechaInicio', 'fechaVencimiento',
-                  'fechaDevolucion', 'estado']
+                  'fechaDevolucion', 'estado', 'devolucionTardia']
         read_only_fields = fields
 
     def get_estudianteNombre(self, loan):
         return str(loan.usuario)
+
+    def get_devolucionTardia(self, loan):
+        return returned_late(loan)
 
 
 class ReservationSerializer(serializers.ModelSerializer):
@@ -72,6 +77,10 @@ class NotificationSerializer(serializers.ModelSerializer):
 
 class AdminActionSerializer(serializers.ModelSerializer):
     bibliotecarioNombre = serializers.SerializerMethodField()
+    bibliotecarioId = serializers.CharField(source='bibliotecario_id', read_only=True)
+    libroTitulo = serializers.CharField(source='libro.titulo', read_only=True, allow_null=True)
+    estudianteId = serializers.SerializerMethodField()
+    estudianteNombre = serializers.SerializerMethodField()
     tipoAccion = serializers.CharField(source='tipo_accion', read_only=True)
     reservaId = serializers.IntegerField(source='reserva_id', read_only=True)
     prestamoId = serializers.IntegerField(source='prestamo_id', read_only=True)
@@ -81,7 +90,22 @@ class AdminActionSerializer(serializers.ModelSerializer):
     class Meta:
         model = AccionAdministrativa
         fields = ['id', 'fecha', 'tipoAccion', 'descripcion', 'bibliotecarioNombre', 'reservaId', 'prestamoId',
-                  'libroId', 'ejemplarId']
+                  'libroId', 'ejemplarId', 'bibliotecarioId', 'libroTitulo', 'estudianteId', 'estudianteNombre']
 
     def get_bibliotecarioNombre(self, action):
         return str(action.bibliotecario) if action.bibliotecario else ''
+
+    def _usuario(self, action):
+        if action.reserva:
+            return action.reserva.usuario
+        if action.prestamo:
+            return action.prestamo.usuario
+        return None
+
+    def get_estudianteId(self, action):
+        usuario = self._usuario(action)
+        return str(usuario.pk) if usuario else None
+
+    def get_estudianteNombre(self, action):
+        usuario = self._usuario(action)
+        return str(usuario) if usuario else ''

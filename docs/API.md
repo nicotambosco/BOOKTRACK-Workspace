@@ -41,7 +41,7 @@ Crear:
 }
 ```
 
-Las fechas del ejemplo deben reemplazarse por fechas vigentes al probar. La fecha de retiro limita cuándo retirar y el vencimiento define el plazo del préstamo. No se envía `estudianteId` ni `estado`: los determina el servidor.
+Las fechas del ejemplo deben reemplazarse por fechas vigentes al probar. El bibliotecario puede registrar el retiro independientemente de la fecha prevista o del orden de solicitud y el vencimiento define el plazo del préstamo. No se envía `estudianteId` ni `estado`: los determina el servidor.
 
 La respuesta incluye `id`, `estudianteId`, `estudianteNombre`, `libroId`, `libroTitulo`, `fechaReserva`, `fechaRetiro`, `fechaVencimiento`, `estado`, `prestamoId` y `bibliotecarioId`. `prestamoId` es nulo hasta retirar.
 
@@ -93,3 +93,14 @@ Devolver nuevamente un préstamo ya devuelto no repone otra copia.
 ## Errores
 
 401 indica sesión ausente o inválida; 403, rol insuficiente; 404, registro inexistente o ajeno al usuario; 400, validación o transición incompatible; 405, método no habilitado. Los errores de campos pueden ser objetos y los de negocio listas de mensajes. Las consultas de reservas y préstamos actualizan vencimientos antes de aplicar filtros.
+
+### Administración de ejemplares
+
+- `POST /api/books/{isbn}/ejemplares/` agrega un ejemplar disponible con código generado y devuelve sus datos.
+- `PATCH /api/copies/{codigo}/codigo/` con `{ "nuevoCodigo": "EJ-001" }` cambia el código, preserva préstamos, reservas vinculadas y acciones administrativas. El código es único y admite hasta 50 letras, números, guiones y guiones bajos.
+- Estas operaciones requieren bibliotecario y registran `alta_ejemplar` o `codigo_ejemplar` en la actividad administrativa.
+- Al editar un libro, `disponibles` es un dato calculado: no cambia el stock. Las copias se administran individualmente; la creación inicial de un libro conserva su cantidad inicial.
+
+### Devoluciones fuera de término
+
+Los préstamos incluyen `devolucionTardia`, calculado al consultar: es verdadero si el estado es `devuelto` y la devolución efectiva es posterior al vencimiento. El estado se conserva como `devuelto`; los historiales y exportaciones indican «Devuelto (vencido)». La devolución en la fecha de vencimiento es puntual. Si no hay fechas suficientes, no se infiere una demora. No requiere campos ni migraciones adicionales.

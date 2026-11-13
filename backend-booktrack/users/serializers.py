@@ -25,6 +25,15 @@ class UserSerializer(serializers.Serializer):
     categoria = serializers.CharField(read_only=True)
     imagen = serializers.CharField(required=False, allow_blank=True)
 
+    def get_fields(self):
+        fields = super().get_fields()
+        request = self.context.get('request')
+        if request and getattr(request.user, 'categoria', None) == 'usuario':
+            for name, field in fields.items():
+                if name != 'email':
+                    field.read_only = True
+        return fields
+
     def update(self, person, validated_data):
         full_name = validated_data.pop('nombre_apellido', None)
         if full_name is not None:

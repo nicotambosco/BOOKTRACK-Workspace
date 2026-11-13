@@ -62,9 +62,10 @@ import { Book } from '../../../models/book.model';
               <div class="disponibles">Estado: {{ libro.estado || 'activo' }}</div>
               <div class="disponibles">Disponibles: {{ libro.disponibles }}</div>
               <div class="botones">
-                <button class="btn-primary" (click)="solicitarPrestamo()" [disabled]="libro.estado === 'inactivo'">
+                @if (!esBibliotecario) { <button class="btn-primary" (click)="solicitarPrestamo()" [disabled]="libro.estado === 'inactivo'">
                   {{ libro.estado === 'inactivo' ? 'LIBRO INACTIVO' : 'RESERVAR LIBRO' }}
                 </button>
+                }
                 <button class="btn-outline" (click)="volver()">VOLVER</button>
               </div>
             </div>
@@ -140,7 +141,9 @@ export class BookDetail implements OnInit {
     });
   }
 
-  solicitarPrestamo() { if (this.libro?.id) this.router.navigate(['/loan-request', this.libro.id]); }
+  get esBibliotecario() { return this.authService.getUserRole() === 'bibliotecario'; }
+
+  solicitarPrestamo() { if (!this.esBibliotecario && this.libro?.id) this.router.navigate(['/loan-request', this.libro.id]); }
   verLibro(id: string) { this.router.navigate(['/book', id]); }
   volver() { this.router.navigate([this.authService.getUserRole() === 'bibliotecario' ? '/home-admin' : '/home']); }
 }

@@ -24,6 +24,7 @@ import { BookSearch } from './features/books/book-search/book-search';
 import { UserHistory } from './features/loans/user-history/user-history';
 import { UserLoans } from './features/loans/user-loans/user-loans';
 import { LoanArchive } from './features/loans/loan-archive/loan-archive';
+import { AdminActivity } from './features/admin/admin-activity/admin-activity';
 
 export const routes: Routes = [
   { path: '', component: Landing },
@@ -103,6 +104,7 @@ export const routes: Routes = [
     canActivate: [authGuard],
     data: { roles: ['bibliotecario'] }
   },
+  { path: 'user-profile/:legajo', component: UserLoans, canActivate: [authGuard], data: { roles: ['bibliotecario'], perfil: true } },
   {
     path: 'user-loans/:legajo',
     component: UserLoans,
@@ -120,5 +122,6 @@ export const routes: Routes = [
   { path: 'book-search', component: BookSearch },
   { path: 'user-history', component: UserHistory, canActivate: [authGuard], data: { roles: ['usuario'] } },
   { path: 'loan-archive', component: LoanArchive, canActivate: [authGuard], data: { roles: ['bibliotecario'] } },
+  { path: 'admin-activity', component: AdminActivity, canActivate: [authGuard], data: { roles: ['bibliotecario'] } },
   { path: '**', redirectTo: '' }
 ];

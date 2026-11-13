@@ -48,7 +48,7 @@ class LoanViewSet(viewsets.ReadOnlyModelViewSet):
         pdf.set_font('Helvetica', size=8)
         for loan in loans:
             cells = [str(loan.usuario)[:18], loan.libro.titulo[:20],
-                     loan.ejemplar_id[:10], loan.estado, str(loan.fecha_prestamo),
+                     loan.ejemplar_id[:10], 'Dev. vencido' if services.returned_late(loan) else loan.estado, str(loan.fecha_prestamo),
                      str(loan.fecha_vencimiento or '-'), str(loan.fecha_devolucion or '-')]
             for width, text in zip(widths, cells):
                 pdf.cell(width, 7, text.encode('latin-1', 'replace').decode('latin-1'))
@@ -68,7 +68,7 @@ class LoanViewSet(viewsets.ReadOnlyModelViewSet):
             nombre_estudiante = str(l.usuario)
             nombre_libro = l.libro.titulo
             fecha_fin = str(l.fecha_vencimiento) if l.fecha_vencimiento else ''
-            ws.append([nombre_estudiante, nombre_libro, l.ejemplar_id, l.estado, str(l.fecha_prestamo), fecha_fin, str(l.fecha_devolucion or "")])
+            ws.append([nombre_estudiante, nombre_libro, l.ejemplar_id, 'devuelto (vencido)' if services.returned_late(l) else l.estado, str(l.fecha_prestamo), fecha_fin, str(l.fecha_devolucion or "")])
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = 'attachment; filename="historial-prestamos.xlsx"'
         wb.save(response)
@@ -122,4 +122,4 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
 class AdminActionViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = AdminActionSerializer
     permission_classes = [IsLibrarian]
-    queryset = AccionAdministrativa.objects.select_related('bibliotecario')
+    queryset = AccionAdministrativa.objects.select_related('bibliotecario', 'libro', 'reserva__usuario', 'prestamo__usuario')

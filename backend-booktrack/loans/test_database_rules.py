@@ -86,6 +86,6 @@ class UpdateStatesCommandTests(TestCase):
 
         for obj in (late, on_time, overdue, current, historical):
             obj.refresh_from_db()
-        self.assertEqual((late.estado, on_time.estado), ('vencida', 'activa'))
+        self.assertEqual((late.estado, on_time.estado), ('activa', 'activa'))
         self.assertEqual((overdue.estado, current.estado, historical.estado), ('vencido', 'vigente', 'vigente'))
-        self.assertIn('Reservas vencidas: 1; préstamos vencidos: 1', out.getvalue())
+        self.assertIn('Reservas vencidas: 0; préstamos vencidos: 1', out.getvalue())

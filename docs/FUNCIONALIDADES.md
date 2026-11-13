@@ -47,3 +47,7 @@ La recuperación de contraseña de la interfaz es una simulación; no envía un 
 
 
 Los formularios y componentes antiguos que no están enlazados en `app.routes.ts` no agregan funcionalidades por sí mismos. Los módulos de ejemplares individuales y auditoría de negocio del diseño conceptual siguen pendientes.
+
+## Actividad administrativa
+
+Desde el inicio del bibliotecario, **Actividad administrativa** consulta la tabla `AccionAdministrativa`: creación de préstamos, devoluciones y cancelaciones realizadas por bibliotecarios. Muestra responsable, fecha/hora de Argentina, lector, libro y referencias de reserva/préstamo/ejemplar. Se puede buscar, filtrar por operación, bibliotecario o fechas y abrir el perfil del lector. El registro es de solo lectura y no está disponible para usuarios comunes.

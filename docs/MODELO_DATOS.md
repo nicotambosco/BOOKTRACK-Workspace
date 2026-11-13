@@ -47,7 +47,6 @@ Las acciones del bibliotecario (retiro, devolución, cancelación) dejan una `Ac
 stateDiagram-v2
   [*] --> Activa: crear reserva
   Activa --> Cancelada: cancelar
-  Activa --> Vencida: supera fecha de retiro sin retirar
   Activa --> Finalizada: retirar libro / generar préstamo
   Cancelada --> [*]
   Vencida --> [*]
@@ -55,13 +54,13 @@ stateDiagram-v2
 ```
 
 - `fecha_reserva`: fecha local de creación.
-- `fecha_retiro`: último día permitido para retirar, inclusive.
+- `fecha_retiro`: fecha prevista de retiro. El bibliotecario puede aprobar en otra fecha.
 - `fecha_vencimiento`: fecha de vencimiento que tendrá el préstamo generado.
 - Las reservas requieren retiro desde hoy y vencimiento igual o posterior al retiro.
 - Se permiten reservas sin stock para mantener una cola. Una persona no puede tener dos reservas activas del mismo libro.
 - Las reservas se atienden por fecha de reserva y, si coinciden, por ID ascendente.
-- Con N copias disponibles pueden retirar las primeras N reservas activas de la cola. Las vencidas y canceladas no bloquean la atención.
-- Crear, cancelar o vencer una reserva no cambia el stock. Solo el retiro lo reduce.
+- El orden de solicitud es una recomendación; el bibliotecario puede elegir otra reserva. Las reservas pendientes no vencen automáticamente. Los períodos superpuestos que exceden la capacidad se señalan para revisión.
+- Crear o cancelar una reserva no cambia el stock. Solo el retiro lo reduce.
 - Una reserva finalizada referencia exactamente un préstamo. Reintentar el retiro devuelve el mismo resultado, sin duplicar préstamo ni descontar otra copia.
 
 ## Préstamo

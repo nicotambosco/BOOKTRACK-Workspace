@@ -1,66 +1,126 @@
-<div class="home-page">
-  <app-header [esAdmin]="true"></app-header>
-  <main class="page-body">
-    <h1>Reservas y préstamos</h1>
-    <p>Registrá el retiro del libro para finalizar la reserva y crear el préstamo. Las reservas ya respondidas y los préstamos devueltos están en el <a routerLink="/loan-archive">archivo</a>.</p>
-    @if (mensaje) { <p class="mensaje" role="status">{{ mensaje }}</p> }
-    <button (click)="cargar()" [disabled]="ocupado">ACTUALIZAR</button>
-    <section>
-      <h2>Reservas</h2>
-      <p>Las reservas se atienden por fecha de reserva y, si coinciden, por orden de registro.</p>
-      @for (r of reservasPendientes; track r.id) {
-        <article>
-          <div><strong>{{ r.libroTitulo }}</strong> · {{ r.estudianteNombre || 'Usuario #' + r.estudianteId }}
-            <p>Reserva #{{ r.id }} · {{ r.estado }}</p>
-            <p>Fecha de retiro {{ r.fechaRetiro }}</p>
-            @if (r.estado === 'activa') { <p>Vencimiento del préstamo: {{ r.fechaVencimiento }}</p> }
-            @if (r.prestamoId) { <p>Préstamo #{{ r.prestamoId }}</p> }
+<div [class.home-page]="!embedded">
+  @if (!embedded) { <app-header [esAdmin]="true"></app-header> }
+  <div class="workspace-shell" [class.page-body]="!embedded">
+    @if (!embedded) {
+      <header class="page-heading"><a routerLink="/home-admin">← Volver al inicio</a><h1>Reservas y préstamos</h1><p>Registrá retiros y devoluciones de la biblioteca.</p></header>
+    }
+    @if (embedded) {
+      <div class="stats" aria-label="Resumen de la biblioteca">
+        <div class="stat-card">
+          <span class="stat-label">Reservas pendientes</span>
+          <strong>{{ cargado && !errorCarga ? reservasPendientes.length : '—' }}</strong>
+          <small>Por atender</small>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Préstamos abiertos</span>
+          <strong>{{ cargado && !errorCarga ? prestamosAbiertos.length : '—' }}</strong>
+          <small>Pendientes de devolución</small>
+        </div>
+        <div class="stat-card" [class.warning]="prestamosVencidos > 0">
+          <span class="stat-label">Préstamos vencidos</span>
+          <strong>{{ cargado && !errorCarga ? prestamosVencidos : '—' }}</strong>
+          <small>{{ !cargado || errorCarga ? 'Estado de devoluciones' : prestamosVencidos ? 'Requieren seguimiento' : 'Sin vencimientos pendientes' }}</small>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Libros en catálogo</span>
+          <strong>{{ cargado && !errorCarga ? libros.length : '—' }}</strong>
+          <small>Títulos registrados</small>
+        </div>
+      </div>
+    }
+
+    <div class="workspace" [class.with-sidebar]="embedded">
+      <section class="activity-panel" aria-labelledby="activity-title">
+        <div class="panel-heading">
+          <div><p class="eyebrow">ATENCIÓN DIARIA</p><h2 id="activity-title">Reservas y préstamos</h2></div>
+          <div class="panel-tools">
+            <input type="search" [(ngModel)]="busqueda" placeholder="Buscar libro o lector…" aria-label="Buscar por libro, lector o número" />
+            <button class="refresh" (click)="cargar()" [disabled]="ocupado"><span aria-hidden="true">↻</span> {{ ocupado ? 'Actualizando…' : 'Actualizar' }}</button>
           </div>
-          @if (r.estado === 'activa') {
-            <div class="acciones">
-              <div class="ejemplar-selector selector-ejemplar" #selector (focusout)="cerrarAlSalir($event, selector)" (keydown.escape)="selectorAbierto = null">
-                <label [id]="'ejemplar-label-' + r.id">Ejemplar a prestar</label>
-                <button type="button" class="selector-boton" [class.sin-ejemplares]="!disponibles(r).length"
-                  [disabled]="ocupado || !disponibles(r).length" (click)="alternarSelector(r)"
-                  [attr.aria-labelledby]="'ejemplar-label-' + r.id" [attr.aria-expanded]="selectorAbierto === r.id"
-                  [attr.aria-controls]="'ejemplares-' + r.id">
-                  <span>{{ disponibles(r).length ? (ejemplaresSeleccionados[r.id] || 'Seleccionar ejemplar') : 'Sin ejemplares disponibles' }}</span>
-                  @if (disponibles(r).length) { <span class="selector-flecha" aria-hidden="true">⌄</span> }
-                  @else { <span class="selector-cierre" aria-hidden="true">—</span> }
-                </button>
-                @if (selectorAbierto === r.id) {
-                  <div class="selector-menu" [id]="'ejemplares-' + r.id">
-                    <input type="search" [(ngModel)]="busquedaEjemplar[r.id]" placeholder="Buscar por código" aria-label="Buscar ejemplar por código" autocomplete="off" />
-                    <div class="selector-opciones">
-                      @for (id of ejemplaresFiltrados(r); track id) {
-                        <button type="button" class="selector-opcion" [class.seleccionado]="ejemplaresSeleccionados[r.id] === id" (click)="seleccionarEjemplar(r, id)">{{ id }}</button>
-                      } @empty { <p class="selector-vacio">No se encontraron ejemplares.</p> }
-                    </div>
+        </div>
+        <div class="view-tabs" aria-label="Tipo de gestión">
+          <button [class.active]="vista === 'reservas'" [attr.aria-pressed]="vista === 'reservas'" (click)="vista = 'reservas'; selectorAbierto = null">
+            Reservas <span>{{ cargado && !errorCarga ? reservasPendientes.length : '—' }}</span>
+          </button>
+          <button [class.active]="vista === 'devoluciones'" [attr.aria-pressed]="vista === 'devoluciones'" (click)="vista = 'devoluciones'; selectorAbierto = null">
+            Devoluciones <span>{{ cargado && !errorCarga ? prestamosAbiertos.length : '—' }}</span>
+          </button>
+        </div>
+        @if (vista === 'devoluciones') { <p class="list-hint">Los préstamos vencidos aparecen primero.</p> }
+        @if (mensaje && !errorCarga) { <p class="message" [class.error]="errorOperacion" [attr.role]="errorOperacion ? 'alert' : 'status'">{{ mensaje }}</p> }
+        @if (errorCarga) {
+          <div class="empty-state" role="alert"><span aria-hidden="true">!</span><h3>No pudimos actualizar la información</h3><p>{{ mensaje }}</p><button (click)="cargar()" [disabled]="ocupado">Reintentar</button></div>
+        } @else if (!cargado) {
+          <div class="empty-state" role="status"><span aria-hidden="true">◷</span><h3>Cargando la actividad…</h3><p>Estamos consultando las reservas, los préstamos y los ejemplares.</p></div>
+        } @else {
+          <div class="activity-list" [attr.aria-busy]="ocupado">
+            @if (vista === 'reservas') {
+              @for (r of reservasFiltradas; track r.id) {
+                <article class="reservation-row" [id]="'reserva-' + r.id" [class.has-conflict]="conflictos[r.id]?.reservas?.length">
+                  <div class="row-heading">
+                    <div><span class="record-id">RESERVA #{{ r.id }}</span><h3>{{ r.libroTitulo }}</h3><p class="reader"><a [routerLink]="['/user-profile', r.estudianteId]" class="reader-link">{{ r.estudianteNombre || 'Usuario #' + r.estudianteId }}</a> <span>· Legajo {{ r.estudianteId }}</span></p></div>
                   </div>
-                }
-              </div>
-              <button class="primary" (click)="retirar(r)" [disabled]="ocupado || !disponibles(r).includes(ejemplaresSeleccionados[r.id])">CREAR PRÉSTAMO</button>
-              <button (click)="cancelar(r.id)" [disabled]="ocupado">CANCELAR RESERVA</button>
-            </div>
-          }
-        </article>
-      } @empty { <p class="sin-reservas">No hay reservas pendientes de respuesta.</p> }
-    </section>
-    <section>
-      <h2>Préstamos</h2>
-      @for (p of prestamosAbiertos; track p.id) {
-        <article>
-          <div><strong>{{ p.libroTitulo }}</strong> · {{ p.estudianteNombre || 'Usuario #' + p.estudianteId }}
-            <p>{{ p.estado }} · Inicio {{ p.fechaInicio }} · Vence {{ p.fechaVencimiento || 'fecha no registrada' }}</p>
-            @if (p.fechaDevolucion) { <p>Devuelto el {{ p.fechaDevolucion }}</p> }
-          </div>
-          <div class="acciones">
-            @if (p.estado === 'vigente' || p.estado === 'vencido') {
-              <button class="primary" (click)="devolver(p.id!)" [disabled]="ocupado">REGISTRAR DEVOLUCIÓN</button>
+                  @if (conflictos[r.id]; as conflicto) {
+                    <div class="conflict-indicators">
+                      @for (id of conflicto.reservas; track id) {
+                        <span class="conflict-indicator"><span aria-hidden="true">!</span> Conflicto con reserva #{{ id }}</span>
+                      }
+                      @for (id of conflicto.prestamos; track id) { <span class="loan-assignment">Ejemplar en préstamo #{{ id }}</span> }
+                    </div>
+                  }
+                  <div class="reservation-controls">
+                    <div class="reservation-dates">
+                      <div><span>Fecha de retiro</span><strong>{{ r.fechaRetiro | date:'dd/MM/yyyy' }}</strong></div>
+                      <div><span>Vencimiento</span><strong>{{ r.fechaVencimiento | date:'dd/MM/yyyy' }}</strong></div>
+                    </div>
+                  <div class="acciones">
+                    <div class="ejemplar-selector" #selector (focusout)="cerrarAlSalir($event, selector)" (keydown.escape)="selectorAbierto = null">
+                      <label [id]="'ejemplar-label-' + r.id">Ejemplar a prestar</label>
+                      <button type="button" class="selector-boton" [class.sin-ejemplares]="!disponibles(r).length"
+                        [disabled]="ocupado || !disponibles(r).length" (click)="alternarSelector(r)"
+                        [attr.aria-label]="'Ejemplar a prestar: ' + (disponibles(r).length ? (ejemplaresSeleccionados[r.id] || 'Seleccionar ejemplar') : 'Sin ejemplares disponibles')" [attr.aria-expanded]="selectorAbierto === r.id"
+                        [attr.aria-controls]="'ejemplares-' + r.id" [attr.aria-describedby]="observacionesEjemplar(r) ? 'observaciones-' + r.id : null">
+                        <span>{{ disponibles(r).length ? (ejemplaresSeleccionados[r.id] || 'Seleccionar ejemplar') : 'Sin ejemplares disponibles' }}</span><span aria-hidden="true">⌄</span>
+                      </button>
+                      @if (selectorAbierto === r.id) {
+                        <div class="selector-menu" [id]="'ejemplares-' + r.id">
+                          <input type="search" [(ngModel)]="busquedaEjemplar[r.id]" placeholder="Buscar por código" aria-label="Buscar ejemplar por código" autocomplete="off" />
+                          <div class="selector-opciones">
+                            @for (id of ejemplaresFiltrados(r); track id) {
+                              <button type="button" class="selector-opcion" [class.seleccionado]="ejemplaresSeleccionados[r.id] === id" (click)="seleccionarEjemplar(r, id)">{{ id }}</button>
+                            } @empty { <p>No se encontraron ejemplares.</p> }
+                          </div>
+                        </div>
+                      }
+                    </div>
+                    <button class="primary" (click)="retirar(r)" [disabled]="ocupado || !disponibles(r).includes(ejemplaresSeleccionados[r.id])">Crear préstamo <span aria-hidden="true">→</span></button>
+                    <button class="cancel" (click)="cancelar(r.id)" [disabled]="ocupado" [attr.aria-label]="'Cancelar reserva #' + r.id">Cancelar reserva</button>
+                  </div></div>
+                  @if (observacionesEjemplar(r); as observaciones) {
+                    <p class="copy-note" [id]="'observaciones-' + r.id" aria-live="polite"><strong>Observaciones · {{ ejemplaresSeleccionados[r.id] }}:</strong> {{ observaciones }}</p>
+                  }
+                </article>
+              } @empty {
+                <div class="empty-state"><span aria-hidden="true">{{ busqueda.trim() ? '⌕' : '✓' }}</span><h3>{{ busqueda.trim() ? 'No encontramos coincidencias' : 'No hay reservas pendientes' }}</h3><p>{{ busqueda.trim() ? 'Probá con otro libro, lector o número de reserva.' : 'Las nuevas reservas aparecerán acá para que puedas registrar el retiro.' }}</p>@if (busqueda.trim()) { <button (click)="busqueda = ''">Limpiar búsqueda</button> }</div>
+              }
+            } @else {
+              @for (p of prestamosFiltrados; track p.id) {
+                <article class="loan-row">
+                  <div class="row-heading">
+                    <div><span class="record-id">PRÉSTAMO #{{ p.id }}</span><h3>{{ p.libroTitulo || p.libroId }}</h3><p class="reader">{{ p.estudianteNombre || 'Usuario #' + p.estudianteId }} <span>· Legajo {{ p.estudianteLegajo || p.estudianteId }}</span></p></div>
+                    <span class="badge" [class.overdue]="p.estado === 'vencido'">{{ p.estado === 'vencido' ? 'Vencido' : 'Vigente' }}</span>
+                  </div>
+                  <p class="dates">Vencimiento <strong>{{ p.fechaVencimiento ? (p.fechaVencimiento | date:'dd/MM/yyyy') : 'Sin fecha registrada' }}</strong>@if (p.ejemplarId) { <span>·</span>Ejemplar <strong>{{ p.ejemplarId }}</strong> }</p>
+                  <button class="return-button" (click)="devolver(p.id!)" [disabled]="ocupado">Registrar devolución <span aria-hidden="true">↳</span></button>
+                </article>
+              } @empty {
+                <div class="empty-state"><span aria-hidden="true">{{ busqueda.trim() ? '⌕' : '✓' }}</span><h3>{{ busqueda.trim() ? 'No encontramos coincidencias' : 'Todas las devoluciones al día' }}</h3><p>{{ busqueda.trim() ? 'Probá con otro libro, lector o número de préstamo.' : 'No hay préstamos pendientes de devolución.' }}</p>@if (busqueda.trim()) { <button (click)="busqueda = ''">Limpiar búsqueda</button> }</div>
+              }
             }
           </div>
-        </article>
-      } @empty { <p>No hay préstamos pendientes de devolución.</p> }
-    </section>
-  </main>
+        }
+      </section>
+      @if (embedded) { <aside class="sidebar"><ng-content></ng-content></aside> }
+    </div>
+  </div>
 </div>

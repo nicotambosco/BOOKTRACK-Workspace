@@ -133,10 +133,22 @@ class UserAccessTests(TestCase):
 
     def test_me_returns_and_updates_only_the_own_profile(self):
         self.assertEqual(self.c_student.get('/api/users/me/').data['id'], self.student.pk)
-        response = self.c_student.patch('/api/users/me/', {'nombreApellido': 'Nuevo Nombre'}, format='json')
+        original_name = self.student.nombre_apellido
+        response = self.c_student.patch('/api/users/me/', {'nombreApellido': 'Nuevo Nombre', 'email': 'nuevo@example.test'}, format='json')
         self.assertEqual(response.status_code, 200)
         self.student.refresh_from_db()
-        self.assertEqual(self.student.nombre_apellido, 'Nuevo Nombre')
+        self.assertEqual(self.student.nombre_apellido, original_name)
+        self.assertEqual(self.student.email, 'nuevo@example.test')
+
+    def test_student_profile_only_allows_email_updates_through_both_routes(self):
+        original = (self.student.pk, self.student.nombre, self.student.apellido, self.student.imagen)
+        for url in ['/api/users/me/', f'/api/users/{self.student.pk}/']:
+            response = self.c_student.patch(url, {'legajo': 'CAMBIADO', 'nombre': 'Otro', 'apellido': 'Otro',
+                'nombreApellido': 'Otro Nombre', 'imagen': 'cambiada', 'email': 'email@example.test'}, format='json')
+            self.assertEqual(response.status_code, 200, response.data)
+            self.student.refresh_from_db()
+            self.assertEqual((self.student.pk, self.student.nombre, self.student.apellido, self.student.imagen), original)
+            self.assertEqual(self.student.email, 'email@example.test')
 
     def test_user_list_is_librarian_only(self):
         self.assertEqual(APIClient().get('/api/users/').status_code, 401)

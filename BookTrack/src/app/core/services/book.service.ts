@@ -39,7 +39,23 @@ export class BookService {
   }
 
   updateCopyState(id: string, estado: Ejemplar['estado']): Observable<Ejemplar> {
-    return this.http.patch<Ejemplar>(`${environment.apiUrl}/copies/${id}/`, { estado });
+    return this.http.patch<Ejemplar>(`${environment.apiUrl}/copies/${encodeURIComponent(id)}/`, { estado });
+  }
+
+  addCopy(bookId: string): Observable<Ejemplar> {
+    return this.http.post<Ejemplar>(`${this.api}/${encodeURIComponent(bookId)}/ejemplares/`, {});
+  }
+
+  renameCopy(id: string, nuevoCodigo: string): Observable<Ejemplar> {
+    return this.http.patch<Ejemplar>(`${environment.apiUrl}/copies/${encodeURIComponent(id)}/codigo/`, { nuevoCodigo });
+  }
+
+  deleteCopy(id: string): Observable<void> {
+    return this.http.delete<void>(`${environment.apiUrl}/copies/${encodeURIComponent(id)}/`);
+  }
+
+  updateCopyObservations(id: string, observaciones: string): Observable<Ejemplar> {
+    return this.http.patch<Ejemplar>(`${environment.apiUrl}/copies/${encodeURIComponent(id)}/`, { observaciones });
   }
 
   uploadImage(file: File): Observable<{ url: string }> {

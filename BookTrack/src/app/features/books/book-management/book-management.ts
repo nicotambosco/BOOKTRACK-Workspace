@@ -1,14 +1,17 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Header } from '../../../shared/components/header/header';
 import { BookService } from '../../../core/services/book.service';
+import { ConfirmDialog } from '../../../shared/components/confirm-dialog/confirm-dialog';
+import { finalize } from 'rxjs';
+import { apiErrorMessage } from '../../../core/utils/api-error-message';
 
 @Component({
   selector: 'app-book-management',
   standalone: true,
-  imports: [CommonModule, FormsModule, Header],
+  imports: [CommonModule, FormsModule, Header, ConfirmDialog],
   template: `
     <div class="home-page">
       <app-header [esAdmin]="true"></app-header>
@@ -22,8 +25,9 @@ import { BookService } from '../../../core/services/book.service';
           </div>
           <div>
             <h2 class="section-title">Gestionar Libros</h2>
-            <p class="section-subtitle">Edita o elimina libros del catálogo.</p>
+            <p class="section-subtitle">Agregá, editá y organizá los libros del catálogo.</p>
           </div>
+          <button class="btn-add" (click)="agregarLibro()">＋ Agregar libro</button>
         </div>
 
         <input
@@ -33,6 +37,7 @@ import { BookService } from '../../../core/services/book.service';
           [(ngModel)]="busqueda"
         />
 
+        @if (errorEliminacion) { <p class="delete-error" role="alert">{{ errorEliminacion }}</p> }
         <div class="table-container">
           @if (librosFiltrados.length === 0) {
             <div class="empty-state">
@@ -69,7 +74,7 @@ import { BookService } from '../../../core/services/book.service';
                     <td>
                       <div class="actions-cell">
                         <button class="btn-edit" (click)="editarLibro(libro.id)">Editar</button>
-                        <button class="btn-delete" (click)="eliminarLibro(libro.id)">Eliminar</button>
+                        <button class="btn-delete" (click)="eliminarLibro(libro.id)" [disabled]="eliminando">Eliminar</button>
                       </div>
                     </td>
                   </tr>
@@ -79,6 +84,10 @@ import { BookService } from '../../../core/services/book.service';
           }
         </div>
       </div>
+      @if (libroEliminar; as libro) {
+        <app-confirm-dialog titulo="¿Eliminar este libro?" [mensaje]="'Se eliminará ' + libro.titulo + ' y sus ejemplares sin historial. Esta acción no se puede deshacer.'" confirmarTexto="Eliminar libro"
+          (cancelled)="libroEliminar = null" (confirmed)="confirmarEliminacionLibro()"></app-confirm-dialog>
+      }
     </div>
   `,
   styles: [`
@@ -94,7 +103,10 @@ import { BookService } from '../../../core/services/book.service';
     .page-body::-webkit-scrollbar-thumb { background: #3a3a3a; border-radius: 4px; }
     .page-body::-webkit-scrollbar-thumb:hover { background: #4a4a4a; }
 
-    .content-header { display:flex; align-items:center; gap:1rem; margin-bottom: 1.5rem; }
+    .content-header { display:flex; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom: 1.5rem; }
+    .btn-add { margin-left:auto; padding:.75rem 1rem; background:#2ecc71; color:#0a0a0a; border:0; border-radius:8px; cursor:pointer; font-weight:bold; }
+    .btn-add:hover { background:#3ddb80; }
+    .btn-add:focus-visible { outline:2px solid #2ecc71; outline-offset:4px; }
     .title-icon { width:72px; height:72px; background:#1c1c1c; border-radius:14px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
     .section-title { font-family: Georgia, serif; font-size: 1.7rem; margin: 0 0 0.2rem; color:#f5f5f5; }
     .section-subtitle { margin:0; color:#9a9a9a; font-size:0.9rem; }
@@ -144,16 +156,20 @@ import { BookService } from '../../../core/services/book.service';
       background:#e74c3c; color:#fff;
     }
     .btn-delete:hover { background:#c0392b; }
+    .delete-error { color:#ffbaba; padding:1rem; border:1px solid #854545; border-radius:8px; background:#301b1e; }
   `]
 })
 export class BookManagement implements OnInit {
   libros: any[] = [];
   busqueda = '';
+  libroEliminar: { id: string; titulo: string } | null = null;
+  eliminando = false;
+  errorEliminacion = '';
   private readonly scrollKey = 'book-management-scroll';
 
   @ViewChild('pageBody') pageBody!: ElementRef<HTMLDivElement>;
 
-  constructor(private bookService: BookService, private router: Router) {}
+  constructor(private bookService: BookService, private router: Router, private changeDetector: ChangeDetectorRef) {}
 
   get librosFiltrados() {
     const q = this.busqueda.trim().toLowerCase();
@@ -196,11 +212,27 @@ export class BookManagement implements OnInit {
     this.router.navigate(['/book-edit', id]);
   }
 
+  agregarLibro() {
+    this.router.navigate(['/book-add']);
+  }
+
   eliminarLibro(id: string) {
-    if (!confirm('¿Está seguro que desea eliminar este libro?')) return;
-    this.bookService.delete(id).subscribe({
+    if (this.eliminando) return;
+    this.libroEliminar = { id, titulo: this.libros.find(l => l.id === id)?.titulo || id };
+  }
+
+  confirmarEliminacionLibro() {
+    if (!this.libroEliminar || this.eliminando) return;
+    const id = this.libroEliminar.id;
+    this.libroEliminar = null;
+    this.eliminando = true;
+    this.errorEliminacion = '';
+    this.bookService.delete(id).pipe(finalize(() => {
+      this.eliminando = false;
+      this.changeDetector.markForCheck();
+    })).subscribe({
       next: () => this.cargarLibros(),
-      error: () => alert('Error al eliminar el libro')
+      error: err => this.errorEliminacion = apiErrorMessage(err, 'No se pudo eliminar el libro. El servidor no informó el motivo.')
     });
   }
 }

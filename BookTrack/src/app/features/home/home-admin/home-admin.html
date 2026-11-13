@@ -1,1 +1,42 @@
-<p>home-admin works!</p>
+<div class="home-page">
+  <app-header [esAdmin]="true"></app-header>
+  <main class="home-body">
+    <header class="page-heading">
+      <p class="eyebrow">ESPACIO DEL BIBLIOTECARIO</p>
+      <h1>Tu biblioteca, al día.</h1>
+      <p>Atendé las reservas y registrá los movimientos desde un solo lugar.</p>
+    </header>
+
+    <app-loan-management [embedded]="true">
+      <nav class="management-panel" aria-labelledby="management-title">
+        <p class="eyebrow">ADMINISTRACIÓN</p>
+        <h2 id="management-title">Gestionar la biblioteca</h2>
+        <a routerLink="/book-management">
+          <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19a2 2 0 0 1 2-2h14M6 3h14v19H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" /></svg></span>
+          <span><strong>Libros</strong><small>Agregar, editar y organizar el catálogo</small></span>
+          <span class="arrow" aria-hidden="true">↗</span>
+        </a>
+        <a routerLink="/user-management">
+          <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 21v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6m2 3a5 5 0 0 1 3 5v2"/></svg></span>
+          <span><strong>Usuarios</strong><small>Consultar y administrar lectores</small></span>
+          <span class="arrow" aria-hidden="true">↗</span>
+        </a>
+        <a routerLink="/loan-archive">
+          <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 9h16v12H4zM3 3h18v6H3zM9 13h6"/></svg></span>
+          <span><strong>Archivo de préstamos</strong><small>Préstamos devueltos</small></span>
+          <span class="arrow" aria-hidden="true">↗</span>
+        </a>
+        <a routerLink="/reports">
+          <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 3v18h17M9 16v-5m5 5V6m5 10v-8"/></svg></span>
+          <span><strong>Reportes</strong><small>Consultar estadísticas y exportar</small></span>
+          <span class="arrow" aria-hidden="true">↗</span>
+        </a>
+        <a routerLink="/admin-activity">
+          <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 4H5v17h14V4h-3M8 3h8v4H8zM8 12h8M8 16h5"/></svg></span>
+          <span><strong>Actividad administrativa</strong><small>Operaciones y bibliotecarios responsables</small></span>
+          <span class="arrow" aria-hidden="true">↗</span>
+        </a>
+      </nav>
+    </app-loan-management>
+  </main>
+</div>
