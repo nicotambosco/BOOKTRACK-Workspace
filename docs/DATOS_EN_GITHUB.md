@@ -6,6 +6,8 @@ Es una copia portable de los modelos administrados por Django, con sus IDs y rel
 
 **La copia se genera en la PC que contiene la base o puede conectarse a ella.** No se puede extraer la base de otra computadora con un push ejecutado desde una PC que no tiene acceso a esa base.
 
+El archivo versionado `data/booktrack.btbak` incluye la cuenta administradora principal `ADMIN-1`. Su contraseña original se conserva como hash dentro de la copia cifrada; no hay que publicar la contraseña ni la clave de cifrado.
+
 ## Primera configuración en la PC con MySQL
 
 1. Antes de actualizar una instalación con datos, creá el respaldo MySQL descrito en [OPERACION](OPERACION.md).
@@ -62,6 +64,8 @@ Antes de copiar, terminá las operaciones y cerrá o pausá las pantallas que es
 1. Cloná o actualizá el repo y montá el entorno siguiendo el [README](../README.md).
 2. Configurá la conexión de destino a una base propia y ejecutá `migrate`. Se necesitan exactamente las mismas migraciones aplicadas que en la copia. No se necesita el mismo nombre de base ni el mismo motor: se puede pasar de MySQL a SQLite y viceversa.
 3. Colocá la clave de copia en el `.env` local de esa PC.
+
+   Si querés conservar la contraseña original de `ADMIN-1` desde el primer arranque, dejá `SUPERADMIN_PASSWORD` vacía: `create_admin.py` recupera solo esa cuenta desde la copia cuando todavía no existe. Si configurás `SUPERADMIN_PASSWORD`, crea la cuenta con esa contraseña. La restauración completa del paso siguiente reemplaza también esa cuenta por la de la copia.
 4. Detené la aplicación o su actividad de escritura y verificá primero el archivo:
 
    ```bash
@@ -102,7 +106,7 @@ También se admite `--output /ruta/copia.btbak` y una clave en un archivo local 
 
 ## Alcance y límites
 
-- No se generó una copia inicial con datos reales desde otra PC; el archivo aparecerá después de ejecutar el publicador allí. No se publican datos de pruebas como si fueran tu base.
+- La copia versionada corresponde a la base desde la que se exportó. Para incorporar cambios de otra PC, ejecutá el publicador desde esa instalación; un push de código no actualiza la copia por sí solo.
 - La copia guarda una versión completa. Cada publicación agrega otra versión al historial de Git y ocupa espacio; se admite hasta 90 MiB cifrados y 512 MiB sin comprimir. Para bases grandes corresponde otro almacenamiento de respaldos.
 - Git distribuye archivos de copia, no es una base compartida en tiempo real. Dos personas que cargan registros en bases distintas deben coordinar qué copia restaurar; no hay fusión automática de esos registros.
 - El cifrado utiliza AES-256-GCM autenticado con una clave derivada mediante scrypt y salt/nonce nuevos en cada exportación. La clave y el contenido no se imprimen ni se agregan al commit.

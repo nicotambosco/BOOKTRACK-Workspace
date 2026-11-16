@@ -14,7 +14,7 @@ cd BOOKTRACK-Workspace
 cp .env.example .env
 ```
 
-En PowerShell, usá `Copy-Item .env.example .env`. Editá `.env`: elegí contraseñas propias para `MYSQL_ROOT_PASSWORD`, `ADMIN_PASSWORD` y `STUDENT_PASSWORD`, y una `SECRET_KEY` aleatoria. Podés generar la clave con `python -c "import secrets; print(secrets.token_urlsafe(50))"`.
+En PowerShell, usá `Copy-Item .env.example .env`. Editá `.env`: elegí contraseñas propias para `MYSQL_ROOT_PASSWORD`, `ADMIN_PASSWORD`, `SUPERADMIN_PASSWORD` y `STUDENT_PASSWORD`, y una `SECRET_KEY` aleatoria. Podés generar la clave con `python -c "import secrets; print(secrets.token_urlsafe(50))"`.
 
 ```bash
 docker compose config --quiet
@@ -29,7 +29,6 @@ El backend aplica migraciones y crea las cuentas de demostración si todavía no
 | --- | --- |
 | Aplicación | <http://localhost:4202> |
 | API REST | <http://localhost:8000/api/> |
-| Django Admin | <http://localhost:8000/admin/> |
 | MySQL | `127.0.0.1:3307`, base `booktrack_db`, usuario `root` |
 
 Dentro de Compose, Django usa `db:3306`; Nginx envía `/api/` al servicio `backend:8000`. El navegador usa el mismo origen del frontend para la API de la compilación de producción.
@@ -37,9 +36,14 @@ Dentro de Compose, Django usa `db:3306`; Nginx envía `/api/` al servicio `backe
 | Rol de demostración | Legajo para ingresar | Contraseña |
 | --- | --- | --- |
 | Bibliotecario | `12473` | La elegida en `ADMIN_PASSWORD` |
+| Administrador principal | `ADMIN-1` o `admin@booktrack.com` | La elegida en `SUPERADMIN_PASSWORD`, o la original si se recuperó de la copia cifrada |
 | Usuario | `13885` | La elegida en `STUDENT_PASSWORD` |
 
 `create_admin.py` no cambia las contraseñas de usuarios existentes. Para detener sin borrar los datos: `docker compose down`. El volumen `mysql_data` conserva la base. **No uses `down -v` para una actualización**, porque elimina el volumen.
+
+Si falta `ADMIN-1`, el arranque lo crea con `SUPERADMIN_PASSWORD`. Cuando esa variable está vacía y hay una copia cifrada con `BOOKTRACK_BACKUP_PASSWORD` configurada, recupera únicamente esa cuenta y conserva su contraseña original. No reemplaza el resto de la base. Sin ninguna de esas opciones, el arranque informa que falta configurar el administrador.
+
+El repositorio incluye esa copia en `data/booktrack.btbak`. Para cargar la base completa en otra PC, seguí [Restaurar en otra PC](docs/DATOS_EN_GITHUB.md#restaurar-en-otra-pc) con la clave original de la copia. El panel administrador pertenece a la aplicación BookTrack y se habilita al ingresar con `ADMIN-1`.
 
 Si ya tenías una instalación, seguí primero [Actualización y respaldo](docs/OPERACION.md): la separación de reservas y préstamos incluye una migración de datos.
 

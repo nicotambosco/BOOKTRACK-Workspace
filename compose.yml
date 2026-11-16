@@ -29,6 +29,7 @@ services:
       DB_HOST: db
       DB_PORT: "3306"
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Configurá ADMIN_PASSWORD en .env}
+      SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD:-}
       STUDENT_PASSWORD: ${STUDENT_PASSWORD:?Configurá STUDENT_PASSWORD en .env}
     ports:
       - "127.0.0.1:8000:8000"
