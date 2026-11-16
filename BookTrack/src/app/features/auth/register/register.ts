@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../core/services/auth.service';
+import { apiErrorMessage } from '../../../core/utils/api-error-message';
 
 @Component({
   selector: 'app-register',
@@ -59,7 +60,7 @@ export class Register {
     this.cargando=true; this.error='';
     this.authService.register({ nombreApellido:this.nombre, email:this.email, legajo:this.legajo, contrasena:this.password, codigo:this.codigo, categoria:'usuario' }).subscribe({
       next: () => { this.cargando=false; this.exito=true; },
-      error: () => { this.cargando=false; this.error='Error al registrarse. Intente de nuevo.'; }
+      error: err => { this.cargando=false; this.error=apiErrorMessage(err, 'Error al registrarse. Intente de nuevo.'); }
     });
   }
 

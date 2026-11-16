@@ -1,13 +1,15 @@
 from django.contrib.auth.base_user import AbstractBaseUser
+from django.core.exceptions import ValidationError
 from django.db import models, transaction
 
 
 NIVEL_USUARIO, NIVEL_BIBLIOTECARIO, NIVEL_ADMIN = 0, 1, 2
 CATEGORIA_POR_NIVEL = {NIVEL_USUARIO: 'usuario', NIVEL_BIBLIOTECARIO: 'bibliotecario', NIVEL_ADMIN: 'admin'}
+ADMIN_PRINCIPAL_LEGAJO = 'ADMIN-1'
 
 
 class Persona(AbstractBaseUser):
-    """Quien inicia sesión. La clave primaria es el legajo; cada rol vive en su propia tabla."""
+    """Identidad compartida por legajo: cada fila activa habilita uno de sus roles."""
     nombre = models.CharField(max_length=100, blank=True)
     apellido = models.CharField(max_length=100, blank=True)
     email = models.EmailField(blank=True)
@@ -24,6 +26,15 @@ class Persona(AbstractBaseUser):
     @property
     def categoria(self):
         return CATEGORIA_POR_NIVEL[self.nivel]
+
+    @property
+    def roles(self):
+        return [rol for rol, modelo in MODELO_POR_CATEGORIA.items()
+                if modelo.objects.filter(pk=self.pk, is_active=True).exists()]
+
+    @property
+    def roles_fijos(self):
+        return ['admin'] if self.pk == ADMIN_PRINCIPAL_LEGAJO else []
 
     @property
     def legajo(self):
@@ -61,9 +72,19 @@ class Bibliotecario(Persona):
 
 
 class Administrador(Persona):
-    """Cuenta propia, distinta de la del bibliotecario: gestiona a los bibliotecarios."""
+    """Habilita la vista admin; puede coexistir con otros roles del mismo legajo."""
     id = models.CharField(max_length=50, primary_key=True, db_column='idAdministrador')  # el legajo
     nivel = models.PositiveSmallIntegerField(default=NIVEL_ADMIN)
+
+    def save(self, *args, **kwargs):
+        if self.pk == ADMIN_PRINCIPAL_LEGAJO and not self.is_active:
+            raise ValidationError('El rol administrador de la cuenta principal es fijo.')
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        if self.pk == ADMIN_PRINCIPAL_LEGAJO:
+            raise ValidationError('No se puede eliminar el administrador principal.')
+        return super().delete(*args, **kwargs)
 
     class Meta:
         db_table = 'Administrador'
@@ -78,26 +99,43 @@ CAMPOS_COMPARTIDOS = ['nombre', 'apellido', 'email', 'imagen', 'password']
 
 
 def find_persona(legajo, solo_activas=False):
-    """Devuelve a quien tiene el legajo (la fila activa si hay varias, una por cada rol que tuvo), o None."""
+    """Identidad principal por legajo: prioriza admin, bibliotecario y usuario activos."""
     filas = [m.objects.filter(pk=legajo).first() for m in (Administrador, Bibliotecario, Usuario)]
     filas = [p for p in filas if p]
     return next((p for p in filas if p.is_active), None if solo_activas else (filas[0] if filas else None))
 
 
+def sincronizar_persona(persona):
+    """Las filas por rol pertenecen a una única identidad y comparten credenciales y ficha."""
+    datos = {campo: getattr(persona, campo) for campo in CAMPOS_COMPARTIDOS}
+    for modelo in MODELO_POR_CATEGORIA.values():
+        modelo.objects.filter(pk=persona.pk).update(**datos)
+
+
+@transaction.atomic
+def asignar_roles(persona, roles):
+    """Activa los roles elegidos sin borrar filas ni relaciones históricas."""
+    elegidos = set(roles)
+    if not elegidos or not elegidos <= set(MODELO_POR_CATEGORIA):
+        raise ValueError('Elegí al menos un rol válido.')
+    if not set(persona.roles_fijos) <= elegidos:
+        raise ValidationError('El rol administrador de la cuenta principal es fijo.')
+    filas = [m.objects.select_for_update().filter(pk=persona.pk).first()
+             for m in (Administrador, Bibliotecario, Usuario)]
+    origen = next(p for p in filas if p and p.is_active)
+    datos = {campo: getattr(origen, campo) for campo in CAMPOS_COMPARTIDOS}
+    for rol, modelo in MODELO_POR_CATEGORIA.items():
+        fila = next((p for p in filas if isinstance(p, modelo)), None)
+        if fila is None and rol not in elegidos:
+            continue
+        fila = fila or modelo(id=persona.pk)
+        for campo, valor in datos.items():
+            setattr(fila, campo, valor)
+        fila.is_active = rol in elegidos
+        fila.save()
+    return find_persona(persona.pk, solo_activas=True)
+
+
 def cambiar_nivel(persona, nivel):
-    """Pasa a la persona al rol `nivel`: activa su fila en esa tabla (la crea la primera vez) y desactiva la actual.
-    Las filas viejas no se borran, así el historial de cada rol queda intacto y se puede volver atrás."""
-    modelo = MODELO_POR_NIVEL[nivel]
-    if isinstance(persona, modelo):
-        return persona
-    with transaction.atomic():
-        datos = {c: getattr(persona, c) for c in CAMPOS_COMPARTIDOS}
-        destino, creada = modelo.objects.get_or_create(pk=persona.pk, defaults=datos)
-        if not creada:
-            for campo, valor in datos.items():
-                setattr(destino, campo, valor)
-        destino.is_active = True
-        destino.save()
-        persona.is_active = False
-        persona.save()
-    return destino
+    """Compatibilidad con el contrato anterior de asignación de un solo nivel."""
+    return asignar_roles(persona, [CATEGORIA_POR_NIVEL[nivel]])

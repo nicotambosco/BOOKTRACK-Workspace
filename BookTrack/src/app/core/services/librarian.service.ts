@@ -2,9 +2,10 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { Rol } from '../../models/user.model';
 import { ActividadBibliotecario, Bibliotecario, NuevoBibliotecario, Persona } from '../../models/librarian.model';
 
-/** Solo para el rol admin. Contrato del backend en docs/ADMIN_BIBLIOTECARIOS.md. */
+/** Bibliotecarios en vista admin y edición de roles según la jerarquía de la cuenta. */
 @Injectable({ providedIn: 'root' })
 export class LibrarianService {
   private http = inject(HttpClient);
@@ -16,6 +17,6 @@ export class LibrarianService {
     return this.http.patch<Bibliotecario>(`${this.api}/${id}/`, b);
   }
   people(): Observable<Persona[]> { return this.http.get<Persona[]>(`${environment.apiUrl}/roles/`); }
-  setNivel(legajo: string, nivel: number): Observable<Persona> { return this.http.patch<Persona>(`${environment.apiUrl}/roles/${legajo}/`, { nivel }); }
+  setRoles(legajo: string, roles: Rol[]): Observable<Persona> { return this.http.patch<Persona>(`${environment.apiUrl}/roles/${legajo}/`, { roles }); }
   activity(id: string): Observable<ActividadBibliotecario[]> { return this.http.get<ActividadBibliotecario[]>(`${this.api}/${id}/activity/`); }
 }

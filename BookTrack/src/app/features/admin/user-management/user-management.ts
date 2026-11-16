@@ -15,6 +15,7 @@ export class UserManagement implements OnInit {
   usuarios: User[] = [];
   cargando = false;
   error: string | null = null;
+  readonly nombresRoles = { usuario: 'Usuario', bibliotecario: 'Bibliotecario', admin: 'Administrador' };
 
   constructor(private userService: UserService, private router: Router) {}
 

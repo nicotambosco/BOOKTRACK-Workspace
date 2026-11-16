@@ -1,132 +1,162 @@
-<div class="page">
+<main class="page">
   <header class="top">
-    <div class="title-icon">📚</div>
+    <div class="title-icon" aria-hidden="true">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 21v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6m2 3a5 5 0 0 1 3 5v2"/></svg>
+    </div>
     <div class="title">
-      <h1>Gestión de Bibliotecarios</h1>
-      <p>Seleccioná un bibliotecario para ver y editar su ficha.</p>
+      <h1>Usuarios y roles</h1>
+      <p>Consultá las cuentas, asigná roles y gestioná los bibliotecarios.</p>
     </div>
     <div class="top-actions">
-      <button class="btn-logout" (click)="cerrarSesion()">Cerrar sesión</button>
-      <button class="btn-primary" (click)="abrirNuevo()">+ Nuevo bibliotecario</button>
+      <app-role-switcher [disabled]="guardando || cargando"/>
+      <button class="btn-logout" type="button" (click)="cerrarSesion()" [disabled]="guardando" aria-label="Cerrar sesión" title="Cerrar sesión">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      </button>
     </div>
   </header>
 
-  <nav class="tabs">
-    <button [class.on]="vista === 'bibliotecarios'" (click)="vista = 'bibliotecarios'">Bibliotecarios</button>
-    <button [class.on]="vista === 'roles'" (click)="abrirRoles()">Usuarios y roles</button>
-  </nav>
+  @if (error) { <p class="msg err" role="alert">{{ error }}</p> }
+  @if (aviso) { <p class="msg ok" role="status">{{ aviso }}</p> }
 
-  @if (vista === 'roles') {
-    <section class="panel roles">
-      <input class="search" type="search" placeholder="Buscar por nombre, legajo o email..." aria-label="Buscar persona" [(ngModel)]="busquedaRoles"/>
-      @if (errorRol) { <p class="msg err" role="alert">{{ errorRol }}</p> }
-      <table>
-        <thead><tr><th>Legajo</th><th>Nombre y apellido</th><th>Email</th><th>Rol</th></tr></thead>
-        <tbody>
-          @for (p of personasFiltradas; track p.id) {
-            <tr>
-              <td>{{ p.legajo }}</td><td>{{ p.nombreApellido }}</td><td>{{ p.email }}</td>
-              <td>
-                <select [value]="p.nivel" [disabled]="p.id === miLegajo || guardando" (change)="pedirCambio(p, $any($event.target).value)" [attr.aria-label]="'Rol de ' + p.nombreApellido">
-                  @for (r of roles; track r.nivel) { <option [value]="r.nivel" [selected]="r.nivel === p.nivel">{{ r.nombre }}</option> }
-                </select>
-              </td>
-            </tr>
-          } @empty { <tr><td colspan="4" class="muted">Sin resultados.</td></tr> }
-        </tbody>
-      </table>
-    </section>
-  }
-
-  @if (cambio; as c) {
-    <div class="overlay">
-      <div class="modal">
-        <h3>Cambiar rol</h3>
-        <p>¿Pasar a <b>{{ c.persona.nombreApellido }}</b> de {{ nombreRol(c.persona.nivel) }} a <b>{{ nombreRol(c.nivel) }}</b>? Su sesión actual se cerrará y su historial se conserva.</p>
-        <div class="modal-actions">
-          <button class="btn-outline" (click)="cambio = null; abrirRoles()" [disabled]="guardando">Cancelar</button>
-          <button class="btn-primary" (click)="confirmarCambio()" [disabled]="guardando">Confirmar</button>
-        </div>
-      </div>
+  <section class="panel toolbar" aria-label="Buscar y gestionar cuentas">
+    <div class="search-tools">
+      <label class="search-label">Buscar usuario
+        <span class="search-control">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></svg>
+          <input class="search" type="search" placeholder="Nombre, legajo o email" [(ngModel)]="busqueda" (ngModelChange)="filtrar()" [disabled]="guardando || cargando"/>
+        </span>
+      </label>
+      <button class="btn-primary btn-new" type="button" (click)="abrirNuevo()" [disabled]="guardando || cargando">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        Nuevo bibliotecario
+      </button>
     </div>
-  }
+    <label class="role-filter">Filtrar por rol
+      <select [(ngModel)]="filtroRol" (ngModelChange)="filtrar()" [disabled]="guardando || cargando">
+        <option value="">Todos los roles</option>
+        @for (r of roles; track r.clave) { <option [value]="r.clave">{{ r.nombre }}</option> }
+      </select>
+    </label>
+  </section>
 
-  <div class="layout" [hidden]="vista !== 'bibliotecarios'">
-    <aside class="panel list">
-      <input class="search" type="search" placeholder="Buscar..." aria-label="Buscar bibliotecario" [(ngModel)]="busqueda"/>
-      @if (cargando) { <p class="muted">Cargando…</p> }
-      @for (b of filtrados; track b.id) {
-        <button class="item" [class.active]="b.id === seleccionado?.id" (click)="seleccionar(b)">
-          <span class="avatar sm">{{ iniciales(b.nombreApellido) }}</span>
-          <span class="item-text">
-            <strong>{{ b.nombreApellido }}</strong>
-            <small>{{ b.legajo }} · {{ b.activo ? 'Activo' : 'Inactivo' }}</small>
-          </span>
-        </button>
-      } @empty {
-        @if (!cargando) { <p class="muted">No hay bibliotecarios.</p> }
+  <div class="layout" [attr.aria-busy]="cargando">
+    <aside class="panel list" aria-label="Lista de usuarios">
+      <div class="list-head"><h2>Cuentas</h2><span class="list-count" role="status">{{ filtrados.length }} de {{ personas.length }}</span></div>
+      @if (cargando) { <p class="muted" role="status">Cargando usuarios…</p> }
+      @else {
+        @for (p of filtrados; track p.id) {
+          <button class="item" [class.active]="p.id === seleccionado?.id" [attr.aria-pressed]="p.id === seleccionado?.id" [disabled]="guardando" (click)="aviso = ''; seleccionar(p)">
+            <span class="avatar sm" aria-hidden="true">{{ iniciales(p.nombreApellido) }}</span>
+            <span class="item-text">
+              <strong>{{ p.nombreApellido || p.legajo }}</strong>
+              <small>{{ p.legajo }} · {{ p.roles.length ? nombresRoles(p.roles) : 'Bibliotecario inactivo' }}</small>
+              @if (!p.activo) { <small class="inactive">Inactivo</small> }
+            </span>
+          </button>
+        } @empty {
+          @if (!error) { <p class="muted">{{ personas.length ? 'No hay usuarios que coincidan con los filtros.' : 'No hay cuentas para mostrar.' }}</p> }
+        }
       }
+      @if (error && !cargando) { <button class="btn-outline" (click)="cargar()">Reintentar carga</button> }
     </aside>
 
-    <section class="panel detail">
+    <section class="panel detail" aria-label="Ficha del usuario">
       @if (seleccionado; as s) {
         <div class="detail-head">
-          <span class="avatar lg">{{ iniciales(s.nombreApellido) }}</span>
+          <span class="avatar lg" aria-hidden="true">{{ iniciales(s.nombreApellido) }}</span>
           <div class="who">
-            <h2>{{ s.nombreApellido }}</h2>
+            <h2>{{ s.nombreApellido || s.legajo }}</h2>
             <div class="meta">
-              <span class="badge" [class.off]="!s.activo">● {{ s.activo ? 'Activo' : 'Inactivo' }}</span>
+              @for (rol of s.roles; track rol) { <span class="badge role">{{ nombreRol(rol) }}</span> }
+              <span class="badge" [class.off]="!s.activo">{{ s.activo ? 'Activo' : 'Inactivo' }}</span>
               <span class="muted">Legajo {{ s.legajo }}</span>
             </div>
           </div>
-          <div class="head-actions">
-            <button class="btn-danger" [class.btn-ok]="!s.activo" (click)="alternarActivo()" [disabled]="guardando">{{ s.activo ? 'Desactivar' : 'Activar' }}</button>
-            <button class="btn-primary" (click)="guardar()" [disabled]="guardando">{{ guardando ? 'Guardando…' : 'Guardar cambios' }}</button>
+          @if (s.bibliotecario) {
+            <div class="head-actions">
+              <button class="btn-danger" [class.btn-ok]="!s.activo" (click)="alternarActivo()" [disabled]="guardando || cargando || (s.activo ? !permisosRoles.quitables.includes('bibliotecario') : !permisosRoles.asignables.includes('bibliotecario'))">{{ s.activo ? 'Desactivar bibliotecario' : 'Activar bibliotecario' }}</button>
+              <button class="btn-primary" type="submit" form="ficha-bibliotecario" [disabled]="guardando || cargando">{{ guardando ? 'Guardando…' : 'Guardar cambios' }}</button>
+            </div>
+          }
+        </div>
+
+        <div class="role-field">
+          <fieldset [disabled]="!s.activo || guardando || cargando" aria-describedby="ayuda-rol">
+            <legend>Roles</legend>
+            <app-role-picker [options]="roles" [selectedValues]="rolesElegidos" [lockedValues]="s.rolesFijos ?? []" [nonRemovableValues]="permisosRoles.bloqueadosParaQuitar" [nonAssignableValues]="permisosRoles.bloqueadosParaAgregar" [disabled]="!s.activo || guardando || cargando" [resetKey]="s.id" (selectionChange)="actualizarRoles($event)"/>
+          </fieldset>
+          <p id="ayuda-rol" class="muted">
+            @if (!s.activo) { Activá la cuenta para asignar roles. }
+            @else if (s.rolesFijos?.includes('admin')) { El rol administrador de la cuenta principal es fijo. }
+            @else if (s.id === miLegajo) { Solo podés quitarte roles inferiores a tu rango más alto. No podés asignarte roles. }
+            @else { Podés modificar rangos inferiores al tuyo. Solo ADMIN-1 puede asignar o quitar admin. }
+          </p>
+          <div class="role-footer">
+            <span class="role-summary" role="status">{{ rolesModificados ? 'Cambios sin guardar' : '' }}</span>
+            <div class="role-actions">
+              @if (rolesModificados) { <button class="btn-outline" (click)="restablecerRoles()" [disabled]="guardando || cargando">Deshacer</button> }
+              <button class="btn-primary" (click)="pedirCambio()" [disabled]="!s.activo || !rolesModificados || guardando || cargando">Guardar roles</button>
+            </div>
           </div>
         </div>
 
-        @if (error) { <p class="msg err" role="alert">{{ error }}</p> }
-        @if (aviso) { <p class="msg ok" role="status">{{ aviso }}</p> }
-
-        <div class="stats">
-          <div><span>Préstamos gestionados</span><b>{{ s.prestamosGestionados }}</b></div>
-          <div><span>Devoluciones</span><b class="green">{{ s.devoluciones }}</b></div>
-          <div><span>Pendientes</span><b class="amber">{{ s.pendientes }}</b></div>
-        </div>
-
-        <div class="fields">
-          <label>Nombre y apellido<input [(ngModel)]="form.nombreApellido" name="nombre"/></label>
-          <label>Email<input type="email" [(ngModel)]="form.email" name="email"/></label>
-          <label>Legajo<input [value]="s.legajo" readonly/></label>
-        </div>
-
-        <h3>Actividad reciente</h3>
-        <ul class="activity">
-          @for (a of actividad; track $index) {
-            <li><span>{{ a.descripcion }}</span><time>{{ a.fecha | date:'dd/MM HH:mm' }}</time></li>
-          } @empty { <li class="muted">Sin actividad registrada.</li> }
-        </ul>
-      } @else {
-        @if (error) { <p class="msg err" role="alert">{{ error }}</p> }
-        @else if (!cargando) { <p class="muted">Seleccioná un bibliotecario de la lista.</p> }
+        @if (s.bibliotecario; as b) {
+          <div class="stats">
+            <div><span>Préstamos gestionados</span><b>{{ b.prestamosGestionados }}</b></div>
+            <div><span>Devoluciones</span><b class="green">{{ b.devoluciones }}</b></div>
+            <div><span>Pendientes</span><b class="amber">{{ b.pendientes }}</b></div>
+          </div>
+          <form id="ficha-bibliotecario" class="fields" (ngSubmit)="guardar()">
+            <label>Nombre y apellido<input [(ngModel)]="form.nombreApellido" name="nombre" required maxlength="200" [disabled]="guardando || cargando"/></label>
+            <label>Email<input type="email" [(ngModel)]="form.email" name="email" [disabled]="guardando || cargando"/></label>
+            <label>Legajo<input [value]="s.legajo" readonly/></label>
+          </form>
+          <h3>Actividad reciente</h3>
+          @if (cargandoActividad) { <p class="muted" role="status">Cargando actividad…</p> }
+          @else if (errorActividad) { <p class="msg err" role="alert">{{ errorActividad }}</p> }
+          @else {
+            <ul class="activity">
+              @for (a of actividad; track $index) {
+                <li><span>{{ a.descripcion }}</span><time>{{ a.fecha | date:'dd/MM HH:mm' }}</time></li>
+              } @empty { <li class="muted">Sin actividad registrada.</li> }
+            </ul>
+          }
+        } @else {
+          <div class="fields">
+            <label>Nombre y apellido<input [value]="s.nombreApellido" readonly/></label>
+            <label>Email<input [value]="s.email" readonly/></label>
+            <label>Legajo<input [value]="s.legajo" readonly/></label>
+          </div>
+        }
+      } @else if (!cargando) {
+        <p class="muted">Seleccioná un usuario de la lista para consultar su ficha y gestionar su rol.</p>
       }
     </section>
   </div>
 
-  @if (creando) {
-    <div class="overlay">
-      <form class="modal" (ngSubmit)="crear()">
-        <h3>Nuevo bibliotecario</h3>
-        <label>Legajo<input autocomplete="off" [(ngModel)]="nuevo.legajo" name="legajo"/></label>
-        <label>Nombre y apellido<input [(ngModel)]="nuevo.nombreApellido" name="nombreApellido"/></label>
-        <label>Email<input type="email" autocomplete="off" [(ngModel)]="nuevo.email" name="email"/></label>
-        <label>Contraseña inicial<input type="password" autocomplete="new-password" [(ngModel)]="nuevo.contrasena" name="contrasena"/></label>
-        @if (errorNuevo) { <p class="msg err" role="alert">{{ errorNuevo }}</p> }
-        <div class="modal-actions">
-          <button type="button" class="btn-outline" (click)="creando=false" [disabled]="guardando">Cancelar</button>
-          <button type="submit" class="btn-primary" [disabled]="guardando">Crear</button>
-        </div>
-      </form>
-    </div>
-  }
-</div>
+  <dialog #dialogoRol class="modal" aria-labelledby="titulo-rol" (cancel)="cancelarCambio($event)">
+    @if (cambio; as c) {
+      <h2 id="titulo-rol">Actualizar roles</h2>
+      <p>¿Asignar a <b>{{ c.persona.nombreApellido }}</b> los roles <b>{{ nombresRoles(c.roles) }}</b>? Su historial se conserva. @if (c.persona.id !== miLegajo) { Deberá volver a iniciar sesión. }</p>
+      <div class="modal-actions">
+        <button class="btn-outline" (click)="cancelarCambio()" [disabled]="guardando" autofocus>Cancelar</button>
+        <button class="btn-primary" (click)="confirmarCambio()" [disabled]="guardando">{{ guardando ? 'Guardando…' : 'Confirmar' }}</button>
+      </div>
+    }
+  </dialog>
+
+  <dialog #dialogoNuevo class="modal" aria-labelledby="titulo-nuevo" (cancel)="cerrarNuevo($event)">
+    <form (ngSubmit)="crear()">
+      <h2 id="titulo-nuevo">Nuevo bibliotecario</h2>
+      <label>Legajo<input autocomplete="off" [(ngModel)]="nuevo.legajo" name="legajo" required maxlength="50" [disabled]="guardando" autofocus/></label>
+      <label>Nombre y apellido<input [(ngModel)]="nuevo.nombreApellido" name="nombreApellido" required maxlength="200" [disabled]="guardando"/></label>
+      <label>Email<input type="email" autocomplete="off" [(ngModel)]="nuevo.email" name="email" [disabled]="guardando"/></label>
+      <label>Contraseña inicial<input type="password" autocomplete="new-password" [(ngModel)]="nuevo.contrasena" name="contrasena" required minlength="6" [disabled]="guardando"/></label>
+      @if (errorNuevo) { <p class="msg err" role="alert">{{ errorNuevo }}</p> }
+      <div class="modal-actions">
+        <button type="button" class="btn-outline" (click)="cerrarNuevo()" [disabled]="guardando">Cancelar</button>
+        <button type="submit" class="btn-primary" [disabled]="guardando">{{ guardando ? 'Creando…' : 'Crear' }}</button>
+      </div>
+    </form>
+  </dialog>
+</main>

@@ -20,7 +20,7 @@ class LoanViewSet(viewsets.ReadOnlyModelViewSet):
         services.refresh_states()
         queryset = Prestamo.objects.select_related('usuario', 'ejemplar__libro', 'bibliotecario').all()
         if self.request.user.categoria != 'bibliotecario':
-            queryset = queryset.filter(usuario=self.request.user)
+            queryset = queryset.filter(usuario_id=self.request.user.pk) if self.request.user.categoria == 'usuario' else queryset.none()
         state = self.request.query_params.get('estado')
         if state:
             if state not in Prestamo.Estado.values:
@@ -83,7 +83,7 @@ class ReservationViewSet(mixins.CreateModelMixin, viewsets.ReadOnlyModelViewSet)
         services.refresh_states()
         queryset = Reserva.objects.select_related('usuario', 'libro', 'bibliotecario').all()
         if self.request.user.categoria != 'bibliotecario':
-            queryset = queryset.filter(usuario=self.request.user)
+            queryset = queryset.filter(usuario_id=self.request.user.pk) if self.request.user.categoria == 'usuario' else queryset.none()
         state = self.request.query_params.get('estado')
         if state:
             if state not in Reserva.Estado.values:

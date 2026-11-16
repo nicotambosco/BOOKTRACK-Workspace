@@ -1,13 +1,15 @@
-import { Injectable } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of, tap } from 'rxjs';
-import { User } from '../../models/user.model';
+import { Observable, catchError, finalize, of, tap, throwError } from 'rxjs';
+import { Rol, User } from '../../models/user.model';
 import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private api = environment.apiUrl;
   private tokenKey = 'auth_token';
+  readonly cambiandoRol = signal(false);
+  readonly errorCambioRol = signal('');
 
   constructor(private http: HttpClient) {}
 
@@ -32,6 +34,7 @@ export class AuthService {
   logout(): void {
     localStorage.removeItem(this.tokenKey);
     sessionStorage.removeItem(this.tokenKey);
+    this.errorCambioRol.set('');
   }
 
   isAuthenticated(): boolean {
@@ -67,5 +70,31 @@ export class AuthService {
     } catch {
       return null;
     }
+  }
+
+  getUserRoles(): Rol[] {
+    try {
+      const payload = JSON.parse(atob((this.getToken() ?? '').split('.')[1]));
+      return (Array.isArray(payload.roles) ? payload.roles : [payload.categoria])
+        .filter((rol: unknown): rol is Rol => rol === 'usuario' || rol === 'bibliotecario' || rol === 'admin');
+    } catch { return []; }
+  }
+
+  actualizarToken(token: string) {
+    const storage = localStorage.getItem(this.tokenKey) && !sessionStorage.getItem(this.tokenKey) ? localStorage : sessionStorage;
+    storage.setItem(this.tokenKey, token);
+  }
+
+  cambiarRol(rol: Rol): Observable<{ token: string; user: User }> {
+    this.cambiandoRol.set(true);
+    this.errorCambioRol.set('');
+    return this.http.post<{ token: string; user: User }>(`${this.api}/users/active-role/`, { rol }).pipe(
+      tap(res => this.actualizarToken(res.token)),
+      catchError(error => {
+        this.errorCambioRol.set('No se pudo cambiar de vista. Intentá nuevamente.');
+        return throwError(() => error);
+      }),
+      finalize(() => this.cambiandoRol.set(false)),
+    );
   }
 }

@@ -1,96 +1,57 @@
-# Instructivo backend — rol Admin y gestión de bibliotecarios
+# Roles y gestión de cuentas
 
-Estado: niveles de privilegio **hechos** (secciones 2, 3, 4 y 6); **pendientes** los endpoints de la sección 5. El front ya está hecho (`/admin-bibliotecarios`) y llama a estos endpoints; hasta que se implementen, la vista muestra el error "No se pudo cargar la lista".
+Una misma identidad (legajo) puede tener uno o varios roles: `usuario`, `bibliotecario` y `admin`. Los roles se asignan con casillas en la pantalla **Usuarios y roles** (`/admin-bibliotecarios`). La búsqueda y el filtro por rol se aplican en el frontend. Una cuenta con varios roles aparece una sola vez y coincide con cada uno de sus roles.
 
-## 1. Objetivo
+Cada rol conserva su fila en `Usuario`, `Bibliotecario` o `Administrador`. Las filas activas del mismo legajo representan los roles asignados. Al quitar un rol se desactiva su fila; sus préstamos, reservas y acciones históricas se conservan. Nombre, email, imagen y hash de contraseña se mantienen sincronizados entre las filas. No se necesitan migraciones nuevas para habilitar las combinaciones de roles.
 
-Un tercer rol, `admin`, que solo gestiona cuentas de bibliotecarios (alta, edición de ficha, activar/desactivar y ver su actividad). El admin **no** opera préstamos ni libros. Sigue la convención actual: **cada rol vive en su propia tabla**, con el legajo como clave primaria.
+Las altas y ediciones rechazan un email que pertenezca a otro legajo, incluso si esa cuenta está inactiva, sin distinguir mayúsculas de minúsculas. Los roles de una misma identidad comparten el email y se permite dejarlo vacío. Si hay emails duplicados de datos anteriores, el acceso por email solicita ingresar con el legajo y corregir el email desde el perfil; no selecciona una cuenta arbitrariamente.
 
-## 2. Modelo (HECHO)
+## Elegir la vista de trabajo
 
-Tres cuentas distintas, cada una en su tabla y con su legajo como clave primaria. Cada persona tiene además `nivel` (privilegios): **0 usuario, 1 bibliotecario, 2 admin**. `categoria` ('usuario' / 'bibliotecario' / 'admin') se deriva del nivel y se sigue enviando al front.
+El login devuelve `token` y `user`, ambos con `roles` (la lista de roles disponibles). `categoria` sigue indicando la vista activa y `nivel` el tipo de fila, no un nivel que reemplace a los demás roles. Si la cuenta tiene el rol bibliotecario, esa es siempre su vista inicial, incluso si también tiene admin y aunque en la sesión anterior haya usado la vista admin. Una cuenta que solo tiene admin inicia en su panel de administración.
 
-- Tabla nueva `Administrador` (separada de `Bibliotecario`). El admin no es un bibliotecario con más permisos.
-- Restricciones en la base: `Usuario.nivel = 0`, `Bibliotecario.nivel = 1`, `Administrador.nivel = 2`.
-- `find_persona` busca en las tres tablas, así que el legajo es único entre las tres.
-- Migración `users/0006_nivel_y_administrador.py`: crea la tabla y la columna `nivel` (usuarios en 0, bibliotecarios en 1). **Falta aplicarla** con `python manage.py migrate`.
+Cuando hay varios roles, el selector **Vista** permite alternar entre Usuario, Bibliotecario y Administrador. El guard solicita al servidor un token para la vista elegida antes de abrir sus rutas; no hace falta volver a escribir la contraseña. Se conserva la preferencia de recordar sesión.
 
-## 3. Autenticación (HECHO)
+| Método | Ruta | Datos / uso |
+|---|---|---|
+| POST | `/api/users/active-role/` | `{ "rol": "bibliotecario" }`; valida que ese rol esté activo y devuelve un nuevo `token` y `user` |
+| GET | `/api/roles/` | Solo vista admin; cuentas activas sin duplicados, con `roles` |
+| PATCH | `/api/roles/<legajo>/` | Requiere vista admin, tanto para la cuenta propia como para terceros; se aplica la jerarquía. Body: `{ "roles": ["admin", "bibliotecario"] }` |
 
-El token lleva `categoria` y con eso se elige la tabla (`MODELO_POR_CATEGORIA`). El login busca en las tres tablas. `/users/login/` y `/users/me/` devuelven también `nivel`.
+Se exige al menos un rol válido y sin duplicados. La jerarquía es **Administrador > Bibliotecario > Usuario**. Se toma el rango más alto asignado a la cuenta; cambiar la vista activa no modifica su autoridad.
 
-## 4. Permiso (`loans/permissions.py`)
+| Cuenta | Gestión de roles en la aplicación |
+|---|---|
+| Usuario | Sin acceso al panel admin; no modifica roles desde su perfil |
+| Bibliotecario | Sin acceso al panel admin; los cambios los realiza un administrador |
+| Administrador normal | Desde el panel admin puede quitarse Bibliotecario y Usuario; conserva Admin y no puede agregarse roles |
+| Administrador fijo (`ADMIN-1`) | Puede agregar y quitar roles; conserva siempre su Admin fijo |
 
-```python
-class IsAdmin(BasePermission):
-    message = 'Esta operación requiere el rol admin.'
+Un administrador normal puede modificar los roles inferiores de otras cuentas desde la vista admin, pero no otorgar ni retirar Admin. Solo `ADMIN-1` puede hacer esos cambios. La regla también se valida en la desactivación del rol bibliotecario y en las eliminaciones de cuentas para evitar eludir la jerarquía.
 
-    def has_permission(self, request, view):
-        return bool(request.user.is_authenticated and request.user.categoria == 'admin')
-```
+`rolesFijos` identifica el Admin permanente de `ADMIN-1`; el frontend distingue los roles fijos de las opciones bloqueadas por la jerarquía. La gestión de roles se realiza exclusivamente en el panel admin (`/admin-bibliotecarios`), con la vista administrador activa. Los perfiles de usuario y bibliotecario solo muestran datos personales y permiten actualizar el email; no incluyen controles de asignación ni eliminación de roles. El selector no permite autoasignaciones salvo para `ADMIN-1`.
 
-## 5. Endpoints (nueva app o `users/`, montar en `booktrack/urls.py`)
+La modificación de roles invalida los tokens anteriores del destinatario, que deberá volver a iniciar sesión. Al modificar la propia cuenta, la respuesta incluye un token actualizado. La operación conserva la vista admin, desde la que se realizó el cambio. La preferencia de iniciar como bibliotecario se aplica en el próximo login.
 
-`path('api/librarians/', include('users.librarian_urls'))`. Todos con `permission_classes = [IsAdmin]`.
+Se admite el cuerpo anterior `{ "nivel": 0|1|2 }` para clientes previos: asigna exclusivamente ese rol. No se puede enviar `nivel` y `roles` a la vez. Los endpoints de perfil y registro no permiten asignar privilegios.
 
-| Método | Ruta | Uso | Body |
-|---|---|---|---|
-| GET | `/api/librarians/` | Lista (activos e inactivos) ordenada por legajo | — |
-| POST | `/api/librarians/` | Alta | `legajo, nombreApellido, email, contrasena` (≥ 6 caracteres) |
-| PATCH | `/api/librarians/<legajo>/` | Editar / activar / desactivar | cualquiera de `nombreApellido, email, activo` |
-| GET | `/api/librarians/<legajo>/activity/` | Últimas 10 acciones | — |
+## Gestión de bibliotecarios
 
-**Respuesta de bibliotecario** (lista, alta y PATCH), la misma forma que `Bibliotecario` en `models/librarian.model.ts`:
+Todos estos endpoints requieren la vista admin:
 
-```json
-{ "id": "L-0012", "legajo": "L-0012", "nombreApellido": "Mariana López", "email": "mlopez@booktrack.com",
-  "activo": true, "prestamosGestionados": 128, "devoluciones": 119, "pendientes": 9 }
-```
+| Método | Ruta | Uso |
+|---|---|---|
+| GET | `/api/librarians/` | Fichas con estadísticas; incluye bibliotecarios activos aunque también sean administradores |
+| POST | `/api/librarians/` | Alta con `legajo`, `nombreApellido`, `email` y `contrasena` (mínimo 6 caracteres) |
+| PATCH | `/api/librarians/<legajo>/` | Editar `nombreApellido` y `email`, o activar/desactivar el rol bibliotecario con `activo` |
+| GET | `/api/librarians/<legajo>/activity/` | Últimas diez acciones del bibliotecario |
 
-Cómo se calculan (sobre `Prestamo.bibliotecario`):
-- `prestamosGestionados` = total de préstamos del bibliotecario.
-- `devoluciones` = los de `estado='devuelto'`.
-- `pendientes` = los de `estado` `vigente` o `vencido`.
-- En la lista, usar `annotate(Count(..., filter=Q(...)))` sobre `Bibliotecario` para no hacer una consulta por fila.
+Desactivar el rol bibliotecario no desactiva los demás roles de la persona. Una fila bibliotecaria inactiva de alguien que tiene otros roles activos se conserva como historial y deja de aparecer como bibliotecario actual. Puede recuperarse asignando nuevamente ese rol desde su ficha de usuario. Una cuenta exclusivamente bibliotecaria inactiva sigue visible para poder reactivarla.
 
-**Actividad**: `AccionAdministrativa.objects.filter(bibliotecario=b)[:10]` (ya viene ordenada por fecha desc) → `[{ "descripcion": "...", "fecha": "<ISO 8601>" }]`. El front formatea la fecha.
+En la vista bibliotecario se pueden gestionar libros, ejemplares, lectores, reservas, retiros, devoluciones, reportes y actividad. Las relaciones y la auditoría se registran con su fila `Bibliotecario`, aunque la misma cuenta también tenga rol admin. En la vista usuario se muestran sus propias reservas y préstamos.
 
-Reglas:
-- - Alta: el rol **nunca** viene del cliente; se crea siempre un `Bibliotecario`. Validar legajo no vacío y único con `find_persona` (409/400 con mensaje "Ya existe una cuenta con ese legajo."), contraseña con `set_password`, `nombreApellido` partido con `split_name`.
-- PATCH: el legajo no se puede cambiar (es la clave primaria); se ignora si llega. Si llega `nombreApellido`, usar `split_name`.
-- No hay DELETE: un bibliotecario con préstamos/acciones históricas no se borra, se desactiva (`is_active=False`). Un bibliotecario inactivo ya no puede iniciar sesión ni usar su token (login y `PersonaJWTAuthentication` ya lo rechazan).
-- 404 si el legajo no es de un bibliotecario (no exponer usuarios ni admins por este endpoint).
+## Respaldo y comprobaciones
 
-## 6. Crear el primer admin (`create_admin.py`)
+Las copias `.btbak` incluyen las filas y sus estados activos, por lo que conservan las combinaciones de roles y sus credenciales. Las copias anteriores con un único rol siguen siendo compatibles.
 
-Agregar, junto a las cuentas de demostración:
-
-```python
-create_person(Administrador, 'ADMIN-1', config('SUPERADMIN_PASSWORD'),
-              nombre='Admin', email='superadmin@booktrack.local')
-```
-
-Variable nueva `SUPERADMIN_PASSWORD` en el `.env` (documentarla en `STARTUP.md`). No se crean admins desde la API: solo por este script o por consola.
-
-## 7. Tests (patrón de `users/test_api.py`)
-
-- Login de admin devuelve `categoria: 'admin'`.
-- Un bibliotecario y un usuario reciben 403 en `/api/librarians/`; sin token, 401.
-- El admin recibe 403 en endpoints de bibliotecario (`/api/loans/` de gestión, libros) — confirma que no hereda permisos.
-- Alta: crea `Bibliotecario`, legajo duplicado (incluso de un usuario o admin) falla, contraseña corta falla.
-- PATCH `activo=false` → ese bibliotecario ya no puede iniciar sesión; `activo=true` lo recupera.
-- Estadísticas: con 3 préstamos (1 devuelto, 1 vigente, 1 vencido) → 3 / 1 / 2.
-
-## 8. Docs a actualizar
-
-`docs/API.md` (4 endpoints), `docs/MODELO_DATOS.md` (tabla `Administrador` y columna `nivel`), `docs/FUNCIONALIDADES.md` (rol admin) y `docs/credenciales.md` (cuenta demo).
-
-## 9. Orden de implementación sugerido
-
-1. Modelo + migración + `find_persona`.
-2. Autenticación (token y login).
-3. `IsAdmin` + endpoints + serializer.
-4. `create_admin.py`.
-5. Tests y docs.
-
-Mientras tanto no se toca el front salvo que cambie el contrato de la sección 5.
+Las pruebas cubren asignación múltiple, selección de vista, permisos, invalidación de tokens, sincronización de la ficha, retiros/devoluciones con auditoría y restauración de una cuenta con varios roles.

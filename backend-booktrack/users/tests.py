@@ -89,7 +89,7 @@ class LibrarianManagementTests(TestCase):
 
 class RoleAssignmentTests(TestCase):
     def setUp(self):
-        self.admin = make_user('ADM-R', 'admin')
+        self.admin = make_user('ADMIN-1', 'admin')
         self.c = APIClient(); self.c.force_authenticate(self.admin)
         self.alumno = make_user('ALU-R', nombre='Ana', apellido='Gómez', email='ana@x.com', password='clave-segura')
 
@@ -123,9 +123,9 @@ class RoleAssignmentTests(TestCase):
         self.assertEqual([u['legajo'] for u in lib.get('/api/users/').data], ['LIB-R'])
 
     def test_reglas(self):
-        self.assertEqual(self.nivel('ADM-R', 0).status_code, 400)       # no se cambia el propio rol
         self.assertEqual(self.nivel('ALU-R', 5).status_code, 400)
         self.assertEqual(self.nivel('NOPE', 1).status_code, 404)
         lib = APIClient(); lib.force_authenticate(make_user('LIB-R2', 'bibliotecario'))
         self.assertEqual(lib.patch('/api/roles/ALU-R/', {'nivel': 1}, format='json').status_code, 403)
         self.assertEqual(len(self.c.get('/api/roles/').data), 3)
+        self.assertEqual(self.nivel('ADMIN-1', 0).status_code, 400)       # nadie puede quitarse roles

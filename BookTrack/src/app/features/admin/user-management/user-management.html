@@ -46,11 +46,13 @@
             <td>{{ usuario.email || '-' }}</td>
             <td>
               <span class="role-badge" [class]="'role-' + usuario.categoria">
-                {{ usuario.categoria === 'usuario' ? '👤 Usuario' : '📚 Bibliotecario' }}
+                @for (rol of usuario.roles ?? [usuario.categoria]; track rol; let ultimo = $last) {
+                  {{ nombresRoles[rol] }}{{ ultimo ? '' : ', ' }}
+                }
               </span>
             </td>
             <td class="actions">
-              @if (usuario.categoria === 'usuario') {
+              @if ((usuario.roles ?? [usuario.categoria]).includes('usuario')) {
                 <button class="btn btn-edit" (click)="verHistorial(usuario)">Ver historial</button>
               } @else { - }
             </td>

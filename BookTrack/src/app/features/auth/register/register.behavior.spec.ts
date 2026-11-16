@@ -41,7 +41,16 @@ describe('Register screen', () => {
     page.registrar();
     ctrl.expectOne(URL).flush({ legajo: ['duplicado'] }, { status: 400, statusText: 'Bad Request' });
     expect(page.exito).toBe(false);
-    expect(page.error).toContain('Error al registrarse');
+    expect(page.error).toBe('duplicado');
+  });
+
+  it('shows the duplicate email validation so the user can correct it', () => {
+    Object.assign(page, { nombre: 'Ana', email: 'ocupado@example.test', legajo: '2', password: 'secreto1' });
+    page.registrar();
+    ctrl.expectOne(URL).flush({ email: ['Ya existe otra cuenta con ese email.'] }, { status: 400, statusText: 'Bad Request' });
+    expect(page.error).toBe('Ya existe otra cuenta con ese email.');
+    expect(page.exito).toBe(false);
+    expect(page.cargando).toBe(false);
   });
 });
 

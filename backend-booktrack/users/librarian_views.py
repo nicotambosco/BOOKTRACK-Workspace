@@ -1,19 +1,24 @@
 """Gestión de bibliotecarios: solo para el rol admin (contrato en docs/ADMIN_BIBLIOTECARIOS.md)."""
+from django.db import transaction
 from django.db.models import Count, Q
 from rest_framework import serializers, status
 from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from loans.permissions import IsAdmin
-from .models import Administrador, Bibliotecario, Usuario, find_persona
-from .serializers import split_name
+from .models import Administrador, Bibliotecario, Usuario, find_persona, sincronizar_persona
+from .serializers import EmailUnicoMixin, split_name, token_persona
+from .role_permissions import validar_cambio_roles
 
 
-def con_estadisticas():
+def con_estadisticas(incluir_historial=False):
     # una fila inactiva de quien hoy es usuario o admin es historial de un rol anterior, no un bibliotecario desactivado
     otros = [*Usuario.objects.filter(is_active=True).values_list('pk', flat=True),
              *Administrador.objects.filter(is_active=True).values_list('pk', flat=True)]
-    return Bibliotecario.objects.exclude(pk__in=otros).annotate(
+    queryset = Bibliotecario.objects.all()
+    if not incluir_historial:
+        queryset = queryset.filter(Q(is_active=True) | ~Q(pk__in=otros))
+    return queryset.annotate(
         total=Count('prestamos', distinct=True),
         devueltos=Count('prestamos', filter=Q(prestamos__estado='devuelto'), distinct=True),
         abiertos=Count('prestamos', filter=Q(prestamos__estado__in=['vigente', 'vencido']), distinct=True),
@@ -22,10 +27,11 @@ def con_estadisticas():
 
 def representar(b):
     return {'id': b.pk, 'legajo': b.pk, 'nombreApellido': b.nombre_apellido, 'email': b.email, 'activo': b.is_active,
-            'prestamosGestionados': b.total, 'devoluciones': b.devueltos, 'pendientes': b.abiertos}
+            'prestamosGestionados': b.total, 'devoluciones': b.devueltos, 'pendientes': b.abiertos,
+            'roles': b.roles, 'rolesFijos': b.roles_fijos}
 
 
-class NuevoBibliotecarioSerializer(serializers.Serializer):
+class NuevoBibliotecarioSerializer(EmailUnicoMixin, serializers.Serializer):
     legajo = serializers.CharField(max_length=50)
     nombreApellido = serializers.CharField(max_length=200)
     email = serializers.EmailField(required=False, allow_blank=True)
@@ -38,7 +44,7 @@ class NuevoBibliotecarioSerializer(serializers.Serializer):
         return value
 
 
-class EdicionBibliotecarioSerializer(serializers.Serializer):
+class EdicionBibliotecarioSerializer(EmailUnicoMixin, serializers.Serializer):
     nombreApellido = serializers.CharField(max_length=200, required=False)
     email = serializers.EmailField(required=False, allow_blank=True)
     activo = serializers.BooleanField(required=False)
@@ -70,11 +76,16 @@ class LibrarianDetailView(APIView):
             raise NotFound()
         return b
 
+    @transaction.atomic
     def patch(self, request, pk):
         b = self._get(pk)
-        s = EdicionBibliotecarioSerializer(data=request.data)
+        s = EdicionBibliotecarioSerializer(instance=b, data=request.data)
         s.is_valid(raise_exception=True)
         d = s.validated_data
+        if 'activo' in d:
+            actuales = set(b.roles)
+            elegidos = actuales | {'bibliotecario'} if d['activo'] else actuales - {'bibliotecario'}
+            validar_cambio_roles(request.user, b, elegidos)
         if 'nombreApellido' in d:
             b.nombre, b.apellido = split_name(d['nombreApellido'])
         if 'email' in d:
@@ -82,7 +93,11 @@ class LibrarianDetailView(APIView):
         if 'activo' in d:
             b.is_active = d['activo']
         b.save()
-        return Response(representar(self._get(pk)))
+        sincronizar_persona(b)
+        resultado = representar(con_estadisticas(incluir_historial=True).get(pk=pk))
+        if pk == request.user.pk:
+            resultado['token'] = token_persona(Administrador.objects.get(pk=pk, is_active=True))
+        return Response(resultado)
 
 
 class LibrarianActivityView(APIView):

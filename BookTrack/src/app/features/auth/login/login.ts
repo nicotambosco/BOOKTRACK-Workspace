@@ -167,7 +167,8 @@ export class Login {
         const campos: string[] = err.error?.campos ?? ['legajoOEmail', 'contrasena'];
         this.legajoInvalido = campos.includes('legajoOEmail');
         this.passwordInvalido = campos.includes('contrasena');
-        this.error = 'Usuario no existente o contraseña incorrecta.';
+        const detalle = err.error?.detail;
+        this.error = typeof detalle === 'string' && detalle.trim() ? detalle : 'Usuario no existente o contraseña incorrecta.';
       }
     });
   }

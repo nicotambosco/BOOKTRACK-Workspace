@@ -15,4 +15,7 @@ class PersonaJWTAuthentication(JWTAuthentication):
             raise AuthenticationFailed('Usuario no encontrado.', code='user_not_found')
         if not user.is_active:
             raise AuthenticationFailed('Usuario inactivo.', code='user_inactive')
+        roles_token = validated_token.get('roles', [user.categoria])
+        if set(roles_token) != set(user.roles):
+            raise AuthenticationFailed('Tus roles cambiaron. Iniciá sesión nuevamente.', code='roles_changed')
         return user

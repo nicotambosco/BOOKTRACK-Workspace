@@ -1,8 +1,14 @@
 from django.db import transaction
-from django.db.models import Q
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import Administrador, Bibliotecario, Usuario, find_persona
+from .models import Administrador, Bibliotecario, Usuario, find_persona, sincronizar_persona
+
+
+def token_persona(persona):
+    refresh = RefreshToken.for_user(persona)
+    refresh['categoria'] = persona.categoria
+    refresh['roles'] = persona.roles
+    return str(refresh.access_token)
 
 
 def split_name(full_name):
@@ -10,7 +16,20 @@ def split_name(full_name):
     return nombre, apellido.strip()
 
 
-class UserSerializer(serializers.Serializer):
+class EmailUnicoMixin:
+    def validate_email(self, value):
+        value = value.strip().lower()
+        if value:
+            for model in (Usuario, Bibliotecario, Administrador):
+                coincidencias = model.objects.filter(email__iexact=value)
+                if self.instance is not None:
+                    coincidencias = coincidencias.exclude(pk=self.instance.pk)
+                if coincidencias.exists():
+                    raise serializers.ValidationError('Ya existe otra cuenta con ese email.')
+        return value
+
+
+class UserSerializer(EmailUnicoMixin, serializers.Serializer):
     """Usuario o bibliotecario. `id` y `legajo` son la clave primaria: el legajo con el que inicia sesión."""
     id = serializers.CharField(read_only=True)
     legajo = serializers.CharField(source='pk', read_only=True)
@@ -24,6 +43,8 @@ class UserSerializer(serializers.Serializer):
     codigo = serializers.CharField(required=False, allow_blank=True, max_length=50)
     categoria = serializers.CharField(read_only=True)
     nivel = serializers.IntegerField(read_only=True)
+    roles = serializers.ListField(child=serializers.CharField(), read_only=True)
+    rolesFijos = serializers.ListField(source='roles_fijos', child=serializers.CharField(), read_only=True)
     imagen = serializers.CharField(required=False, allow_blank=True)
 
     def get_fields(self):
@@ -35,6 +56,7 @@ class UserSerializer(serializers.Serializer):
                     field.read_only = True
         return fields
 
+    @transaction.atomic
     def update(self, person, validated_data):
         full_name = validated_data.pop('nombre_apellido', None)
         if full_name is not None:
@@ -43,10 +65,11 @@ class UserSerializer(serializers.Serializer):
             if hasattr(person, field):  # el bibliotecario no tiene teléfono, email alternativo ni código
                 setattr(person, field, value)
         person.save()
+        sincronizar_persona(person)
         return person
 
 
-class RegisterSerializer(serializers.Serializer):
+class RegisterSerializer(EmailUnicoMixin, serializers.Serializer):
     legajo = serializers.CharField(max_length=50)
     nombreApellido = serializers.CharField()
     email = serializers.EmailField(required=False, allow_blank=True)
@@ -82,12 +105,21 @@ class LoginSerializer(serializers.Serializer):
 
     def validate(self, data):
         legajo_o_email = data['legajoOEmail'].strip()
-        # por legajo (la clave primaria) primero, luego por email; los bibliotecarios se buscan antes que los usuarios
+        # Por legajo primero, luego por email. Bibliotecario es la vista inicial si tiene ese rol.
         existente = None
-        for model in (Administrador, Bibliotecario, Usuario):
+        for model in (Bibliotecario, Administrador, Usuario):
             existente = existente or model.objects.filter(pk=legajo_o_email, is_active=True).first()
-        for model in (Administrador, Bibliotecario, Usuario):
-            existente = existente or (model.objects.filter(~Q(email=''), email=legajo_o_email, is_active=True).first())
+        if existente is None:
+            por_legajo = {}
+            for model in (Bibliotecario, Administrador, Usuario):
+                for persona in model.objects.filter(email__iexact=legajo_o_email, is_active=True):
+                    por_legajo.setdefault(persona.pk, persona)
+            if len(por_legajo) > 1:
+                raise serializers.ValidationError({
+                    'detail': 'El email está asociado a varias cuentas. Ingresá con tu legajo y actualizá tu email.',
+                    'campos': ['legajoOEmail'],
+                })
+            existente = next(iter(por_legajo.values()), None)
 
         if not existente or not existente.check_password(data['contrasena']):
             raise serializers.ValidationError({
@@ -95,8 +127,6 @@ class LoginSerializer(serializers.Serializer):
                 'campos': ['contrasena'] if existente else ['legajoOEmail', 'contrasena'],
             })
 
-        refresh = RefreshToken.for_user(existente)
-        refresh['categoria'] = existente.categoria
-        data['token'] = str(refresh.access_token)
+        data['token'] = token_persona(existente)
         data['user'] = existente
         return data

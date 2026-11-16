@@ -1,0 +1,26 @@
+<button #trigger type="button" class="role-trigger" [disabled]="disabled" [attr.aria-expanded]="abierto" [attr.aria-controls]="abierto ? id : null" aria-haspopup="dialog" [attr.aria-label]="'Editar roles: ' + (nombresSeleccionados.join(', ') || 'ninguno seleccionado')" (click)="alternar()" (keydown.arrowdown)="$event.preventDefault(); $event.stopPropagation(); abrir()">
+  <span class="selection">
+    @for (nombre of nombresSeleccionados.slice(0, 2); track $index) { <span class="token" [title]="nombre">{{ nombre }}</span> }
+    @if (nombresSeleccionados.length > 2) { <span class="extra">+{{ nombresSeleccionados.length - 2 }}</span> }
+    @if (!nombresSeleccionados.length) { <span class="placeholder">Seleccionar roles…</span> }
+  </span>
+  <svg class="chevron" [class.open]="abierto" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+</button>
+
+@if (abierto) {
+  <section [id]="id" class="role-dropdown" role="dialog" aria-label="Asignar roles">
+    <fieldset class="role-results">
+      <legend class="sr-only">Roles disponibles</legend>
+      @for (r of options; track r.clave) {
+        <label class="role-option" [for]="id + '-check-' + r.clave" [title]="motivo(r.clave)" [class.selected]="selectedValues.includes(r.clave)" [class.locked]="bloqueado(r.clave)">
+          <input [id]="id + '-check-' + r.clave" type="checkbox" [checked]="selectedValues.includes(r.clave)" [disabled]="bloqueado(r.clave)" (change)="elegir(r.clave, $any($event.target).checked)" [attr.aria-labelledby]="id + '-name-' + r.clave" [attr.aria-describedby]="id + '-desc-' + r.clave"/>
+          <span [id]="id + '-name-' + r.clave">{{ r.nombre }}</span>
+          <span class="sr-only" [id]="id + '-desc-' + r.clave">{{ motivo(r.clave) }}</span>
+          @if (lockedValues.includes(r.clave)) { <span class="lock" aria-hidden="true">Fijo</span> }
+        </label>
+      } @empty {
+        <p class="empty">No hay roles disponibles.</p>
+      }
+    </fieldset>
+  </section>
+}
