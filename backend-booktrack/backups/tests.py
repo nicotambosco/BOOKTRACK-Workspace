@@ -1,7 +1,9 @@
 from datetime import timedelta
+import errno
 import hashlib
 import io
 import json
+import os
 from pathlib import Path
 import tempfile
 import zipfile
@@ -17,7 +19,7 @@ from django.utils import timezone
 from books.models import Ejemplar, Libro
 from books.testing import make_book
 from loans.models import Prestamo, Reserva
-from users.models import Bibliotecario, Usuario
+from users.models import Administrador, Bibliotecario, Usuario, asignar_roles
 from users.testing import make_user
 from .snapshots import decrypt, encrypt, export_snapshot, read_snapshot, restore_snapshot
 
@@ -103,6 +105,16 @@ class SnapshotTests(TransactionTestCase):
         previous, _ = read_snapshot(recovery, PASSWORD)
         self.assertEqual(previous['counts']['books.libro'], 2)
 
+    def test_multi_role_account_preserves_both_roles_and_password_after_restore(self):
+        persona = asignar_roles(self.librarian, ['admin', 'bibliotecario'])
+        self.export()
+        Administrador.objects.filter(pk=persona.pk).update(is_active=False)
+        restore_snapshot(self.output, PASSWORD, replace=True)
+        restored = Administrador.objects.get(pk=persona.pk)
+        self.assertEqual(set(restored.roles), {'admin', 'bibliotecario'})
+        self.assertTrue(restored.check_password('clave-segura'))
+        self.assertTrue(Bibliotecario.objects.get(pk=persona.pk).is_active)
+
     def test_wrong_key_and_tampering_never_modify_destination(self):
         self.export()
         with self.assertRaises(CommandError):
@@ -148,10 +160,9 @@ class SnapshotTests(TransactionTestCase):
     def test_media_failure_rolls_back_database_and_keeps_original_files(self):
         self.export()
         Libro.objects.filter(pk=self.book.pk).update(titulo='Current data')
-        import os
         original_replace = os.replace
         def fail_media(source, target):
-            if Path(source).name == 'new-media':
+            if Path(source).parent.name == 'new-media':
                 raise OSError('Simulated disk failure')
             return original_replace(source, target)
         with patch('backups.snapshots.os.replace', side_effect=fail_media):
@@ -159,6 +170,81 @@ class SnapshotTests(TransactionTestCase):
                 restore_snapshot(self.output, PASSWORD, replace=True)
         self.assertEqual(Libro.objects.get(pk=self.book.pk).titulo, 'Current data')
         self.assertEqual((self.media/'foto.jpg').read_bytes(), b'uploaded-image-test')
+
+    def test_restore_preserves_a_mounted_media_root_and_uses_the_same_filesystem(self):
+        nested = self.media/'portraits'
+        nested.mkdir()
+        (nested/'user.png').write_bytes(b'original-portrait')
+        self.export()
+        inode = self.media.stat().st_ino
+        (nested/'user.png').write_bytes(b'changed')
+        (self.media/'extra.txt').write_bytes(b'extra')
+        original_replace = os.replace
+
+        def mounted_media(source, target):
+            source, target = Path(source), Path(target)
+            if source == self.media or target == self.media:
+                raise OSError(errno.EBUSY, 'Device or resource busy')
+            if source.is_relative_to(self.media) != target.is_relative_to(self.media):
+                raise OSError(errno.EXDEV, 'Invalid cross-device link')
+            return original_replace(source, target)
+
+        with patch('backups.snapshots.os.replace', side_effect=mounted_media):
+            recovery = restore_snapshot(self.output, PASSWORD, replace=True)
+        self.assertTrue(recovery.exists())
+        self.assertEqual(self.media.stat().st_ino, inode)
+        self.assertEqual((nested/'user.png').read_bytes(), b'original-portrait')
+        self.assertEqual((self.media/'foto.jpg').read_bytes(), b'uploaded-image-test')
+        self.assertEqual({p.name for p in self.media.iterdir()}, {'foto.jpg', 'portraits'})
+
+    def test_partial_media_install_failure_restores_all_files_and_database(self):
+        (self.media/'second.jpg').write_bytes(b'second-original')
+        self.export()
+        Libro.objects.filter(pk=self.book.pk).update(titulo='Current data')
+        (self.media/'foto.jpg').write_bytes(b'current-photo')
+        (self.media/'second.jpg').write_bytes(b'current-second')
+        (self.media/'extra.txt').write_bytes(b'current-extra')
+        original_replace = os.replace
+        installed = []
+
+        def fail_second_file(source, target):
+            if Path(source).parent.name == 'new-media':
+                if installed:
+                    raise OSError('Failure after installing the first file')
+                installed.append(Path(target).name)
+            return original_replace(source, target)
+
+        with patch('backups.snapshots.os.replace', side_effect=fail_second_file):
+            with self.assertRaises(OSError):
+                restore_snapshot(self.output, PASSWORD, replace=True)
+        self.assertEqual(len(installed), 1)
+        self.assertEqual(Libro.objects.get(pk=self.book.pk).titulo, 'Current data')
+        self.assertEqual({p.name: p.read_bytes() for p in self.media.iterdir()}, {
+            'foto.jpg': b'current-photo', 'second.jpg': b'current-second', 'extra.txt': b'current-extra',
+        })
+
+    def test_partial_media_backup_failure_restores_already_moved_files(self):
+        self.export()
+        Libro.objects.filter(pk=self.book.pk).update(titulo='Current data')
+        (self.media/'extra.txt').write_bytes(b'current-extra')
+        original_replace = os.replace
+        moved = []
+
+        def fail_second_move(source, target):
+            if Path(target).parent.name == 'old-media':
+                if moved:
+                    raise OSError('Failure while preserving current files')
+                moved.append(Path(source).name)
+            return original_replace(source, target)
+
+        with patch('backups.snapshots.os.replace', side_effect=fail_second_move):
+            with self.assertRaises(OSError):
+                restore_snapshot(self.output, PASSWORD, replace=True)
+        self.assertEqual(len(moved), 1)
+        self.assertEqual(Libro.objects.get(pk=self.book.pk).titulo, 'Current data')
+        self.assertEqual({p.name: p.read_bytes() for p in self.media.iterdir()}, {
+            'foto.jpg': b'uploaded-image-test', 'extra.txt': b'current-extra',
+        })
 
     def test_archive_paths_and_media_symlinks_are_rejected(self):
         self.export()
