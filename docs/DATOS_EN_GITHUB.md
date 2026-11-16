@@ -86,6 +86,8 @@ docker compose exec -T backend python manage.py restaurar_datos --replace --no-i
 
 El backend del contenedor necesita estar iniciado para ejecutar esos comandos, pero no debe recibir operaciones durante la restauración. Después podés reiniciarlo con `docker compose restart backend`.
 
+La restauración conserva la carpeta raíz de `media`, incluso cuando es un volumen montado por Docker. Reemplaza su contenido y utiliza un directorio temporal dentro del mismo volumen para poder recuperar los archivos anteriores si falla la operación. El volumen necesita espacio libre para conservar temporalmente los archivos actuales y los restaurados.
+
 Si cambiás `SECRET_KEY` entre PCs, las sesiones antiguas pueden dejar de ser válidas; ingresá nuevamente. Las contraseñas de los usuarios se conservan porque se restauran sus hashes, pero la clave de MySQL de destino se configura por separado en `.env`.
 
 ## Exportar sin hacer un commit

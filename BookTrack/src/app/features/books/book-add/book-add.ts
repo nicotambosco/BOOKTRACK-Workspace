@@ -169,7 +169,7 @@ export class BookAdd implements OnInit {
     });
   }
 
-  cerrarModal() { this.modal=false; if (this.modalMsg.includes('exitosamente')) this.router.navigate(['/home-admin']); }
+  cerrarModal() { this.modal=false; if (this.modalMsg.includes('exitosamente')) this.router.navigate(['/home-bibliotecario']); }
 
   onImagenSeleccionada(event: Event) {
     const file = (event.target as HTMLInputElement).files?.[0];
@@ -177,5 +177,5 @@ export class BookAdd implements OnInit {
     this.bookService.uploadImage(file).subscribe(res => this.libro.imagen = res.url);
   }
 
-  salir() { this.router.navigate(['/home-admin']); }
+  salir() { this.router.navigate(['/home-bibliotecario']); }
 }

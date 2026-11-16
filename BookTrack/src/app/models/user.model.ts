@@ -1,5 +1,7 @@
 import type { Loan } from './loan.model';
 
+export type Rol = 'usuario' | 'bibliotecario' | 'admin';
+
 export interface User {
   id?: string;             // el legajo
   username?: string;
@@ -13,7 +15,9 @@ export interface User {
   legajo?: string;
   contrasena?: string;
   codigo?: string;         // código de invitación (opcional)
-  categoria: 'usuario' | 'bibliotecario';
+  categoria: Rol;
+  roles?: Rol[];
+  rolesFijos?: Rol[];
   imagen?: string;         // URL de imagen de perfil
   historialPrestamos?: Loan[];
 }

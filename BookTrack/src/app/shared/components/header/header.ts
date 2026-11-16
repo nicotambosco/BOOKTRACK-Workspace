@@ -5,11 +5,12 @@ import { CommonModule } from '@angular/common';
 import { NotificationService } from '../../../core/services/notification.service';
 import { Notificacion } from '../../../models/notification.model';
 import { AuthService } from '../../../core/services/auth.service';
+import { RoleSwitcher } from '../role-switcher/role-switcher';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [FormsModule, CommonModule],
+  imports: [FormsModule, CommonModule, RoleSwitcher],
   template: `
     <div class="header">
       <div class="header-left">
@@ -32,6 +33,7 @@ import { AuthService } from '../../../core/services/auth.service';
       </div>
       }
       <div class="header-right">
+        <app-role-switcher/>
         @if (!esAdmin) {
           <div class="notif-wrap">
             <svg class="icon-btn" width="22" height="22" viewBox="0 0 24 24" fill="none" (click)="toggleNotificaciones()">
@@ -138,6 +140,11 @@ import { AuthService } from '../../../core/services/auth.service';
       display:flex; align-items:center; justify-content:center;
       cursor: pointer;
     }
+    @media (max-width: 600px) {
+      .header { height:auto; min-height:56px; flex-wrap:wrap; gap:.7rem; padding:.7rem 1rem; }
+      .header-right { gap:.6rem; margin-left:auto; }
+      .header-center { order:3; flex-basis:100%; padding:0; }
+    }
   `]
 })
 export class Header implements OnInit {
@@ -152,7 +159,7 @@ export class Header implements OnInit {
   ngOnInit() {
     // El rol real manda: las vistas compartidas (búsqueda, detalle, préstamo) no saben quién las ve.
     const rol = this.authService.getUserRole();
-    if (rol) this.esAdmin = rol === 'bibliotecario';
+    if (rol) this.esAdmin = rol !== 'usuario';
     // Los avisos los genera el servidor (reservas, retiros, vencimientos); el bibliotecario no recibe.
     if (!this.esAdmin) {
       this.notificationService.getAll().subscribe({
@@ -186,7 +193,7 @@ export class Header implements OnInit {
     this.tieneNotificaciones = false;
   }
 
-  irAHome() { this.router.navigate([this.esAdmin ? '/home-admin' : '/home']); }
+  irAHome() { this.router.navigate([this.esAdmin ? '/home-bibliotecario' : '/home']); }
   irAPerfil() { this.router.navigate([this.esAdmin ? '/profile-admin' : '/profile']); }
   irAHistorial() { this.router.navigate(['/user-history']); }
   buscar() { if (this.busqueda.trim()) this.router.navigate(['/book-search'], { queryParams: { q: this.busqueda } }); }

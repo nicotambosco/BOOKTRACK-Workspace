@@ -115,7 +115,7 @@ export class LoanHistory implements OnInit {
     });
   }
 
-  volver() { this.router.navigate(['/home-admin']); }
+  volver() { this.router.navigate(['/home-bibliotecario']); }
 
   exportPDF() { this.descargar(this.loanService.exportPDF(), `historiales_prestamos_${new Date().toISOString().split('T')[0]}.pdf`); }
   exportExcel() { this.descargar(this.loanService.exportExcel(), `historiales_prestamos_${new Date().toISOString().split('T')[0]}.xlsx`); }

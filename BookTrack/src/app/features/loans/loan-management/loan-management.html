@@ -2,7 +2,7 @@
   @if (!embedded) { <app-header [esAdmin]="true"></app-header> }
   <div class="workspace-shell" [class.page-body]="!embedded">
     @if (!embedded) {
-      <header class="page-heading"><a routerLink="/home-admin">← Volver al inicio</a><h1>Reservas y préstamos</h1><p>Registrá retiros y devoluciones de la biblioteca.</p></header>
+      <header class="page-heading"><a routerLink="/home-bibliotecario">← Volver al inicio</a><h1>Reservas y préstamos</h1><p>Registrá retiros y devoluciones de la biblioteca.</p></header>
     }
     @if (embedded) {
       <div class="stats" aria-label="Resumen de la biblioteca">

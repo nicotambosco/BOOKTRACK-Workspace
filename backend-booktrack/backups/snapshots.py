@@ -195,10 +195,12 @@ def restore_snapshot(source, password, *, replace=False, database='default'):
         raise CommandError('La carpeta media no puede ser un enlace simbólico.')
     recovery = Path(source).absolute().parent / 'recovery' / f'before-restore-{uuid.uuid4().hex}.btbak'
     export_snapshot(recovery, password, database)
-    media.parent.mkdir(parents=True, exist_ok=True)
+    media.mkdir(parents=True, exist_ok=True)
     tables = connection.introspection.django_table_names(only_existing=True)
     # DELETE is transactional on InnoDB; Django flush uses TRUNCATE on MySQL and cannot be rolled back.
-    with tempfile.TemporaryDirectory(prefix='.booktrack-restore-', dir=media.parent) as temp:
+    # MEDIA_ROOT puede ser un volumen de Docker: no se renombra el punto de
+    # montaje. El staging y la recuperación viven en su mismo filesystem.
+    with tempfile.TemporaryDirectory(prefix='.booktrack-restore-', dir=media) as temp:
         root = Path(temp)
         fixture = root/'database.json'
         fixture.write_bytes(files['database.json'])
@@ -210,7 +212,8 @@ def restore_snapshot(source, password, *, replace=False, database='default'):
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes(data)
         old_media = root/'old-media'
-        moved_old = moved_new = False
+        old_media.mkdir()
+        moved_old, moved_new = [], []
         try:
             with connection.constraint_checks_disabled():
                 with transaction.atomic(using=database):
@@ -221,15 +224,22 @@ def restore_snapshot(source, password, *, replace=False, database='default'):
                     connection.check_constraints(table_names=tables)
                     if _counts(database) != metadata['counts']:
                         raise CommandError('Los conteos restaurados no coinciden. Se revirtió la restauración.')
-                    if media.exists():
-                        os.replace(media, old_media)
-                        moved_old = True
-                    os.replace(staged_media, media)
-                    moved_new = True
+                    for path in list(media.iterdir()):
+                        if path == root:
+                            continue
+                        os.replace(path, old_media/path.name)
+                        moved_old.append(path.name)
+                    for path in list(staged_media.iterdir()):
+                        os.replace(path, media/path.name)
+                        moved_new.append(path.name)
         except Exception:
-            if moved_new:
-                shutil.rmtree(media)
-            if moved_old:
-                os.replace(old_media, media)
+            for name in moved_new:
+                path = media/name
+                if path.is_dir():
+                    shutil.rmtree(path)
+                else:
+                    path.unlink()
+            for name in moved_old:
+                os.replace(old_media/name, media/name)
             raise
     return recovery

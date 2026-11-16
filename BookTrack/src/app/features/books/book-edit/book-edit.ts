@@ -485,7 +485,7 @@ export class BookEdit implements OnInit {
       this.guardandoEjemplar = false;
       this.changeDetector.markForCheck();
     })).subscribe({
-      next: () => this.router.navigate(['/home-admin']),
+      next: () => this.router.navigate(['/home-bibliotecario']),
       error: err => { this.modalMsg=apiErrorMessage(err, 'No se pudo eliminar el libro. El servidor no informó el motivo.'); this.modal=true; }
     });
   }
@@ -498,5 +498,5 @@ export class BookEdit implements OnInit {
     this.bookService.uploadImage(file).subscribe(res => this.libro.imagen = res.url);
   }
 
-  salir() { this.router.navigate(['/home-admin']); }
+  salir() { this.router.navigate(['/home-bibliotecario']); }
 }

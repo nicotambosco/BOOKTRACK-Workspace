@@ -1,6 +1,11 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router, ActivatedRouteSnapshot } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { Rol } from '../../../models/user.model';
+import { catchError, map, of } from 'rxjs';
+
+export const homeDeRol = (rol: string | null | undefined) =>
+  rol === 'admin' ? '/admin-bibliotecarios' : rol === 'bibliotecario' ? '/home-bibliotecario' : '/home';
 
 export const authGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
   const authService = inject(AuthService);
@@ -14,8 +19,17 @@ export const authGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
   if (roles) {
     const userRole = authService.getUserRole();
     if (!userRole || !roles.includes(userRole)) {
-      // cada rol vuelve a su propio inicio: el bibliotecario al panel, el usuario al catálogo
-      return router.createUrlTree([userRole === 'bibliotecario' ? '/home-admin' : '/home']);
+      const destino = (roles as Rol[]).find(rol => authService.getUserRoles().includes(rol));
+      if (destino) {
+        return authService.cambiarRol(destino).pipe(
+          map(() => true),
+          catchError(error => {
+            if (error.status === 401) { authService.logout(); return of(router.createUrlTree(['/login'])); }
+            return of(router.createUrlTree([homeDeRol(userRole)]));
+          }),
+        );
+      }
+      return router.createUrlTree([homeDeRol(userRole)]);
     }
   }
 

@@ -1,5 +1,5 @@
 import { Router } from '@angular/router';
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpTestingController } from '@angular/common/http/testing';
 import { Reports } from './reports/reports';
 import { UserManagement } from './user-management/user-management';
@@ -35,6 +35,7 @@ describe('Reports screen', () => {
 });
 
 describe('UserManagement screen', () => {
+  let fixture: ComponentFixture<UserManagement>;
   let page: UserManagement;
   let ctrl: HttpTestingController;
   const users = () => [
@@ -43,7 +44,8 @@ describe('UserManagement screen', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({ imports: [UserManagement], providers: testProviders });
-    page = TestBed.createComponent(UserManagement).componentInstance;
+    fixture = TestBed.createComponent(UserManagement);
+    page = fixture.componentInstance;
     ctrl = TestBed.inject(HttpTestingController);
     page.ngOnInit();
     ctrl.expectOne(`${API}/users/`).flush(users());
@@ -64,5 +66,19 @@ describe('UserManagement screen', () => {
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     page.verHistorial(page.usuarios[1]);
     expect(navigate).toHaveBeenCalledWith(['/user-loans', '13885']);
+  });
+
+  it('shows both roles and keeps access to reader history for a librarian who is also a user', () => {
+    fixture.detectChanges();
+    ctrl.expectOne(`${API}/users/`).flush([{ id: 'DOBLE', legajo: 'DOBLE', nombreApellido: 'Ana', email: '',
+      categoria: 'bibliotecario', roles: ['usuario', 'bibliotecario'] }]);
+    fixture.changeDetectorRef.markForCheck();
+    fixture.detectChanges();
+    const root: HTMLElement = fixture.nativeElement;
+    expect(root.querySelector('.role-badge')?.textContent).toContain('Usuario');
+    expect(root.querySelector('.role-badge')?.textContent).toContain('Bibliotecario');
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    root.querySelector<HTMLButtonElement>('.actions button')!.click();
+    expect(navigate).toHaveBeenCalledWith(['/user-loans', 'DOBLE']);
   });
 });

@@ -4,10 +4,10 @@ import { Header } from '../../../shared/components/header/header';
 import { LoanManagement } from '../../loans/loan-management/loan-management';
 
 @Component({
-  selector: 'app-home-admin',
+  selector: 'app-home-bibliotecario',
   standalone: true,
   imports: [Header, RouterLink, LoanManagement],
-  templateUrl: './home-admin.html',
-  styleUrl: './home-admin.scss',
+  templateUrl: './home-bibliotecario.html',
+  styleUrl: './home-bibliotecario.scss',
 })
-export class HomeAdmin {}
+export class HomeBibliotecario {}

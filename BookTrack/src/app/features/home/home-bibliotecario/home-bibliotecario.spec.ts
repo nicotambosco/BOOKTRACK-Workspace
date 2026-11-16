@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpTestingController } from '@angular/common/http/testing';
-import { HomeAdmin } from './home-admin';
+import { HomeBibliotecario } from './home-bibliotecario';
 import { testProviders } from '../../../testing/test-providers';
 import { environment } from '../../../../environments/environment';
 import { Reservation } from '../../../models/reservation.model';
@@ -17,8 +17,8 @@ const prestamo: Loan = {
   ejemplarId: 'E-1', fechaInicio: '2026-11-01', fechaVencimiento: '2026-11-08', fechaDevolucion: null, estado: 'vencido',
 };
 
-describe('HomeAdmin daily workspace', () => {
-  let fixture: ComponentFixture<HomeAdmin>;
+describe('HomeBibliotecario daily workspace', () => {
+  let fixture: ComponentFixture<HomeBibliotecario>;
   let ctrl: HttpTestingController;
   let root: HTMLElement;
 
@@ -36,8 +36,8 @@ describe('HomeAdmin daily workspace', () => {
   }
 
   beforeEach(async () => {
-    await TestBed.configureTestingModule({ imports: [HomeAdmin], providers: testProviders }).compileComponents();
-    fixture = TestBed.createComponent(HomeAdmin);
+    await TestBed.configureTestingModule({ imports: [HomeBibliotecario], providers: testProviders }).compileComponents();
+    fixture = TestBed.createComponent(HomeBibliotecario);
     ctrl = TestBed.inject(HttpTestingController);
     root = fixture.nativeElement;
     fixture.detectChanges();

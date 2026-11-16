@@ -1,18 +1,21 @@
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.settings import api_settings
-from .models import Bibliotecario, Usuario
+from .models import MODELO_POR_CATEGORIA, Usuario
 
 
 class PersonaJWTAuthentication(JWTAuthentication):
     """El token lleva el legajo (`user_id`) y el rol (`categoria`): con el rol se sabe en qué tabla buscar."""
 
     def get_user(self, validated_token):
-        model = Bibliotecario if validated_token.get('categoria') == 'bibliotecario' else Usuario
+        model = MODELO_POR_CATEGORIA.get(validated_token.get('categoria'), Usuario)
         try:
             user = model.objects.get(pk=validated_token[api_settings.USER_ID_CLAIM])
         except (KeyError, model.DoesNotExist):
             raise AuthenticationFailed('Usuario no encontrado.', code='user_not_found')
         if not user.is_active:
             raise AuthenticationFailed('Usuario inactivo.', code='user_inactive')
+        roles_token = validated_token.get('roles', [user.categoria])
+        if set(roles_token) != set(user.roles):
+            raise AuthenticationFailed('Tus roles cambiaron. Iniciá sesión nuevamente.', code='roles_changed')
         return user

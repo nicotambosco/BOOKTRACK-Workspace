@@ -4,7 +4,7 @@ import { testProviders } from '../../../testing/test-providers';
 import { ProfileUser } from './profile-user';
 import { environment } from '../../../../environments/environment';
 const API = environment.apiUrl;
-const user = {id:'13885',legajo:'13885',nombreApellido:'Ana Ejemplo',email:'ana@example.test',categoria:'usuario'};
+const user = {id:'13885',legajo:'13885',nombreApellido:'Ana Ejemplo',email:'ana@example.test',categoria:'usuario',roles:['usuario','bibliotecario','admin']};
 describe('ProfileUser: email-only editing', () => {
   let fixture: ComponentFixture<ProfileUser>;
   let page: ProfileUser;
@@ -22,6 +22,13 @@ describe('ProfileUser: email-only editing', () => {
     await fixture.whenStable();
   });
   afterEach(() => ctrl.verify());
+  it('does not expose role management even when the account has admin', () => {
+    const root: HTMLElement = fixture.nativeElement;
+    expect(root.querySelector('app-profile-roles')).toBeNull();
+    expect(root.querySelector('app-role-picker')).toBeNull();
+    expect(root.textContent).not.toContain('Guardar roles');
+    expect(root.textContent).not.toContain('Mis roles');
+  });
   it('keeps identity fields read-only while only email becomes editable', async () => {
     page.editando = true; fixture.detectChanges(false); await fixture.whenStable();
     const root: HTMLElement = fixture.nativeElement;

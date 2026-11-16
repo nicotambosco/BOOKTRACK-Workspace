@@ -33,11 +33,22 @@ describe('Login screen', () => {
     expect(navigate).toHaveBeenCalledWith(['/home']);
   });
 
-  it('sends a librarian to /home-admin', () => {
+  it('sends a librarian to /home-bibliotecario', () => {
     login.legajo = '12473'; login.password = 'x';
     login.login();
     ctrl.expectOne(URL).flush({ token: fakeJwt({ categoria: 'bibliotecario' }), user: { categoria: 'bibliotecario' } });
-    expect(navigate).toHaveBeenCalledWith(['/home-admin']);
+    expect(navigate).toHaveBeenCalledWith(['/home-bibliotecario']);
+  });
+
+  it('opens the librarian home for an account that also has admin', () => {
+    login.legajo = 'DOBLE'; login.password = 'x';
+    login.login();
+    ctrl.expectOne(URL).flush({
+      token: fakeJwt({ categoria: 'bibliotecario', roles: ['bibliotecario', 'admin'] }),
+      user: { categoria: 'bibliotecario', roles: ['bibliotecario', 'admin'] },
+    });
+    expect(navigate).toHaveBeenCalledWith(['/home-bibliotecario']);
+    expect(navigate).not.toHaveBeenCalledWith(['/admin-bibliotecarios']);
   });
 
   it('remembers the session in localStorage only when "Recordarme" is checked', () => {
@@ -51,7 +62,7 @@ describe('Login screen', () => {
   it('marks only the password when the user exists but the password is wrong', () => {
     login.legajo = '13885'; login.password = 'mal';
     login.login();
-    ctrl.expectOne(URL).flush({ detail: 'x', campos: ['contrasena'] }, { status: 400, statusText: 'Bad Request' });
+    ctrl.expectOne(URL).flush({ detail: 'Usuario no existente o contraseña incorrecta.', campos: ['contrasena'] }, { status: 400, statusText: 'Bad Request' });
     expect(login.passwordInvalido).toBe(true);
     expect(login.legajoInvalido).toBe(false);
     expect(login.error).toBe('Usuario no existente o contraseña incorrecta.');
@@ -64,6 +75,18 @@ describe('Login screen', () => {
     login.login();
     ctrl.expectOne(URL).flush({ campos: ['legajoOEmail', 'contrasena'] }, { status: 400, statusText: 'Bad Request' });
     expect(login.legajoInvalido && login.passwordInvalido).toBe(true);
+  });
+
+  it('explains how to sign in when an existing email belongs to multiple accounts', () => {
+    login.legajo = 'duplicado@example.test'; login.password = 'clave';
+    login.login();
+    const detail = 'El email está asociado a varias cuentas. Ingresá con tu legajo y actualizá tu email.';
+    ctrl.expectOne(URL).flush({ detail, campos: ['legajoOEmail'] }, { status: 400, statusText: 'Bad Request' });
+    expect(login.error).toBe(detail);
+    expect(login.legajoInvalido).toBe(true);
+    expect(login.passwordInvalido).toBe(false);
+    expect(login.cargando).toBe(false);
+    expect(navigate).not.toHaveBeenCalled();
   });
 
   it('navigates to the landing and to password recovery', () => {

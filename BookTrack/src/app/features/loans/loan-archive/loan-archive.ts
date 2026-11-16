@@ -86,7 +86,7 @@ interface FilaArchivo {
 
           <div class="bottom">
             <span class="total">{{ filtrados.length }} registro/s</span>
-            <button class="btn-outline" (click)="router.navigate(['/home-admin'])">VOLVER</button>
+            <button class="btn-outline" (click)="router.navigate(['/home-bibliotecario'])">VOLVER</button>
           </div>
         </div>
       </div>
