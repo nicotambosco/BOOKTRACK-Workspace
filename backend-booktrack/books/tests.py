@@ -7,6 +7,8 @@ from loans.models import Prestamo, Reserva, AccionAdministrativa
 from users.testing import make_user
 from .models import Ejemplar, Libro
 from .testing import make_book, stock
+from .serializers import EjemplarSerializer
+from loans import services as loan_services
 
 
 def book_payload(**over):
@@ -123,6 +125,64 @@ class CopyApiTests(TestCase):
         response = self.c_lib.patch(f'/api/copies/{copy.pk}/', {'estado': 'baja'}, format='json')
         self.assertEqual((response.status_code, stock(self.book)), (200, 0))
         self.assertEqual(self.c_lib.patch(f'/api/copies/{copy.pk}/', {'estado': 'perdido'}, format='json').status_code, 400)
+        self.assertEqual(self.c_lib.patch(f'/api/copies/{copy.pk}/', {'estado': 'disponible'}, format='json').status_code, 200)
+        self.assertEqual(stock(self.book), 1)
+
+    def test_copy_crud_cannot_mark_copies_as_lent(self):
+        copy = self.book.ejemplares.get()
+        for method in ('patch', 'put'):
+            response = getattr(self.c_lib, method)(f'/api/copies/{copy.pk}/',
+                {'id': copy.pk, 'isbn': self.book.pk, 'estado': 'prestado'}, format='json')
+            self.assertEqual(response.status_code, 400, response.data)
+        response = self.c_lib.post('/api/copies/',
+            {'id': 'LENT-WITHOUT-LOAN', 'isbn': self.book.pk, 'estado': 'prestado'}, format='json')
+        self.assertEqual(response.status_code, 400, response.data)
+        self.assertFalse(Ejemplar.objects.filter(pk='LENT-WITHOUT-LOAN').exists())
+        self.assertEqual(stock(self.book), 1)
+
+    def test_copy_cannot_be_lent_again_until_the_first_loan_is_returned(self):
+        today = timezone.localdate()
+        other = make_user('other-reader')
+        reservations = [Reserva.objects.create(usuario=user, libro=self.book,
+            fecha_retiro=today, fecha_vencimiento=today) for user in (self.student, other)]
+        first = self.c_lib.patch(f'/api/reservations/{reservations[0].pk}/retirar/')
+        self.assertEqual(first.status_code, 200, first.data)
+        copy = self.book.ejemplares.get()
+        for method in ('patch', 'put'):
+            for state in ('disponible', 'baja'):
+                response = getattr(self.c_lib, method)(f'/api/copies/{copy.pk}/',
+                    {'id': copy.pk, 'isbn': self.book.pk, 'estado': state}, format='json')
+                self.assertEqual(response.status_code, 400, response.data)
+        second_url = f'/api/reservations/{reservations[1].pk}/retirar/'
+        self.assertEqual(self.c_lib.patch(second_url).status_code, 400)
+        self.assertEqual(Prestamo.objects.filter(ejemplar=copy).count(), 1)
+        self.assertEqual(stock(self.book), 0)
+        self.assertEqual(self.c_lib.patch(f'/api/loans/{first.data["prestamoId"]}/devolver/').status_code, 200)
+        self.assertEqual(self.c_lib.patch(second_url).status_code, 200)
+        self.assertEqual(Prestamo.objects.filter(ejemplar=copy, estado__in=['vigente', 'vencido']).count(), 1)
+
+    def test_stale_copy_updates_recheck_the_state_after_a_pickup(self):
+        copy = self.book.ejemplares.get()
+        change_state = EjemplarSerializer(copy, data={'estado': 'baja'}, partial=True)
+        notes = EjemplarSerializer(copy, data={'observaciones': 'Nota actualizada'}, partial=True)
+        change_state.is_valid(raise_exception=True)
+        notes.is_valid(raise_exception=True)
+        today = timezone.localdate()
+        reservation = Reserva.objects.create(usuario=self.student, libro=self.book,
+            fecha_retiro=today, fecha_vencimiento=today)
+        loan_services.pick_up(reservation, self.librarian)
+        from rest_framework.exceptions import ValidationError
+        with self.assertRaises(ValidationError):
+            change_state.save()
+        notes.save()
+        copy.refresh_from_db()
+        self.assertEqual((copy.estado, copy.observaciones, stock(self.book)), ('prestado', 'Nota actualizada', 0))
+
+    def test_open_loan_prevents_releasing_a_copy_with_inconsistent_legacy_state(self):
+        copy = self.book.ejemplares.get()
+        Prestamo.objects.create(usuario=self.student, ejemplar=copy, estado='vencido')
+        response = self.c_lib.patch(f'/api/copies/{copy.pk}/', {'estado': 'disponible'}, format='json')
+        self.assertEqual(response.status_code, 400, response.data)
 
     def test_copy_observations_are_saved_without_changing_stock_and_appear_in_catalog(self):
         copy = self.book.ejemplares.get()

@@ -11,9 +11,25 @@ class EjemplarSerializer(serializers.ModelSerializer):
         model = Ejemplar
         fields = ['id', 'estado', 'observaciones', 'isbn']
 
+    def create(self, validated_data):
+        if validated_data.get('estado') == 'prestado':
+            raise serializers.ValidationError({'estado': 'El ejemplar se presta al registrar un retiro.'})
+        return super().create(validated_data)
+
+    @transaction.atomic
     def update(self, instance, validated_data):
+        # Mismo orden de bloqueo que retiros y devoluciones. La instancia recibida
+        # puede haberse leído antes de que otra petición prestara el ejemplar.
+        Libro.objects.select_for_update().get(pk=instance.libro_id)
+        instance = Ejemplar.objects.select_for_update().get(pk=instance.pk)
         if 'id' in validated_data and validated_data['id'] != instance.pk:
             raise serializers.ValidationError({'id': 'Usá la operación de cambio de código del ejemplar.'})
+        if 'estado' in validated_data:
+            estado = validated_data['estado']
+            if estado != instance.estado and (estado == 'prestado' or instance.estado == 'prestado'):
+                raise serializers.ValidationError({'estado': 'Usá las operaciones de retiro y devolución para cambiar un ejemplar prestado.'})
+            if estado != 'prestado' and instance.prestamos.filter(estado__in=['vigente', 'vencido']).exists():
+                raise serializers.ValidationError({'estado': 'El ejemplar tiene un préstamo abierto. Registrá su devolución primero.'})
         return super().update(instance, validated_data)
 
 
